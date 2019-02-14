@@ -1,5 +1,6 @@
 [workspace]
 
 members = [
-    "pw_gix"
+    "bab",
+    "pw_gix",
 ]
