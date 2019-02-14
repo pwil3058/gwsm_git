@@ -37,9 +37,7 @@ impl EventNotifier {
         next_token.set(token + 1);
 
         let callbacks = self.callbacks.lock().unwrap();
-        callbacks
-            .borrow_mut()
-            .push((token, events, callback));
+        callbacks.borrow_mut().push((token, events, callback));
 
         token
     }
@@ -63,19 +61,19 @@ impl EventNotifier {
 }
 
 //lazy_static! {
-    //static ref ENOTIFIER: EventNotifier = { EventNotifier::default() };
+//static ref ENOTIFIER: EventNotifier = { EventNotifier::default() };
 //}
 
 //pub fn add_notification_cb(events: u64, callback: fn(u64)) -> u64 {
-    //ENOTIFIER.add_notification_cb(events, callback)
+//ENOTIFIER.add_notification_cb(events, callback)
 //}
 
 //pub fn del_notification(token: u64) {
-    //ENOTIFIER.del_notification(token)
+//ENOTIFIER.del_notification(token)
 //}
 
 //pub fn notify_events(token: u64) {
-    //ENOTIFIER.notify_events(token)
+//ENOTIFIER.notify_events(token)
 //}
 
 #[cfg(test)]
