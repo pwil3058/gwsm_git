@@ -1,3 +1,6 @@
 [submodule "pw_gix"]
 	path = pw_gix
 	url = git@github.com:pwil3058/rs_pw_gix.git
+[submodule "pa_pathux"]
+	path = pw_pathux
+	url = git@github.com:pwil3058/rs_pw_pathux.git
