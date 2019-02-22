@@ -3,5 +3,6 @@
 members = [
     "bab",
     "pw_gix",
-    "pw_pathux"
+    "pw_pathux",
+    "rgwsm_git",
 ]
