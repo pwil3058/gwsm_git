@@ -17,6 +17,7 @@ use std::collections::HashMap;
 use std::io::Write;
 use std::rc::Rc;
 
+use gtk::prelude::*;
 use gtk::{StaticType, ToValue, TreeIter};
 
 use crypto_hash::{Algorithm, Hasher};
