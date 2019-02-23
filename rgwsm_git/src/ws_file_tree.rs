@@ -27,7 +27,7 @@ pub struct OsWsFsTree {
     v_box: gtk::Box,
     view: gtk::TreeView,
     store: gtk::TreeStore,
-    fs_db: OsFsDb<OsFileData, OsFileData>,
+    fs_db: OsFsDb<OsFsoData>,
     auto_expand: bool,
     show_hidden: bool,
     hide_clean: bool,
@@ -35,24 +35,24 @@ pub struct OsWsFsTree {
 
 impl_widget_wrapper!(v_box: gtk::Box, OsWsFsTree);
 
-impl FileTreeIfce<OsFsDb<OsFileData, OsFileData>, OsFileData, OsFileData> for OsWsFsTree {
+impl FileTreeIfce<OsFsDb<OsFsoData>, OsFsoData> for OsWsFsTree {
     fn new(auto_expand: bool) -> Rc<Self> {
         let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         let view = gtk::TreeView::new();
-        let store = gtk::TreeStore::new(&OsFileData::tree_store_spec());
+        let store = gtk::TreeStore::new(&OsFsoData::tree_store_spec());
         view.set_model(&store);
         let scrolled_window = gtk::ScrolledWindow::new(None, None);
         scrolled_window.add(&view);
         v_box.pack_start(&scrolled_window, true, true, 0);
         view.set_headers_visible(false);
-        for col in OsFileData::tree_view_columns() {
+        for col in OsFsoData::tree_view_columns() {
             view.append_column(&col);
         }
         let owft = Rc::new(OsWsFsTree {
             v_box: v_box,
             view: view,
             store: store,
-            fs_db: OsFsDb::<OsFileData, OsFileData>::new(),
+            fs_db: OsFsDb::<OsFsoData>::new(),
             auto_expand: auto_expand,
             show_hidden: false,
             hide_clean: false,
@@ -78,7 +78,7 @@ impl FileTreeIfce<OsFsDb<OsFileData, OsFileData>, OsFileData, OsFileData> for Os
         &self.store
     }
 
-    fn fs_db(&self) -> &OsFsDb<OsFileData, OsFileData> {
+    fn fs_db(&self) -> &OsFsDb<OsFsoData> {
         &self.fs_db
     }
 

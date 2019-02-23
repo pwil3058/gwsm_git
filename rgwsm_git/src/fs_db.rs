@@ -28,4 +28,4 @@ use pw_pathux::str_path::*;
 use pw_pathux::UsableDirEntry;
 
 impl_os_fs_db!(OsFsDb, OsFsDbDir);
-impl_simple_fs_object!(OsFileData);
+impl_simple_fs_object!(OsFsoData);
