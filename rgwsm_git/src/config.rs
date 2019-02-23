@@ -24,23 +24,33 @@ const DCDP_OVERRIDE_ENVAR: &str = "RGWSM_GIT_CONFIG_DIR";
 pub fn abs_default_config_dir_path() -> PathBuf {
     match pw_pathux::expand_home_dir(&PathBuf::from(DEFAULT_CONFIG_DIR_PATH)) {
         Some(expanded_dir) => expanded_dir,
-        None => panic!("{:?}: line {:?}: config dir path expansion failed", file!(), line!())
+        None => panic!(
+            "{:?}: line {:?}: config dir path expansion failed",
+            file!(),
+            line!()
+        ),
     }
 }
 
 pub fn get_config_dir_path() -> PathBuf {
     match env::var(DCDP_OVERRIDE_ENVAR) {
-        Ok(dir_path) => if dir_path.len() == 0 {
-            abs_default_config_dir_path()
-        } else if dir_path.starts_with("~") {
-            match pw_pathux::expand_home_dir(&PathBuf::from(dir_path)) {
-                Some(expanded_dir) => expanded_dir,
-                None => panic!("{:?}: line {:?}: config dir path expansion failed", file!(), line!())
+        Ok(dir_path) => {
+            if dir_path.len() == 0 {
+                abs_default_config_dir_path()
+            } else if dir_path.starts_with("~") {
+                match pw_pathux::expand_home_dir(&PathBuf::from(dir_path)) {
+                    Some(expanded_dir) => expanded_dir,
+                    None => panic!(
+                        "{:?}: line {:?}: config dir path expansion failed",
+                        file!(),
+                        line!()
+                    ),
+                }
+            } else {
+                PathBuf::from(dir_path)
             }
-        } else {
-            PathBuf::from(dir_path)
-        },
-        Err(_) => abs_default_config_dir_path()
+        }
+        Err(_) => abs_default_config_dir_path(),
     }
 }
 
