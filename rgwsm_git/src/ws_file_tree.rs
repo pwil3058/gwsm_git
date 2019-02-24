@@ -62,12 +62,16 @@ where
         v_box.pack_start(&scrolled_window, true, true, 0);
         let show_hidden = gtk::CheckButton::new_with_label("Show Hidden");
         let hide_clean = gtk::CheckButton::new_with_label("Hide Clean");
-        let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        h_box.pack_start(&show_hidden, false, false, 0);
-        if !OsFsDb::<OsFsoData>::hide_clean_is_ignored() {
-            h_box.pack_start(&show_hidden, false, false, 0);
+        if OsFsDb::<OsFsoData>::honours_show_hidden() || OsFsDb::<OsFsoData>::honours_hide_clean() {
+            let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+            if OsFsDb::<OsFsoData>::honours_show_hidden() {
+                h_box.pack_start(&show_hidden, false, false, 0);
+            }
+            if OsFsDb::<OsFsoData>::honours_hide_clean() {
+                h_box.pack_start(&hide_clean, false, false, 0);
+            }
+            v_box.pack_start(&h_box, false, false, 0);
         }
-        v_box.pack_start(&h_box, false, false, 0);
         view.set_headers_visible(false);
         for col in OsFsoData::tree_view_columns() {
             view.append_column(&col);

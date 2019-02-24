@@ -19,7 +19,7 @@ use std::rc::Rc;
 
 use gtk::prelude::*;
 use gtk::{StaticType, ToValue, TreeIter};
-use pango_sys::{PANGO_STYLE_NORMAL, PANGO_STYLE_ITALIC, PANGO_STYLE_OBLIQUE};
+use pango_sys::{PANGO_STYLE_ITALIC, PANGO_STYLE_NORMAL, PANGO_STYLE_OBLIQUE};
 
 use crypto_hash::{Algorithm, Hasher};
 
@@ -78,7 +78,9 @@ lazy_static! {
 }
 
 fn get_deco(status: &str) -> &(i32, &'static str) {
-    _DECO_MAP.get(status).unwrap_or(&(PANGO_STYLE_NORMAL, "black"))
+    _DECO_MAP
+        .get(status)
+        .unwrap_or(&(PANGO_STYLE_NORMAL, "black"))
 }
 
 const NAME: i32 = 0;
@@ -173,8 +175,17 @@ impl FsObjectIfce for OsFsoData {
             store.set_value(iter, STATUS as u32, &self.status.to_value());
             changed = true;
         }
-        if self.associated_file != store.get_value(iter, ASSOCIATED_FILE).get::<String>().unwrap() {
-            store.set_value(iter, ASSOCIATED_FILE as u32, &self.associated_file.to_value());
+        if self.associated_file
+            != store
+                .get_value(iter, ASSOCIATED_FILE)
+                .get::<String>()
+                .unwrap()
+        {
+            store.set_value(
+                iter,
+                ASSOCIATED_FILE as u32,
+                &self.associated_file.to_value(),
+            );
             changed = true;
         }
         if self.is_dir != store.get_value(iter, IS_DIR).get::<bool>().unwrap() {
@@ -193,7 +204,11 @@ impl FsObjectIfce for OsFsoData {
         store.set_value(iter, NAME as u32, &self.name.to_value());
         store.set_value(iter, PATH as u32, &self.path.to_value());
         store.set_value(iter, STATUS as u32, &self.status.to_value());
-        store.set_value(iter, ASSOCIATED_FILE as u32, &self.associated_file.to_value());
+        store.set_value(
+            iter,
+            ASSOCIATED_FILE as u32,
+            &self.associated_file.to_value(),
+        );
         if self.is_dir {
             store.set_value(iter, ICON as u32, &"gtk-directory".to_value());
         } else {
