@@ -66,13 +66,38 @@ lazy_static! {
             gtk::Type::String,          // 3 AssociatedFile
             gtk::Type::String,          // 4 Icon
             gtk::Type::String,          // 5 Foreground
-            gtk::Type::I32,          // 6 Style
+            gtk::Type::I32,             // 6 Style
             bool::static_type(),        // 7 is a directory?
         ];
 
     static ref _DECO_MAP: HashMap<&'static str, (i32, &'static str)> = {
         let mut m = HashMap::new();
         m.insert(UNMODIFIED, (PANGO_STYLE_NORMAL, "black"));
+        m.insert(WD_ONLY_MODIFIED, (PANGO_STYLE_NORMAL, "blue"));
+        m.insert(WD_ONLY_DELETED, (PANGO_STYLE_NORMAL, "red"));
+        m.insert(MODIFIED, (PANGO_STYLE_NORMAL, "blue"));
+        m.insert(MODIFIED_MODIFIED, (PANGO_STYLE_NORMAL, "blue"));
+        m.insert(MODIFIED_DELETED, (PANGO_STYLE_NORMAL, "red"));
+        m.insert(ADDED, (PANGO_STYLE_NORMAL, "darkgreen"));
+        m.insert(ADDED_MODIFIED, (PANGO_STYLE_NORMAL, "blue"));
+        m.insert(ADDED_DELETED, (PANGO_STYLE_NORMAL, "red"));
+        m.insert(DELETED, (PANGO_STYLE_NORMAL, "red"));
+        m.insert(DELETED_MODIFIED, (PANGO_STYLE_NORMAL, "blue"));
+        m.insert(RENAMED, (PANGO_STYLE_ITALIC, "pink"));
+        m.insert(RENAMED_MODIFIED, (PANGO_STYLE_ITALIC, "blue"));
+        m.insert(RENAMED_DELETED, (PANGO_STYLE_ITALIC, "red"));
+        m.insert(COPIED, (PANGO_STYLE_ITALIC, "green"));
+        m.insert(COPIED_MODIFIED, (PANGO_STYLE_ITALIC, "blue"));
+        m.insert(COPIED_DELETED, (PANGO_STYLE_ITALIC, "red"));
+        m.insert(UNMERGED, (PANGO_STYLE_NORMAL, "magenta"));
+        m.insert(UNMERGED_ADDED, (PANGO_STYLE_NORMAL, "magenta"));
+        m.insert(UNMERGED_ADDED_US, (PANGO_STYLE_NORMAL, "magenta"));
+        m.insert(UNMERGED_ADDED_THEM, (PANGO_STYLE_NORMAL, "magenta"));
+        m.insert(UNMERGED_DELETED, (PANGO_STYLE_NORMAL, "magenta"));
+        m.insert(UNMERGED_DELETED_US, (PANGO_STYLE_NORMAL, "magenta"));
+        m.insert(UNMERGED_DELETED_THEM, (PANGO_STYLE_NORMAL, "magenta"));
+        m.insert(NOT_TRACKED, (PANGO_STYLE_ITALIC, "cyan"));
+        m.insert(IGNORED, (PANGO_STYLE_ITALIC, "grey"));
         m
     };
 }
@@ -225,7 +250,7 @@ impl FsObjectIfce for OsFsoData {
         store.set_value(iter, PATH as u32, &"".to_value());
         store.set_value(iter, IS_DIR as u32, &false.to_value());
         store.set_value(iter, FOREGROUND as u32, &"purple".to_value());
-        store.set_value(iter, STYLE as u32, &PANGO_STYLE_ITALIC.to_value());
+        store.set_value(iter, STYLE as u32, &PANGO_STYLE_OBLIQUE.to_value());
     }
 
     fn name(&self) -> &str {
