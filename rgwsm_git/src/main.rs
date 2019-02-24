@@ -18,6 +18,7 @@ extern crate lazy_static;
 
 extern crate gio;
 extern crate gtk;
+extern crate pango_sys;
 
 #[macro_use]
 extern crate pw_gix;

@@ -12,6 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+use std::marker::PhantomData;
 use std::rc::Rc;
 
 use gtk;
@@ -23,19 +24,34 @@ use pw_gix::wrapper::*;
 
 use crate::fs_db::*;
 
-pub struct OsWsFsTree {
+pub struct GenWsFsTree<FSDB, FSOI>
+where
+    FSDB: FsDbIfce<FSOI> + 'static,
+    FSOI: FsObjectIfce + 'static,
+{
     v_box: gtk::Box,
     view: gtk::TreeView,
     store: gtk::TreeStore,
-    fs_db: OsFsDb<OsFsoData>,
+    fs_db: FSDB,
     auto_expand: bool,
     show_hidden: gtk::CheckButton,
     hide_clean: gtk::CheckButton,
+    phantom: PhantomData<FSOI>,
 }
 
-impl_widget_wrapper!(v_box: gtk::Box, OsWsFsTree);
+pub type OsWsFsTree = GenWsFsTree<OsFsDb<OsFsoData>, OsFsoData>;
 
-impl FileTreeIfce<OsFsDb<OsFsoData>, OsFsoData> for OsWsFsTree {
+impl_widget_wrapper!(v_box: gtk::Box, GenWsFsTree<FSDB, FSOI>
+    where
+        FSDB: FsDbIfce<FSOI> + 'static,
+        FSOI: FsObjectIfce + 'static,
+);
+
+impl<FSDB, FSOI> FileTreeIfce<FSDB, FSOI> for GenWsFsTree<FSDB, FSOI>
+where
+    FSDB: FsDbIfce<FSOI> + 'static,
+    FSOI: FsObjectIfce + 'static,
+{
     fn new(auto_expand: bool) -> Rc<Self> {
         let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         let view = gtk::TreeView::new();
@@ -56,14 +72,15 @@ impl FileTreeIfce<OsFsDb<OsFsoData>, OsFsoData> for OsWsFsTree {
         for col in OsFsoData::tree_view_columns() {
             view.append_column(&col);
         }
-        let owft = Rc::new(OsWsFsTree {
+        let owft = Rc::new(Self {
             v_box: v_box,
             view: view,
             store: store,
-            fs_db: OsFsDb::<OsFsoData>::new(),
+            fs_db: FSDB::new(),
             auto_expand: auto_expand,
             show_hidden: show_hidden,
             hide_clean: hide_clean,
+            phantom: PhantomData,
         });
         let owft_clone = Rc::clone(&owft);
         owft.view
@@ -94,7 +111,7 @@ impl FileTreeIfce<OsFsDb<OsFsoData>, OsFsoData> for OsWsFsTree {
         &self.store
     }
 
-    fn fs_db(&self) -> &OsFsDb<OsFsoData> {
+    fn fs_db(&self) -> &FSDB {
         &self.fs_db
     }
 
