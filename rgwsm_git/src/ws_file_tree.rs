@@ -29,8 +29,8 @@ pub struct OsWsFsTree {
     store: gtk::TreeStore,
     fs_db: OsFsDb<OsFsoData>,
     auto_expand: bool,
-    show_hidden: bool,
-    hide_clean: bool,
+    show_hidden: gtk::CheckButton,
+    hide_clean: gtk::CheckButton,
 }
 
 impl_widget_wrapper!(v_box: gtk::Box, OsWsFsTree);
@@ -44,6 +44,14 @@ impl FileTreeIfce<OsFsDb<OsFsoData>, OsFsoData> for OsWsFsTree {
         let scrolled_window = gtk::ScrolledWindow::new(None, None);
         scrolled_window.add(&view);
         v_box.pack_start(&scrolled_window, true, true, 0);
+        let show_hidden = gtk::CheckButton::new_with_label("Show Hidden");
+        let hide_clean = gtk::CheckButton::new_with_label("Hide Clean");
+        let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        h_box.pack_start(&show_hidden, false, false, 0);
+        if !OsFsDb::<OsFsoData>::hide_clean_is_ignored() {
+            h_box.pack_start(&show_hidden, false, false, 0);
+        }
+        v_box.pack_start(&h_box, false, false, 0);
         view.set_headers_visible(false);
         for col in OsFsoData::tree_view_columns() {
             view.append_column(&col);
@@ -54,8 +62,8 @@ impl FileTreeIfce<OsFsDb<OsFsoData>, OsFsoData> for OsWsFsTree {
             store: store,
             fs_db: OsFsDb::<OsFsoData>::new(),
             auto_expand: auto_expand,
-            show_hidden: false,
-            hide_clean: false,
+            show_hidden: show_hidden,
+            hide_clean: hide_clean,
         });
         let owft_clone = Rc::clone(&owft);
         owft.view
@@ -63,6 +71,14 @@ impl FileTreeIfce<OsFsDb<OsFsoData>, OsFsoData> for OsWsFsTree {
         let owft_clone = Rc::clone(&owft);
         owft.view.connect_row_collapsed(move |_, dir_iter, _| {
             owft_clone.insert_place_holder_if_needed(dir_iter)
+        });
+        let owft_clone = Rc::clone(&owft);
+        owft.show_hidden.connect_toggled(move |_| {
+            owft_clone.update(true);
+        });
+        let owft_clone = Rc::clone(&owft);
+        owft.hide_clean.connect_toggled(move |_| {
+            owft_clone.update(true);
         });
         owft.repopulate();
         owft.view.show_all();
@@ -87,10 +103,10 @@ impl FileTreeIfce<OsFsDb<OsFsoData>, OsFsoData> for OsWsFsTree {
     }
 
     fn show_hidden(&self) -> bool {
-        self.show_hidden
+        self.show_hidden.get_active()
     }
 
     fn hide_clean(&self) -> bool {
-        self.hide_clean
+        self.hide_clean.get_active()
     }
 }
