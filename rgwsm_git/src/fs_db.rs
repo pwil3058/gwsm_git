@@ -198,6 +198,9 @@ impl FsObjectIfce for OsFsoData {
         }
         if self.status != store.get_value(iter, STATUS).get::<String>().unwrap() {
             store.set_value(iter, STATUS as u32, &self.status.to_value());
+            let (style, foreground) = get_deco(&self.status.as_str());
+            store.set_value(iter, STYLE as u32, &style.to_value());
+            store.set_value(iter, FOREGROUND as u32, &foreground.to_value());
             changed = true;
         }
         if self.associated_file
