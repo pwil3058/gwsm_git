@@ -60,16 +60,17 @@ const NOT_TRACKED: &str = "??";
 const IGNORED: &str = "!!";
 
 lazy_static! {
-    static ref SCM_FS_DB_ROW_SPEC: [gtk::Type; 8] =
+    static ref SCM_FS_DB_ROW_SPEC: [gtk::Type; 9] =
         [
             gtk::Type::String,          // 0 Name
             gtk::Type::String,          // 1 Path
             gtk::Type::String,          // 2 Status
             gtk::Type::String,          // 3 AssociatedFile
-            gtk::Type::String,          // 4 Icon
-            gtk::Type::String,          // 5 Foreground
-            gtk::Type::I32,             // 6 Style
-            bool::static_type(),        // 7 is a directory?
+            gtk::Type::String,          // 4 Relation
+            gtk::Type::String,          // 5 Icon
+            gtk::Type::String,          // 6 Foreground
+            gtk::Type::I32,             // 7 Style
+            bool::static_type(),        // 8 is a directory?
         ];
 
     static ref _DECO_MAP: HashMap<&'static str, (i32, &'static str)> = {
@@ -113,19 +114,56 @@ fn get_deco(status: &str) -> &(i32, &'static str) {
 const NAME: i32 = 0;
 const PATH: i32 = 1;
 const STATUS: i32 = 2;
-const ASSOCIATED_FILE: i32 = 3;
-const ICON: i32 = 4;
-const FOREGROUND: i32 = 5;
-const STYLE: i32 = 6;
-const IS_DIR: i32 = 7;
+const RELATED_FILE: i32 = 3;
+const RELATION: i32 = 4;
+const ICON: i32 = 5;
+const FOREGROUND: i32 = 6;
+const STYLE: i32 = 7;
+const IS_DIR: i32 = 8;
+
+#[derive(Debug, PartialEq)]
+pub struct RelatedFileData {
+    file_path: String,
+    relation: String,
+}
 
 #[derive(Debug)]
 pub struct ScmFsoData {
     name: String,
     path: String,
     status: String,
-    associated_file: String,
+    related_file_data: Option<RelatedFileData>,
     is_dir: bool,
+}
+
+impl ScmFsoData {
+    fn get_rfd_from_row<S: TreeRowOps>(store: &S, iter: &TreeIter) -> Option<RelatedFileData> {
+        let relation = store.get_value(iter, RELATION).get::<String>().unwrap();
+        if relation.len() == 0 {
+            None
+        } else {
+            let file_path = store.get_value(iter, RELATED_FILE).get::<String>().unwrap();
+            Some(RelatedFileData{file_path, relation})
+        }
+    }
+
+    fn set_rfd_in_row<S: TreeRowOps>(&self, store: &S, iter: &TreeIter) {
+        if let Some(ref rfd) = self.related_file_data {
+            store.set_value(iter, RELATED_FILE as u32, &rfd.file_path.to_value());
+            store.set_value(iter, RELATION as u32, &rfd.relation.to_value());
+        } else {
+            store.set_value(iter, RELATED_FILE as u32, &"".to_value());
+            store.set_value(iter, RELATION as u32, &"".to_value());
+        }
+    }
+
+    fn set_icon_in_row<S: TreeRowOps>(&self, store: &S, iter: &TreeIter) {
+        if self.is_dir {
+            store.set_value(iter, ICON as u32, &"gtk-directory".to_value());
+        } else {
+            store.set_value(iter, ICON as u32, &"gtk-file".to_value());
+        }
+    }
 }
 
 impl FsObjectIfce for ScmFsoData {
@@ -134,7 +172,7 @@ impl FsObjectIfce for ScmFsoData {
             name: dir_entry.file_name(),
             path: dir_entry.path().to_string_lossy().into_owned(),
             status: UNMODIFIED.to_string(),
-            associated_file: "".to_string(),
+            related_file_data: None,
             is_dir: dir_entry.is_dir(),
         }
     }
@@ -160,7 +198,14 @@ impl FsObjectIfce for ScmFsoData {
         let cell = gtk::CellRendererText::new();
         cell.set_property_editable(false);
         col.pack_start(&cell, false);
-        col.add_attribute(&cell, "text", ASSOCIATED_FILE);
+        col.add_attribute(&cell, "text", RELATION);
+        col.add_attribute(&cell, "foreground", FOREGROUND);
+        col.add_attribute(&cell, "style", STYLE);
+
+        let cell = gtk::CellRendererText::new();
+        cell.set_property_editable(false);
+        col.pack_start(&cell, false);
+        col.add_attribute(&cell, "text", RELATED_FILE);
         col.add_attribute(&cell, "foreground", FOREGROUND);
         col.add_attribute(&cell, "style", STYLE);
 
@@ -205,26 +250,13 @@ impl FsObjectIfce for ScmFsoData {
             store.set_value(iter, FOREGROUND as u32, &foreground.to_value());
             changed = true;
         }
-        if self.associated_file
-            != store
-                .get_value(iter, ASSOCIATED_FILE)
-                .get::<String>()
-                .unwrap()
-        {
-            store.set_value(
-                iter,
-                ASSOCIATED_FILE as u32,
-                &self.associated_file.to_value(),
-            );
+        if self.related_file_data != ScmFsoData::get_rfd_from_row(store, iter) {
+            self.set_rfd_in_row(store, iter);
             changed = true;
         }
         if self.is_dir != store.get_value(iter, IS_DIR).get::<bool>().unwrap() {
             store.set_value(iter, IS_DIR as u32, &self.is_dir.to_value());
-            if self.is_dir {
-                store.set_value(iter, ICON as u32, &"stock_directory".to_value());
-            } else {
-                store.set_value(iter, ICON as u32, &"stock_file".to_value());
-            }
+            self.set_icon_in_row(store, iter);
             changed = true;
         }
         changed
@@ -234,16 +266,8 @@ impl FsObjectIfce for ScmFsoData {
         store.set_value(iter, NAME as u32, &self.name.to_value());
         store.set_value(iter, PATH as u32, &self.path.to_value());
         store.set_value(iter, STATUS as u32, &self.status.to_value());
-        store.set_value(
-            iter,
-            ASSOCIATED_FILE as u32,
-            &self.associated_file.to_value(),
-        );
-        if self.is_dir {
-            store.set_value(iter, ICON as u32, &"gtk-directory".to_value());
-        } else {
-            store.set_value(iter, ICON as u32, &"gtk-file".to_value());
-        }
+        self.set_rfd_in_row(store, iter);
+        self.set_icon_in_row(store, iter);
         let (style, foreground) = get_deco(&self.status.as_str());
         store.set_value(iter, STYLE as u32, &style.to_value());
         store.set_value(iter, FOREGROUND as u32, &foreground.to_value());
@@ -307,6 +331,10 @@ impl<'a> Snapshot<'a> {
             file_status_data: Rc::clone(&self.file_status_data),
             relevant_keys_iter: self.relevant_keys.iter(),
         }
+    }
+
+    fn narrowed_for_dir_path(&'a self, dir_path: &str) -> Self {
+        Self::new(&self.file_status_data, Some(dir_path))
     }
 }
 
