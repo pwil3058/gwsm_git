@@ -120,7 +120,7 @@ const STYLE: i32 = 6;
 const IS_DIR: i32 = 7;
 
 #[derive(Debug)]
-pub struct OsFsoData {
+pub struct ScmFsoData {
     name: String,
     path: String,
     status: String,
@@ -128,9 +128,9 @@ pub struct OsFsoData {
     is_dir: bool,
 }
 
-impl FsObjectIfce for OsFsoData {
+impl FsObjectIfce for ScmFsoData {
     fn new(dir_entry: &UsableDirEntry) -> Self {
-        OsFsoData {
+        ScmFsoData {
             name: dir_entry.file_name(),
             path: dir_entry.path().to_string_lossy().into_owned(),
             status: UNMODIFIED.to_string(),
@@ -282,7 +282,12 @@ struct Snapshot<'a> {
 impl<'a> Snapshot<'a> {
     fn new(file_status_data: &'a FileStatusData, dir_path: Option<&str>) -> Self {
         let relevant_keys: Rc<Vec<&'a String>> = if let Some(prefix) = dir_path {
-            Rc::new(file_status_data.keys().filter(|k| k.path_starts_with(prefix)).collect())
+            Rc::new(
+                file_status_data
+                    .keys()
+                    .filter(|k| k.path_starts_with(prefix))
+                    .collect(),
+            )
         } else {
             Rc::new(file_status_data.keys().collect())
         };
@@ -333,3 +338,4 @@ impl<'a> Iterator for SnapshotIterator<'a> {
         }
     }
 }
+
