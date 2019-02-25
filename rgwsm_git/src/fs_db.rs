@@ -13,9 +13,11 @@
 // limitations under the License.
 
 use std::cell::RefCell;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::io::Write;
+use std::iter::Iterator;
 use std::rc::Rc;
+use std::slice::Iter;
 
 use gtk::prelude::*;
 use gtk::{StaticType, ToValue, TreeIter};
@@ -266,5 +268,68 @@ impl FsObjectIfce for OsFsoData {
 
     fn is_dir(&self) -> bool {
         self.is_dir
+    }
+}
+
+type FileStatusData = Rc<HashMap<String, (String, String)>>;
+
+struct Snapshot<'a> {
+    file_status_data: FileStatusData,
+    relevant_keys: Rc<Vec<&'a String>>,
+    status_set: HashSet<&'a String>,
+}
+
+impl<'a> Snapshot<'a> {
+    fn new(file_status_data: &'a FileStatusData, dir_path: Option<&str>) -> Self {
+        let relevant_keys: Rc<Vec<&'a String>> = if let Some(prefix) = dir_path {
+            Rc::new(file_status_data.keys().filter(|k| k.path_starts_with(prefix)).collect())
+        } else {
+            Rc::new(file_status_data.keys().collect())
+        };
+        let mut status_set = HashSet::new();
+        for (status, _) in file_status_data.values() {
+            status_set.insert(status);
+        }
+        Self {
+            file_status_data: Rc::clone(file_status_data),
+            relevant_keys: relevant_keys,
+            status_set: status_set,
+        }
+    }
+
+    fn iter(&self) -> SnapshotIterator {
+        SnapshotIterator {
+            file_status_data: Rc::clone(&self.file_status_data),
+            relevant_keys_iter: self.relevant_keys.iter(),
+        }
+    }
+}
+
+struct SnapshotIterator<'a> {
+    file_status_data: FileStatusData,
+    relevant_keys_iter: Iter<'a, &'a String>,
+}
+
+impl<'a> Iterator for SnapshotIterator<'a> {
+    // TODO: figure out how to use &str instead of String here
+    // or are Strings what I need (to save creating them later)?
+    type Item = (String, String, String);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        loop {
+            if let Some(file_path) = self.relevant_keys_iter.next() {
+                if file_path.path_is_dir() {
+                    continue;
+                }
+                let (status, related_file_data) = self.file_status_data.get(*file_path).unwrap();
+                return Some((
+                    file_path.to_string(),
+                    status.to_string(),
+                    related_file_data.to_string(),
+                ));
+            } else {
+                return None;
+            }
+        }
     }
 }
