@@ -24,6 +24,8 @@ use gtk::{StaticType, ToValue, TreeIter};
 use pango_sys::{PANGO_STYLE_ITALIC, PANGO_STYLE_NORMAL, PANGO_STYLE_OBLIQUE};
 
 use crypto_hash::{Algorithm, Hasher};
+use git2;
+use regex::Regex;
 
 use pw_gix::fs_db::{FsDbIfce, FsObjectIfce, TreeRowOps};
 
@@ -32,6 +34,7 @@ use pw_pathux::UsableDirEntry;
 
 impl_os_fs_db!(OsFsDb, OsFsDbDir);
 
+const NO_STATUS: &str = "";
 const UNMODIFIED: &str = "  ";
 const WD_ONLY_MODIFIED: &str = " M";
 const WD_ONLY_DELETED: &str = " D";
@@ -75,6 +78,7 @@ lazy_static! {
 
     static ref _DECO_MAP: HashMap<&'static str, (i32, &'static str)> = {
         let mut m = HashMap::new();
+        m.insert(NO_STATUS, (PANGO_STYLE_NORMAL, "black"));
         m.insert(UNMODIFIED, (PANGO_STYLE_NORMAL, "black"));
         m.insert(WD_ONLY_MODIFIED, (PANGO_STYLE_NORMAL, "blue"));
         m.insert(WD_ONLY_DELETED, (PANGO_STYLE_NORMAL, "red"));
@@ -121,7 +125,7 @@ const FOREGROUND: i32 = 6;
 const STYLE: i32 = 7;
 const IS_DIR: i32 = 8;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct RelatedFileData {
     file_path: String,
     relation: String,
@@ -143,7 +147,10 @@ impl ScmFsoData {
             None
         } else {
             let file_path = store.get_value(iter, RELATED_FILE).get::<String>().unwrap();
-            Some(RelatedFileData{file_path, relation})
+            Some(RelatedFileData {
+                file_path,
+                relation,
+            })
         }
     }
 
@@ -171,7 +178,7 @@ impl FsObjectIfce for ScmFsoData {
         ScmFsoData {
             name: dir_entry.file_name(),
             path: dir_entry.path().to_string_lossy().into_owned(),
-            status: UNMODIFIED.to_string(),
+            status: NO_STATUS.to_string(),
             related_file_data: None,
             is_dir: dir_entry.is_dir(),
         }
@@ -295,12 +302,96 @@ impl FsObjectIfce for ScmFsoData {
     }
 }
 
-type FileStatusData = Rc<HashMap<String, (String, String)>>;
+lazy_static! {
+    static ref MODIFIED_LIST: [&'static str; 23] = [
+        // TODO: review order of modified set re directory decoration
+        // order is preference order for directory decoration based on contents' states
+        WD_ONLY_MODIFIED, WD_ONLY_DELETED,
+        MODIFIED_MODIFIED, MODIFIED_DELETED,
+        ADDED_MODIFIED, ADDED_DELETED,
+        DELETED_MODIFIED,
+        RENAMED_MODIFIED, RENAMED_DELETED,
+        COPIED_MODIFIED, COPIED_DELETED,
+        UNMERGED,
+        UNMERGED_ADDED, UNMERGED_ADDED_US, UNMERGED_ADDED_THEM,
+        UNMERGED_DELETED, UNMERGED_DELETED_US, UNMERGED_DELETED_THEM,
+        MODIFIED, ADDED, DELETED, RENAMED, COPIED,
+    ];
+
+    static ref MODIFIED_SET: HashSet<&'static str> = {
+        let mut s: HashSet<&'static str> = HashSet::new();
+        for status in MODIFIED_LIST.iter() {
+            s.insert(status);
+        }
+        s
+    };
+
+    static ref CLEAN_SET: HashSet<&'static str> = {
+        let mut s: HashSet<&'static str> = HashSet::new();
+        for status in [UNMODIFIED, MODIFIED, ADDED, DELETED, RENAMED, COPIED, IGNORED, NO_STATUS].iter() {
+            s.insert(status);
+        }
+        s
+    };
+
+    static ref SIGNIFICANT_SET: HashSet<&'static str> = {
+        let mut s: HashSet<&'static str> = MODIFIED_SET.clone();
+        s.insert(NOT_TRACKED);
+        s
+    };
+
+    static ref ORDERED_DIR_STATUS_LIST: Vec<&'static str> = {
+        let mut v = MODIFIED_LIST.to_vec();
+        v.push(NOT_TRACKED);
+        v
+    };
+
+    static ref ORDERED_DIR_CLEAN_STATUS_LIST: Vec<&'static str> = {
+        let mut v: Vec<&'static str> = MODIFIED_LIST.iter().filter(|x| !CLEAN_SET.contains(*x)).map(|x| *x).collect();
+        v.push(NOT_TRACKED);
+        v
+    };
+}
+
+fn is_ignored_path(path: &str) -> bool {
+    match git2::Repository::open(".") {
+        Ok(repo) => match repo.is_path_ignored(path) {
+            Ok(is_ignored) => is_ignored,
+            Err(_) => false,
+        },
+        Err(_) => false,
+    }
+}
+
+fn first_status_in_set(
+    status_list: &[&'static str],
+    status_set: &HashSet<&str>,
+    path: Option<&str>,
+) -> &'static str {
+    for status in status_list.iter() {
+        if status_set.contains(status) {
+            return status;
+        }
+    }
+    let ignored = if let Some(path) = path {
+        is_ignored_path(path)
+    } else {
+        is_ignored_path(".")
+    };
+    if ignored {
+        IGNORED
+    } else {
+        NO_STATUS
+    }
+}
+
+type FileStatusData = Rc<HashMap<String, (String, Option<RelatedFileData>)>>;
 
 struct Snapshot<'a> {
     file_status_data: FileStatusData,
     relevant_keys: Rc<Vec<&'a String>>,
-    status_set: HashSet<&'a String>,
+    status: &'a str,
+    clean_status: &'a str,
 }
 
 impl<'a> Snapshot<'a> {
@@ -316,13 +407,18 @@ impl<'a> Snapshot<'a> {
             Rc::new(file_status_data.keys().collect())
         };
         let mut status_set = HashSet::new();
-        for (status, _) in file_status_data.values() {
-            status_set.insert(status);
+        for key in relevant_keys.iter() {
+            let (status, _) = file_status_data.get(*key).unwrap();
+            status_set.insert(status.as_str());
         }
+        let status = first_status_in_set(&ORDERED_DIR_STATUS_LIST, &status_set, dir_path);
+        let clean_status =
+            first_status_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &status_set, dir_path);
         Self {
             file_status_data: Rc::clone(file_status_data),
             relevant_keys: relevant_keys,
-            status_set: status_set,
+            status: status,
+            clean_status: clean_status,
         }
     }
 
@@ -346,7 +442,7 @@ struct SnapshotIterator<'a> {
 impl<'a> Iterator for SnapshotIterator<'a> {
     // TODO: figure out how to use &str instead of String here
     // or are Strings what I need (to save creating them later)?
-    type Item = (String, String, String);
+    type Item = (String, String, Option<RelatedFileData>);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -358,7 +454,7 @@ impl<'a> Iterator for SnapshotIterator<'a> {
                 return Some((
                     file_path.to_string(),
                     status.to_string(),
-                    related_file_data.to_string(),
+                    related_file_data.clone(),
                 ));
             } else {
                 return None;
@@ -367,3 +463,66 @@ impl<'a> Iterator for SnapshotIterator<'a> {
     }
 }
 
+lazy_static! {
+    static ref GIT_FILE_DATA_RE: Regex =
+        Regex::new(r###"(("([^"]+)")|(\S+))( -> (("([^"]+)")|(\S+)))?"###).unwrap();
+}
+
+macro_rules! parse_line {
+    ( $line:ident ) => {{
+        let captures = GIT_FILE_DATA_RE.captures(&$line[3..]).unwrap();
+        let path = if let Some(path) = captures.get(3) {
+            path
+        } else {
+            captures.get(4).unwrap()
+        };
+        let related_file_data = if captures.get(5).is_some() {
+            let file_path = if let Some(path) = captures.get(8) {
+                path
+            } else {
+                captures.get(9).unwrap()
+            };
+            Some(RelatedFileData {
+                file_path: file_path.as_str().to_string(),
+                relation: "->".to_string(),
+            })
+        } else {
+            None
+        };
+        (
+            path.as_str().to_string(),
+            $line[..2].to_string(),
+            related_file_data,
+        )
+    }};
+}
+
+fn extract_snapshot_from_text(text: &str) {
+    //}-> Snapshot {
+    let mut rfd_data: Vec<(String, RelatedFileData)> = vec![];
+    let mut file_status_data: HashMap<String, (String, Option<RelatedFileData>)> = HashMap::new();
+    for line in text.lines() {
+        let (file_path, status, related_file_data) = parse_line!(text);
+        if let Some(ref rfd) = related_file_data {
+            rfd_data.push((file_path.to_string(), rfd.clone()));
+        }
+        file_status_data.insert(
+            file_path.to_string(),
+            (status.to_string(), related_file_data),
+        );
+    }
+    //for file_path, related_file_path in related_file_path_data:
+    //    data = fsd.get(related_file_path, None)
+    //    if data is not None:
+    //        # don't overwrite git's opinion on related file data if it had one
+    //        if data[1] is not None: continue
+    //        status = data[0]
+    //    else:
+    //        stdout = runext.run_get_cmd(["git", "status", "--porcelain", "--", related_file_path], default="")
+    //        status = stdout[:2] if stdout else None
+    //    fsd[related_file_path] = (status, fsdb.RFD(path=file_path, relation="<-"))
+    let file_status_data = Rc::new(file_status_data);
+    //Snapshot {
+    //   file_status_data: Rc::new(file_status_data),
+    //}
+}

@@ -13,8 +13,10 @@
 // limitations under the License.
 
 extern crate crypto_hash;
+extern crate git2;
 #[macro_use]
 extern crate lazy_static;
+extern crate regex;
 
 extern crate gio;
 extern crate gtk;
