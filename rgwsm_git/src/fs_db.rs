@@ -389,39 +389,12 @@ type FileStatusData = Rc<HashMap<String, (String, Option<RelatedFileData>)>>;
 
 struct Snapshot<'a> {
     file_status_data: FileStatusData,
-    relevant_keys: Rc<Vec<&'a String>>,
+    relevant_keys: Rc<Vec<String>>,
     status: &'a str,
     clean_status: &'a str,
 }
 
 impl<'a> Snapshot<'a> {
-    fn new(file_status_data: &'a FileStatusData, dir_path: Option<&str>) -> Self {
-        let relevant_keys: Rc<Vec<&'a String>> = if let Some(prefix) = dir_path {
-            Rc::new(
-                file_status_data
-                    .keys()
-                    .filter(|k| k.path_starts_with(prefix))
-                    .collect(),
-            )
-        } else {
-            Rc::new(file_status_data.keys().collect())
-        };
-        let mut status_set = HashSet::new();
-        for key in relevant_keys.iter() {
-            let (status, _) = file_status_data.get(*key).unwrap();
-            status_set.insert(status.as_str());
-        }
-        let status = first_status_in_set(&ORDERED_DIR_STATUS_LIST, &status_set, dir_path);
-        let clean_status =
-            first_status_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &status_set, dir_path);
-        Self {
-            file_status_data: Rc::clone(file_status_data),
-            relevant_keys: relevant_keys,
-            status: status,
-            clean_status: clean_status,
-        }
-    }
-
     fn iter(&self) -> SnapshotIterator {
         SnapshotIterator {
             file_status_data: Rc::clone(&self.file_status_data),
@@ -430,13 +403,33 @@ impl<'a> Snapshot<'a> {
     }
 
     fn narrowed_for_dir_path(&'a self, dir_path: &str) -> Self {
-        Self::new(&self.file_status_data, Some(dir_path))
+        let relevant_keys: Rc<Vec<String>> = Rc::new(
+            self.file_status_data
+                .keys()
+                .filter(|k| k.path_starts_with(dir_path))
+                .map(|s| s.to_string())
+                .collect(),
+        );
+        let mut status_set = HashSet::new();
+        for key in relevant_keys.iter() {
+            let (status, _) = self.file_status_data.get(key).unwrap();
+            status_set.insert(status.as_str());
+        }
+        let status = first_status_in_set(&ORDERED_DIR_STATUS_LIST, &status_set, Some(dir_path));
+        let clean_status =
+            first_status_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &status_set, Some(dir_path));
+        Self {
+            file_status_data: Rc::clone(&self.file_status_data),
+            relevant_keys: relevant_keys,
+            status: status,
+            clean_status: clean_status,
+        }
     }
 }
 
 struct SnapshotIterator<'a> {
     file_status_data: FileStatusData,
-    relevant_keys_iter: Iter<'a, &'a String>,
+    relevant_keys_iter: Iter<'a, String>,
 }
 
 impl<'a> Iterator for SnapshotIterator<'a> {
@@ -450,7 +443,7 @@ impl<'a> Iterator for SnapshotIterator<'a> {
                 if file_path.path_is_dir() {
                     continue;
                 }
-                let (status, related_file_data) = self.file_status_data.get(*file_path).unwrap();
+                let (status, related_file_data) = self.file_status_data.get(&*file_path).unwrap();
                 return Some((
                     file_path.to_string(),
                     status.to_string(),
@@ -497,12 +490,11 @@ macro_rules! parse_line {
     }};
 }
 
-fn extract_snapshot_from_text(text: &str) {
-    //}-> Snapshot {
+fn extract_snapshot_from_text(text: &str) -> Snapshot {
     let mut rfd_data: Vec<(String, RelatedFileData)> = vec![];
     let mut file_status_data: HashMap<String, (String, Option<RelatedFileData>)> = HashMap::new();
     for line in text.lines() {
-        let (file_path, status, related_file_data) = parse_line!(text);
+        let (file_path, status, related_file_data) = parse_line!(line);
         if let Some(ref rfd) = related_file_data {
             rfd_data.push((file_path.to_string(), rfd.clone()));
         }
@@ -511,6 +503,7 @@ fn extract_snapshot_from_text(text: &str) {
             (status.to_string(), related_file_data),
         );
     }
+    // TODO: add "goes to" related file data
     //for file_path, related_file_path in related_file_path_data:
     //    data = fsd.get(related_file_path, None)
     //    if data is not None:
@@ -522,7 +515,14 @@ fn extract_snapshot_from_text(text: &str) {
     //        status = stdout[:2] if stdout else None
     //    fsd[related_file_path] = (status, fsdb.RFD(path=file_path, relation="<-"))
     let file_status_data = Rc::new(file_status_data);
-    //Snapshot {
-    //   file_status_data: Rc::new(file_status_data),
-    //}
+    let relevant_keys: Vec<String> = file_status_data.keys().map(|s| s.to_string()).collect();
+    let status_set: HashSet<&str> = file_status_data.values().map(|(a, _)| a.as_str()).collect();
+    let status = first_status_in_set(&ORDERED_DIR_STATUS_LIST, &status_set, None);
+    let clean_status = first_status_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &status_set, None);
+    Snapshot {
+        file_status_data: file_status_data,
+        relevant_keys: Rc::new(relevant_keys),
+        status,
+        clean_status,
+    }
 }
