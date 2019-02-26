@@ -389,7 +389,7 @@ type FileStatusData = Rc<HashMap<String, (String, Option<RelatedFileData>)>>;
 
 struct Snapshot<'a> {
     file_status_data: FileStatusData,
-    relevant_keys: Rc<Vec<String>>,
+    relevant_keys: Vec<String>,
     status: &'a str,
     clean_status: &'a str,
 }
@@ -403,13 +403,12 @@ impl<'a> Snapshot<'a> {
     }
 
     fn narrowed_for_dir_path(&'a self, dir_path: &str) -> Self {
-        let relevant_keys: Rc<Vec<String>> = Rc::new(
+        let relevant_keys: Vec<String> =
             self.file_status_data
                 .keys()
                 .filter(|k| k.path_starts_with(dir_path))
                 .map(|s| s.to_string())
-                .collect(),
-        );
+                .collect();
         let mut status_set = HashSet::new();
         for key in relevant_keys.iter() {
             let (status, _) = self.file_status_data.get(key).unwrap();
@@ -521,7 +520,7 @@ fn extract_snapshot_from_text(text: &str) -> Snapshot {
     let clean_status = first_status_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &status_set, None);
     Snapshot {
         file_status_data: file_status_data,
-        relevant_keys: Rc::new(relevant_keys),
+        relevant_keys: relevant_keys,
         status,
         clean_status,
     }
