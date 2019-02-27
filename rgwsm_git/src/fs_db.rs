@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// TODO: make a porcelain version 2 implementation of this functionality
+
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
@@ -385,15 +387,16 @@ fn first_status_in_set(
 
 type FileStatusData = Rc<HashMap<String, (String, Option<RelatedFileData>)>>;
 
-struct Snapshot<'a> {
+#[derive(Debug)]
+struct Snapshot {
     num_dir_components: usize,
     file_status_data: FileStatusData,
     relevant_keys: Vec<String>,
-    status: &'a str,
-    clean_status: &'a str,
+    status: String,
+    clean_status: String,
 }
 
-impl<'a> Snapshot<'a> {
+impl Snapshot {
     fn iter(&self) -> SnapshotIterator {
         SnapshotIterator {
             num_dir_components: self.num_dir_components,
@@ -402,7 +405,7 @@ impl<'a> Snapshot<'a> {
         }
     }
 
-    fn narrowed_for_dir_path(&'a self, dir_path: &str) -> Self {
+    fn narrowed_for_dir_path(&self, dir_path: &str) -> Self {
         let relevant_keys: Vec<String> = self
             .file_status_data
             .keys()
@@ -421,8 +424,8 @@ impl<'a> Snapshot<'a> {
             num_dir_components: dir_path.path_components().len(),
             file_status_data: Rc::clone(&self.file_status_data),
             relevant_keys: relevant_keys,
-            status: status,
-            clean_status: clean_status,
+            status: status.to_string(),
+            clean_status: clean_status.to_string(),
         }
     }
 }
@@ -528,8 +531,8 @@ fn extract_snapshot_from_text(text: &str) -> Snapshot {
         num_dir_components: 1,
         file_status_data: file_status_data,
         relevant_keys: relevant_keys,
-        status,
-        clean_status,
+        status: status.to_string(),
+        clean_status: clean_status.to_string(),
     }
 }
 
@@ -545,13 +548,14 @@ where
     files_data: Rc<Vec<FSOI>>,
     hash_digest: Option<Vec<u8>>,
     sub_dirs: HashMap<String, GitFsDbDir<FSOI>>,
+    snapshot: Snapshot,
 }
 
 impl<FSOI> GitFsDbDir<FSOI>
 where
     FSOI: FsObjectIfce,
 {
-    fn new(dir_path: &str, show_hidden: bool, hide_clean: bool) -> Self {
+    fn new(dir_path: &str, snapshot: Snapshot, show_hidden: bool, hide_clean: bool) -> Self {
         Self {
             path: dir_path.to_string(),
             show_hidden: show_hidden,
@@ -560,6 +564,7 @@ where
             files_data: Rc::new(vec![]),
             hash_digest: None,
             sub_dirs: HashMap::new(),
+            snapshot: snapshot,
         }
     }
 
@@ -606,9 +611,10 @@ where
                 if dir_entry.is_dir() {
                     let path = dir_entry.path().to_string_lossy().into_owned();
                     dirs.push(FSOI::new(&dir_entry));
+                    let snapshot = self.snapshot.narrowed_for_dir_path(&path);
                     self.sub_dirs.insert(
                         dir_entry.file_name(),
-                        GitFsDbDir::<FSOI>::new(&path, self.show_hidden, self.hide_clean),
+                        GitFsDbDir::<FSOI>::new(&path, snapshot, self.show_hidden, self.hide_clean),
                     );
                 } else {
                     files.push(FSOI::new(&dir_entry));
@@ -665,7 +671,8 @@ where
 
     fn new() -> Self {
         let curr_dir = str_path_current_dir_or_panic();
-        let base_dir = GitFsDbDir::<FSOI>::new("./", false, false); // paths are relative
+        let snapshot = extract_snapshot_from_text("");
+        let base_dir = GitFsDbDir::<FSOI>::new("./", snapshot, false, false); // paths are relative
         Self {
             base_dir: RefCell::new(base_dir),
             curr_dir: RefCell::new(curr_dir),
@@ -694,8 +701,9 @@ where
     }
 
     fn reset(&self) {
+        let snapshot = extract_snapshot_from_text("");
         *self.curr_dir.borrow_mut() = str_path_current_dir_or_panic();
-        *self.base_dir.borrow_mut() = GitFsDbDir::new("./", false, false);
+        *self.base_dir.borrow_mut() = GitFsDbDir::new("./", snapshot, false, false);
     }
 }
 
@@ -710,7 +718,8 @@ where
     fn check_visibility(&self, show_hidden: bool, hide_clean: bool) {
         let mut base_dir = self.base_dir.borrow_mut();
         if base_dir.show_hidden != show_hidden || base_dir.hide_clean != hide_clean {
-            *base_dir = GitFsDbDir::new("./", show_hidden, hide_clean);
+            let snapshot = extract_snapshot_from_text("");
+            *base_dir = GitFsDbDir::new("./", snapshot, show_hidden, hide_clean);
         }
     }
 }
