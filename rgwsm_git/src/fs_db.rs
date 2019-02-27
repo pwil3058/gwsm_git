@@ -600,26 +600,29 @@ where
     fn populate(&mut self) {
         let mut hasher = Hasher::new(Algorithm::SHA256);
         if let Ok(dir_entries) = UsableDirEntry::get_entries(&self.path) {
-            let mut dirs = vec![];
-            let mut files = vec![];
+            let mut dirs_map = HashMap::new();
+            let mut files_map = HashMap::new();
             for dir_entry in dir_entries {
-                let path = dir_entry.path().to_string_lossy().into_owned();
+                let path = dir_entry.path().to_string_path();
                 hasher.write_all(&path.into_bytes()).unwrap();
                 if !self.show_hidden && dir_entry.file_name().starts_with(".") {
                     continue;
                 }
+                let name = dir_entry.file_name();
                 if dir_entry.is_dir() {
                     let path = dir_entry.path().to_string_lossy().into_owned();
-                    dirs.push(FSOI::new(&dir_entry));
+                    dirs_map.insert(name, FSOI::new(&dir_entry));
                     let snapshot = self.snapshot.narrowed_for_dir_path(&path);
                     self.sub_dirs.insert(
                         dir_entry.file_name(),
                         GitFsDbDir::<FSOI>::new(&path, snapshot, self.show_hidden, self.hide_clean),
                     );
                 } else {
-                    files.push(FSOI::new(&dir_entry));
+                    files_map.insert(name, FSOI::new(&dir_entry));
                 }
             }
+            let mut dirs: Vec<FSOI> = dirs_map.drain().map(|(_, y)| y).collect();
+            let mut files: Vec<FSOI> = files_map.drain().map(|(_, y)| y).collect();
             dirs.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
             files.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
             self.dirs_data = Rc::new(dirs);
