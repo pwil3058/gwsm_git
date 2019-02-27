@@ -388,6 +388,7 @@ fn first_status_in_set(
 type FileStatusData = Rc<HashMap<String, (String, Option<RelatedFileData>)>>;
 
 struct Snapshot<'a> {
+    num_dir_components: usize,
     file_status_data: FileStatusData,
     relevant_keys: Vec<String>,
     status: &'a str,
@@ -397,18 +398,19 @@ struct Snapshot<'a> {
 impl<'a> Snapshot<'a> {
     fn iter(&self) -> SnapshotIterator {
         SnapshotIterator {
+            num_dir_components: self.num_dir_components,
             file_status_data: Rc::clone(&self.file_status_data),
             relevant_keys_iter: self.relevant_keys.iter(),
         }
     }
 
     fn narrowed_for_dir_path(&'a self, dir_path: &str) -> Self {
-        let relevant_keys: Vec<String> =
-            self.file_status_data
-                .keys()
-                .filter(|k| k.path_starts_with(dir_path))
-                .map(|s| s.to_string())
-                .collect();
+        let relevant_keys: Vec<String> = self
+            .file_status_data
+            .keys()
+            .filter(|k| k.path_starts_with(dir_path))
+            .map(|s| s.to_string())
+            .collect();
         let mut status_set = HashSet::new();
         for key in relevant_keys.iter() {
             let (status, _) = self.file_status_data.get(key).unwrap();
@@ -418,6 +420,7 @@ impl<'a> Snapshot<'a> {
         let clean_status =
             first_status_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &status_set, Some(dir_path));
         Self {
+            num_dir_components: dir_path.path_components().len(),
             file_status_data: Rc::clone(&self.file_status_data),
             relevant_keys: relevant_keys,
             status: status,
@@ -427,25 +430,30 @@ impl<'a> Snapshot<'a> {
 }
 
 struct SnapshotIterator<'a> {
+    num_dir_components: usize,
     file_status_data: FileStatusData,
     relevant_keys_iter: Iter<'a, String>,
 }
 
 impl<'a> Iterator for SnapshotIterator<'a> {
-    // TODO: figure out how to use &str instead of String here
-    // or are Strings what I need (to save creating them later)?
-    type Item = (String, String, Option<RelatedFileData>);
+    type Item = (String, String, String, bool, Option<RelatedFileData>);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if let Some(file_path) = self.relevant_keys_iter.next() {
-                if file_path.path_is_dir() {
-                    continue;
-                }
                 let (status, related_file_data) = self.file_status_data.get(&*file_path).unwrap();
+                let mut components = file_path.path_components();
+                // git doesn't include "./" but have to for read_dir() so add for compatibility
+                components.insert(0, StrPathComponent::CurDir);
+                let is_dir =
+                    components.len() > self.num_dir_components + 1 || file_path.path_is_dir();
+                let name = components[self.num_dir_components + 1].to_string();
+                let path = components[..self.num_dir_components + 1].to_string_path();
                 return Some((
-                    file_path.to_string(),
+                    name,
+                    path,
                     status.to_string(),
+                    is_dir,
                     related_file_data.clone(),
                 ));
             } else {
@@ -519,6 +527,7 @@ fn extract_snapshot_from_text(text: &str) -> Snapshot {
     let status = first_status_in_set(&ORDERED_DIR_STATUS_LIST, &status_set, None);
     let clean_status = first_status_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &status_set, None);
     Snapshot {
+        num_dir_components: 1,
         file_status_data: file_status_data,
         relevant_keys: relevant_keys,
         status,
