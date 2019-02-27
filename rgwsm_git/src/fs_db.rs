@@ -18,6 +18,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::iter::Iterator;
+use std::process::Command;
 use std::rc::Rc;
 use std::slice::Iter;
 
@@ -465,6 +466,7 @@ impl<'a> Iterator for SnapshotIterator<'a> {
     type Item = (String, String, bool, String, Option<RelatedFileData>);
 
     fn next(&mut self) -> Option<Self::Item> {
+        // TODO: fix snapshot iterator
         loop {
             if let Some(file_path) = self.relevant_keys_iter.next() {
                 let (status, related_file_data) = self.file_status_data.get(&*file_path).unwrap();
@@ -473,7 +475,7 @@ impl<'a> Iterator for SnapshotIterator<'a> {
                 components.insert(0, StrPathComponent::CurDir);
                 let is_dir =
                     components.len() > self.num_dir_components + 1 || file_path.path_is_dir();
-                let name = components[self.num_dir_components + 1].to_string();
+                let name = components[self.num_dir_components].to_string();
                 let path = components[..self.num_dir_components + 1].to_string_path();
                 return Some((
                     name,
@@ -486,6 +488,23 @@ impl<'a> Iterator for SnapshotIterator<'a> {
                 return None;
             }
         }
+    }
+}
+
+fn get_snapshot_text() -> (String, Vec<u8>) {
+    let output = Command::new("git")
+        .arg("status")
+        .arg("--porcelain")
+        .arg("--ignored")
+        .arg("--untracked=all")
+        .arg("--ignore-submodules=none")
+        .output().expect("get_snapshota_text() failed");
+    if output.status.success(){
+        let mut hasher = Hasher::new(Algorithm::SHA256);
+        hasher.write_all(&output.stdout);
+        (String::from_utf8_lossy(&output.stdout).to_string(), hasher.finish())
+    } else {
+        ("".to_string(), vec![])
     }
 }
 
@@ -720,7 +739,8 @@ where
 
     fn new() -> Self {
         let curr_dir = str_path_current_dir_or_panic();
-        let snapshot = extract_snapshot_from_text("");
+        let (text, _) = get_snapshot_text();
+        let snapshot = extract_snapshot_from_text(&text);
         let base_dir = GitFsDbDir::<FSOI>::new("./", snapshot, false, false); // paths are relative
         Self {
             base_dir: RefCell::new(base_dir),
@@ -750,7 +770,8 @@ where
     }
 
     fn reset(&self) {
-        let snapshot = extract_snapshot_from_text("");
+        let (text, _) = get_snapshot_text();
+        let snapshot = extract_snapshot_from_text(&text);
         *self.curr_dir.borrow_mut() = str_path_current_dir_or_panic();
         *self.base_dir.borrow_mut() = GitFsDbDir::new("./", snapshot, false, false);
     }
@@ -767,7 +788,8 @@ where
     fn check_visibility(&self, show_hidden: bool, hide_clean: bool) {
         let mut base_dir = self.base_dir.borrow_mut();
         if base_dir.show_hidden != show_hidden || base_dir.hide_clean != hide_clean {
-            let snapshot = extract_snapshot_from_text("");
+            let (text, _) = get_snapshot_text();
+            let snapshot = extract_snapshot_from_text(&text);
             *base_dir = GitFsDbDir::new("./", snapshot, show_hidden, hide_clean);
         }
     }
