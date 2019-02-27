@@ -140,6 +140,21 @@ pub struct ScmFsoData {
     is_dir: bool,
 }
 
+pub trait ScmFsoDataIfce {
+    fn set_status(&mut self, status: &str);
+    fn set_related_file_data(&mut self, related_file_data: &Option<RelatedFileData>);
+}
+
+impl ScmFsoDataIfce for ScmFsoData {
+    fn set_status(&mut self, status: &str) {
+        self.status = status.to_string();
+    }
+
+    fn set_related_file_data(&mut self, related_file_data: &Option<RelatedFileData>) {
+        self.related_file_data = related_file_data.clone();
+    }
+}
+
 impl ScmFsoData {
     fn get_rfd_from_row<S: TreeRowOps>(store: &S, iter: &TreeIter) -> Option<RelatedFileData> {
         let relation = store.get_value(iter, RELATION).get::<String>().unwrap();
@@ -447,7 +462,7 @@ struct SnapshotIterator<'a> {
 }
 
 impl<'a> Iterator for SnapshotIterator<'a> {
-    type Item = (String, String, String, bool, Option<RelatedFileData>);
+    type Item = (String, String, bool, String, Option<RelatedFileData>);
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
@@ -463,8 +478,8 @@ impl<'a> Iterator for SnapshotIterator<'a> {
                 return Some((
                     name,
                     path,
-                    status.to_string(),
                     is_dir,
+                    status.to_string(),
                     related_file_data.clone(),
                 ));
             } else {
@@ -549,7 +564,7 @@ fn extract_snapshot_from_text(text: &str) -> Snapshot {
 #[derive(Debug)]
 struct GitFsDbDir<FSOI>
 where
-    FSOI: FsObjectIfce,
+    FSOI: FsObjectIfce + ScmFsoDataIfce,
 {
     path: String,
     show_hidden: bool,
@@ -563,7 +578,7 @@ where
 
 impl<FSOI> GitFsDbDir<FSOI>
 where
-    FSOI: FsObjectIfce,
+    FSOI: FsObjectIfce + ScmFsoDataIfce,
 {
     fn new(dir_path: &str, snapshot: Snapshot, show_hidden: bool, hide_clean: bool) -> Self {
         Self {
@@ -631,6 +646,27 @@ where
                     files_map.insert(name, FSOI::from_dir_entry(&dir_entry));
                 }
             }
+            for (name, path, is_dir, status, related_file_data) in self.snapshot.iter() {
+                if is_dir {
+                    if !dirs_map.contains_key(&name) {
+                        dirs_map.insert(name.clone(), FSOI::new(&name, &path, is_dir));
+                    }
+                    let snapshot = self.snapshot.narrowed_for_dir_path(&path);
+                    self.sub_dirs.insert(
+                        name,
+                        GitFsDbDir::<FSOI>::new(&path, snapshot, self.show_hidden, self.hide_clean),
+                    );
+                } else if let Some(file_data) = files_map.get_mut(&name) {
+                    file_data.set_status(&status);
+                    file_data.set_related_file_data(&related_file_data);
+                } else {
+                    let mut file_data = FSOI::new(&name, &path, is_dir);
+                    file_data.set_status(&status);
+                    file_data.set_related_file_data(&related_file_data);
+                    dirs_map.insert(name, file_data);
+                }
+            }
+            // TODO: filter based on show_hidden and hide_clean
             let mut dirs: Vec<FSOI> = dirs_map.drain().map(|(_, y)| y).collect();
             let mut files: Vec<FSOI> = files_map.drain().map(|(_, y)| y).collect();
             dirs.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
@@ -664,7 +700,7 @@ where
 
 pub struct GitFsDb<FSOI>
 where
-    FSOI: FsObjectIfce,
+    FSOI: FsObjectIfce + ScmFsoDataIfce,
 {
     base_dir: RefCell<GitFsDbDir<FSOI>>,
     curr_dir: RefCell<String>, // so we can tell if there's a change of current directory
@@ -672,7 +708,7 @@ where
 
 impl<FSOI> FsDbIfce<FSOI> for GitFsDb<FSOI>
 where
-    FSOI: FsObjectIfce,
+    FSOI: FsObjectIfce + ScmFsoDataIfce,
 {
     fn honours_hide_clean() -> bool {
         false
@@ -722,7 +758,7 @@ where
 
 impl<FSOI> GitFsDb<FSOI>
 where
-    FSOI: FsObjectIfce,
+    FSOI: FsObjectIfce + ScmFsoDataIfce,
 {
     fn curr_dir_unchanged(&self) -> bool {
         *self.curr_dir.borrow() == str_path_current_dir_or_panic()
