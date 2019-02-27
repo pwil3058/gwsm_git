@@ -174,7 +174,7 @@ impl ScmFsoData {
 }
 
 impl FsObjectIfce for ScmFsoData {
-    fn new(dir_entry: &UsableDirEntry) -> Self {
+    fn from_dir_entry(dir_entry: &UsableDirEntry) -> Self {
         ScmFsoData {
             name: dir_entry.file_name(),
             path: dir_entry.path().to_string_lossy().into_owned(),
@@ -611,14 +611,14 @@ where
                 let name = dir_entry.file_name();
                 if dir_entry.is_dir() {
                     let path = dir_entry.path().to_string_lossy().into_owned();
-                    dirs_map.insert(name, FSOI::new(&dir_entry));
+                    dirs_map.insert(name, FSOI::from_dir_entry(&dir_entry));
                     let snapshot = self.snapshot.narrowed_for_dir_path(&path);
                     self.sub_dirs.insert(
                         dir_entry.file_name(),
                         GitFsDbDir::<FSOI>::new(&path, snapshot, self.show_hidden, self.hide_clean),
                     );
                 } else {
-                    files_map.insert(name, FSOI::new(&dir_entry));
+                    files_map.insert(name, FSOI::from_dir_entry(&dir_entry));
                 }
             }
             let mut dirs: Vec<FSOI> = dirs_map.drain().map(|(_, y)| y).collect();
