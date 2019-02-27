@@ -174,6 +174,16 @@ impl ScmFsoData {
 }
 
 impl FsObjectIfce for ScmFsoData {
+    fn new(name: &str, path: &str, is_dir: bool) -> Self {
+        ScmFsoData {
+            name: name.to_string(),
+            path: path.to_string(),
+            status: NO_STATUS.to_string(),
+            related_file_data: None,
+            is_dir: is_dir,
+        }
+    }
+
     fn from_dir_entry(dir_entry: &UsableDirEntry) -> Self {
         ScmFsoData {
             name: dir_entry.file_name(),
