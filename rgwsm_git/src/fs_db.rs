@@ -32,8 +32,6 @@ use pw_gix::fs_db::{FsDbIfce, FsObjectIfce, TreeRowOps};
 use pw_pathux::str_path::*;
 use pw_pathux::UsableDirEntry;
 
-impl_os_fs_db!(OsFsDb, OsFsDbDir);
-
 const NO_STATUS: &str = "";
 const UNMODIFIED: &str = "  ";
 const WD_ONLY_MODIFIED: &str = " M";
@@ -532,5 +530,187 @@ fn extract_snapshot_from_text(text: &str) -> Snapshot {
         relevant_keys: relevant_keys,
         status,
         clean_status,
+    }
+}
+
+#[derive(Debug)]
+struct GitFsDbDir<FSOI>
+where
+    FSOI: FsObjectIfce,
+{
+    path: String,
+    show_hidden: bool,
+    hide_clean: bool,
+    dirs_data: Rc<Vec<FSOI>>,
+    files_data: Rc<Vec<FSOI>>,
+    hash_digest: Option<Vec<u8>>,
+    sub_dirs: HashMap<String, GitFsDbDir<FSOI>>,
+}
+
+impl<FSOI> GitFsDbDir<FSOI>
+where
+    FSOI: FsObjectIfce,
+{
+    fn new(dir_path: &str, show_hidden: bool, hide_clean: bool) -> Self {
+        Self {
+            path: dir_path.to_string(),
+            show_hidden: show_hidden,
+            hide_clean: hide_clean,
+            dirs_data: Rc::new(vec![]),
+            files_data: Rc::new(vec![]),
+            hash_digest: None,
+            sub_dirs: HashMap::new(),
+        }
+    }
+
+    fn current_hash_digest(&self) -> Vec<u8> {
+        let mut hasher = Hasher::new(Algorithm::SHA256);
+        if let Ok(dir_entries) = UsableDirEntry::get_entries(&self.path) {
+            for dir_entry in dir_entries {
+                let path = dir_entry.path().to_string_lossy().into_owned();
+                hasher.write_all(&path.into_bytes()).unwrap()
+            }
+        }
+        hasher.finish()
+    }
+
+    fn is_current(&self) -> bool {
+        match self.hash_digest {
+            None => return true,
+            Some(ref hash_digest) => {
+                if *hash_digest != self.current_hash_digest() {
+                    return false;
+                } else {
+                    for sub_dir in self.sub_dirs.values() {
+                        if !sub_dir.is_current() {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+        true
+    }
+
+    fn populate(&mut self) {
+        let mut hasher = Hasher::new(Algorithm::SHA256);
+        if let Ok(dir_entries) = UsableDirEntry::get_entries(&self.path) {
+            let mut dirs = vec![];
+            let mut files = vec![];
+            for dir_entry in dir_entries {
+                let path = dir_entry.path().to_string_lossy().into_owned();
+                hasher.write_all(&path.into_bytes()).unwrap();
+                if !self.show_hidden && dir_entry.file_name().starts_with(".") {
+                    continue;
+                }
+                if dir_entry.is_dir() {
+                    let path = dir_entry.path().to_string_lossy().into_owned();
+                    dirs.push(FSOI::new(&dir_entry));
+                    self.sub_dirs.insert(
+                        dir_entry.file_name(),
+                        GitFsDbDir::<FSOI>::new(&path, self.show_hidden, self.hide_clean),
+                    );
+                } else {
+                    files.push(FSOI::new(&dir_entry));
+                }
+            }
+            dirs.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
+            files.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
+            self.dirs_data = Rc::new(dirs);
+            self.files_data = Rc::new(files);
+        }
+        self.hash_digest = Some(hasher.finish());
+    }
+
+    fn find_dir(&mut self, components: &[StrPathComponent]) -> Option<&mut GitFsDbDir<FSOI>> {
+        if self.hash_digest.is_none() {
+            self.populate();
+        }
+        if components.len() == 0 {
+            Some(self)
+        } else {
+            assert!(components[0].is_normal());
+            let name = components[0].to_string();
+            match self.sub_dirs.get_mut(&name) {
+                Some(subdir) => subdir.find_dir(&components[1..]),
+                None => None,
+            }
+        }
+    }
+
+    fn dirs_and_files<'a>(&'a mut self) -> (Rc<Vec<FSOI>>, Rc<Vec<FSOI>>) {
+        (Rc::clone(&self.dirs_data), Rc::clone(&self.files_data))
+    }
+}
+
+pub struct GitFsDb<FSOI>
+where
+    FSOI: FsObjectIfce,
+{
+    base_dir: RefCell<GitFsDbDir<FSOI>>,
+    curr_dir: RefCell<String>, // so we can tell if there's a change of current directory
+}
+
+impl<FSOI> FsDbIfce<FSOI> for GitFsDb<FSOI>
+where
+    FSOI: FsObjectIfce,
+{
+    fn honours_hide_clean() -> bool {
+        false
+    }
+
+    fn honours_show_hidden() -> bool {
+        true
+    }
+
+    fn new() -> Self {
+        let curr_dir = str_path_current_dir_or_panic();
+        let base_dir = GitFsDbDir::<FSOI>::new("./", false, false); // paths are relative
+        Self {
+            base_dir: RefCell::new(base_dir),
+            curr_dir: RefCell::new(curr_dir),
+        }
+    }
+
+    fn dir_contents(
+        &self,
+        dir_path: &str,
+        show_hidden: bool,
+        hide_clean: bool,
+    ) -> (Rc<Vec<FSOI>>, Rc<Vec<FSOI>>) {
+        assert!(dir_path.path_is_relative());
+        self.check_visibility(show_hidden, hide_clean);
+        let components = dir_path.to_string().path_components();
+        assert!(components[0].is_cur_dir());
+        if let Some(ref mut dir) = self.base_dir.borrow_mut().find_dir(&components[1..]) {
+            dir.dirs_and_files()
+        } else {
+            (Rc::new(vec![]), Rc::new(vec![]))
+        }
+    }
+
+    fn is_current(&self) -> bool {
+        self.curr_dir_unchanged() && self.base_dir.borrow_mut().is_current()
+    }
+
+    fn reset(&self) {
+        *self.curr_dir.borrow_mut() = str_path_current_dir_or_panic();
+        *self.base_dir.borrow_mut() = GitFsDbDir::new("./", false, false);
+    }
+}
+
+impl<FSOI> GitFsDb<FSOI>
+where
+    FSOI: FsObjectIfce,
+{
+    fn curr_dir_unchanged(&self) -> bool {
+        *self.curr_dir.borrow() == str_path_current_dir_or_panic()
+    }
+
+    fn check_visibility(&self, show_hidden: bool, hide_clean: bool) {
+        let mut base_dir = self.base_dir.borrow_mut();
+        if base_dir.show_hidden != show_hidden || base_dir.hide_clean != hide_clean {
+            *base_dir = GitFsDbDir::new("./", show_hidden, hide_clean);
+        }
     }
 }
