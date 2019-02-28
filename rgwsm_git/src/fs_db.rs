@@ -133,7 +133,7 @@ pub struct RelatedFileData {
     relation: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct ScmFsoData {
     name: String,
     path: String,
@@ -667,6 +667,8 @@ where
     path: String,
     show_hidden: bool,
     hide_clean: bool,
+    dirs_data_unfiltered: Vec<FSOI>,
+    files_data_unfiltered: Vec<FSOI>,
     dirs_data: Rc<Vec<FSOI>>,
     files_data: Rc<Vec<FSOI>>,
     hash_digest: Option<Vec<u8>>,
@@ -676,13 +678,15 @@ where
 
 impl<FSOI> GitFsDbDir<FSOI>
 where
-    FSOI: FsObjectIfce + ScmFsoDataIfce,
+    FSOI: FsObjectIfce + ScmFsoDataIfce + Clone,
 {
     fn new(dir_path: &str, snapshot: Snapshot, show_hidden: bool, hide_clean: bool) -> Self {
         Self {
             path: dir_path.to_string(),
             show_hidden: show_hidden,
             hide_clean: hide_clean,
+            dirs_data_unfiltered: vec![],
+            files_data_unfiltered: vec![],
             dirs_data: Rc::new(vec![]),
             files_data: Rc::new(vec![]),
             hash_digest: None,
@@ -774,22 +778,49 @@ where
                     dirs_map.insert(name, file_data);
                 }
             }
-            let mut dirs: Vec<FSOI> = dirs_map
+            self.dirs_data_unfiltered = dirs_map
                 .drain()
                 .map(|(_, y)| y)
-                .filter(|x| x.is_visible(self.show_hidden, self.hide_clean))
                 .collect();
-            let mut files: Vec<FSOI> = files_map
+            self.files_data_unfiltered = files_map
                 .drain()
                 .map(|(_, y)| y)
-                .filter(|x| x.is_visible(self.show_hidden, self.hide_clean))
                 .collect();
-            dirs.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
-            files.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
-            self.dirs_data = Rc::new(dirs);
-            self.files_data = Rc::new(files);
+            self.dirs_data_unfiltered.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
+            self.files_data_unfiltered.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
+            self.filter_data()
         }
         self.hash_digest = Some(hasher.finish());
+    }
+
+    fn filter_data(&mut self) {
+        let dirs_filtered = self.dirs_data_unfiltered.iter()
+            .filter(|x| x.is_visible(self.show_hidden, self.hide_clean))
+            .map(|x| x.clone())
+            .collect();
+        self.dirs_data = Rc::new(dirs_filtered);
+        let files_filtered = self.files_data_unfiltered.iter()
+            .filter(|x| x.is_visible(self.show_hidden, self.hide_clean))
+            .map(|x| x.clone())
+            .collect();
+        self.files_data = Rc::new(files_filtered);
+    }
+
+    fn set_visibility(&mut self, show_hidden: bool, hide_clean: bool ) {
+        self.show_hidden = show_hidden;
+        self.hide_clean = hide_clean;
+        for sub_dir in self.sub_dirs.values_mut() {
+            sub_dir.set_visibility(show_hidden, hide_clean);
+        }
+    }
+
+    fn re_filter_data(&mut self) {
+        if self.hash_digest.is_some() {
+            self.filter_data();
+            for sub_dir in self.sub_dirs.values_mut() {
+                sub_dir.filter_data()
+            }
+        }
     }
 
     fn find_dir(&mut self, components: &[StrPathComponent]) -> Option<&mut GitFsDbDir<FSOI>> {
@@ -815,7 +846,7 @@ where
 
 pub struct GitFsDb<FSOI>
 where
-    FSOI: FsObjectIfce + ScmFsoDataIfce,
+    FSOI: FsObjectIfce + ScmFsoDataIfce + Clone,
 {
     base_dir: RefCell<GitFsDbDir<FSOI>>,
     curr_dir: RefCell<String>, // so we can tell if there's a change of current directory
@@ -824,7 +855,7 @@ where
 // TODO: put in mechanisms to only recalculate snapshot when there are changes
 impl<FSOI> FsDbIfce<FSOI> for GitFsDb<FSOI>
 where
-    FSOI: FsObjectIfce + ScmFsoDataIfce,
+    FSOI: FsObjectIfce + ScmFsoDataIfce + Clone,
 {
     fn honours_hide_clean() -> bool {
         true
@@ -876,7 +907,7 @@ where
 
 impl<FSOI> GitFsDb<FSOI>
 where
-    FSOI: FsObjectIfce + ScmFsoDataIfce,
+    FSOI: FsObjectIfce + ScmFsoDataIfce + Clone,
 {
     fn curr_dir_unchanged(&self) -> bool {
         *self.curr_dir.borrow() == str_path_current_dir_or_panic()
@@ -885,9 +916,8 @@ where
     fn check_visibility(&self, show_hidden: bool, hide_clean: bool) {
         let mut base_dir = self.base_dir.borrow_mut();
         if base_dir.show_hidden != show_hidden || base_dir.hide_clean != hide_clean {
-            let (text, _) = get_snapshot_text();
-            let snapshot = extract_snapshot_from_text(&text);
-            *base_dir = GitFsDbDir::new(".", snapshot, show_hidden, hide_clean);
+            base_dir.set_visibility(show_hidden, hide_clean);
+            base_dir.re_filter_data();
         }
     }
 }

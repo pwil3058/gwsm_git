@@ -95,11 +95,11 @@ where
         });
         let owft_clone = Rc::clone(&owft);
         owft.show_hidden.connect_toggled(move |_| {
-            owft_clone.update(true);
+            owft_clone.update_dir(".", None);
         });
         let owft_clone = Rc::clone(&owft);
         owft.hide_clean.connect_toggled(move |_| {
-            owft_clone.update(true);
+            owft_clone.update_dir(".", None);
         });
         owft.repopulate();
         owft.view.show_all();
