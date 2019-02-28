@@ -56,7 +56,7 @@ fn activate(app: &gtk::Application) {
     });
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
     let label = gtk::Label::new("GUI is under construction");
-    vbox.pack_start(&label, true, true, 0);
+    vbox.pack_start(&label, false, false, 0);
     let ws_file_tree = ws_file_tree::GitWsFsTree::new(false);
     vbox.pack_start(&ws_file_tree.pwo(), true, true, 0);
     window.add(&vbox);

@@ -853,6 +853,9 @@ where
 {
     base_dir: RefCell<GitFsDbDir<FSOI>>,
     curr_dir: RefCell<String>, // so we can tell if there's a change of current directory
+    latest_text: RefCell<String>,
+    snapshot_digest: RefCell<Vec<u8>>,
+    latest_text_digest: RefCell<Vec<u8>>,
 }
 
 // TODO: put in mechanisms to only recalculate snapshot when there are changes
@@ -870,12 +873,15 @@ where
 
     fn new() -> Self {
         let curr_dir = str_path_current_dir_or_panic();
-        let (text, _) = get_snapshot_text();
+        let (text, snapshot_digest) = get_snapshot_text();
         let snapshot = extract_snapshot_from_text(&text);
         let base_dir = GitFsDbDir::<FSOI>::new(".", snapshot, false, false); // paths are relative
         Self {
             base_dir: RefCell::new(base_dir),
             curr_dir: RefCell::new(curr_dir),
+            latest_text: RefCell::new("".to_string()),
+            snapshot_digest: RefCell::new(snapshot_digest),
+            latest_text_digest: RefCell::new(vec![]),
         }
     }
 
@@ -897,11 +903,18 @@ where
     }
 
     fn is_current(&self) -> bool {
-        self.curr_dir_unchanged() && self.base_dir.borrow_mut().is_current()
+        let (text, digest) = get_snapshot_text();
+        if digest != *self.snapshot_digest.borrow() {
+            *self.latest_text_digest.borrow_mut() = digest;
+            *self.latest_text.borrow_mut() = text;
+            false
+        } else {
+            self.curr_dir_unchanged() && self.base_dir.borrow_mut().is_current()
+        }
     }
 
     fn reset(&self) {
-        let (text, _) = get_snapshot_text();
+        let text = self.latest_text.borrow();
         let snapshot = extract_snapshot_from_text(&text);
         *self.curr_dir.borrow_mut() = str_path_current_dir_or_panic();
         *self.base_dir.borrow_mut() = GitFsDbDir::new(".", snapshot, false, false);
