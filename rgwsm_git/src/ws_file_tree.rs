@@ -55,15 +55,14 @@ where
     fn new(auto_expand: bool) -> Rc<Self> {
         let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         let view = gtk::TreeView::new();
-        let store = gtk::TreeStore::new(&ScmFsoData::tree_store_spec());
+        let store = gtk::TreeStore::new(&FSOI::tree_store_spec());
         view.set_model(&store);
         let scrolled_window = gtk::ScrolledWindow::new(None, None);
         scrolled_window.add(&view);
         v_box.pack_start(&scrolled_window, true, true, 0);
         let show_hidden = gtk::CheckButton::new_with_label("Show Hidden");
         let hide_clean = gtk::CheckButton::new_with_label("Hide Clean");
-        if FSDB::honours_show_hidden() || FSDB::honours_hide_clean()
-        {
+        if FSDB::honours_show_hidden() || FSDB::honours_hide_clean() {
             let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
             if FSDB::honours_show_hidden() {
                 h_box.pack_start(&show_hidden, false, false, 0);
@@ -74,7 +73,7 @@ where
             v_box.pack_start(&h_box, false, false, 0);
         }
         view.set_headers_visible(false);
-        for col in ScmFsoData::tree_view_columns() {
+        for col in FSOI::tree_view_columns() {
             view.append_column(&col);
         }
         let owft = Rc::new(Self {

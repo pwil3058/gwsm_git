@@ -18,6 +18,7 @@ use std::cell::RefCell;
 use std::collections::{HashMap, HashSet};
 use std::io::Write;
 use std::iter::Iterator;
+use std::path::MAIN_SEPARATOR;
 use std::process::Command;
 use std::rc::Rc;
 use std::slice::Iter;
@@ -137,13 +138,16 @@ pub struct ScmFsoData {
     name: String,
     path: String,
     status: String,
+    clean_status: String,
     related_file_data: Option<RelatedFileData>,
     is_dir: bool,
 }
 
 pub trait ScmFsoDataIfce {
     fn set_status(&mut self, status: &str);
+    fn set_clean_status(&mut self, clean_status: &str);
     fn set_related_file_data(&mut self, related_file_data: &Option<RelatedFileData>);
+    fn is_visible(&self, show_hidden: bool, hide_clean: bool) -> bool;
 }
 
 impl ScmFsoDataIfce for ScmFsoData {
@@ -151,12 +155,70 @@ impl ScmFsoDataIfce for ScmFsoData {
         self.status = status.to_string();
     }
 
+    fn set_clean_status(&mut self, clean_status: &str) {
+        self.clean_status = clean_status.to_string();
+    }
+
     fn set_related_file_data(&mut self, related_file_data: &Option<RelatedFileData>) {
         self.related_file_data = related_file_data.clone();
+    }
+
+    fn is_visible(&self, show_hidden: bool, hide_clean: bool) -> bool {
+        if self.is_dir {
+            if show_hidden {
+                if hide_clean {
+                    !self.is_clean_dir()
+                } else {
+                    true
+                }
+            } else if hide_clean {
+                !self.is_clean_dir() && !self.is_hidden_dir()
+            } else {
+                !self.is_hidden_dir()
+            }
+        } else {
+            if show_hidden {
+                if hide_clean {
+                    !self.is_clean_file()
+                } else {
+                    true
+                }
+            } else if hide_clean {
+                !self.is_clean_file() && !self.is_hidden_file()
+            } else {
+                !self.is_hidden_file()
+            }
+        }
     }
 }
 
 impl ScmFsoData {
+    fn is_hidden_dir(&self) -> bool {
+        if self.name.starts_with(".") {
+            !SIGNIFICANT_SET.contains(&self.status.as_str())
+                && !SIGNIFICANT_SET.contains(&self.clean_status.as_str())
+        } else {
+            self.status == IGNORED
+        }
+    }
+
+    fn is_clean_dir(&self) -> bool {
+        CLEAN_SET.contains(&self.status.as_str())
+            && !SIGNIFICANT_SET.contains(&self.clean_status.as_str())
+    }
+
+    fn is_hidden_file(&self) -> bool {
+        if self.name.starts_with(".") {
+            !SIGNIFICANT_SET.contains(&self.status.as_str())
+        } else {
+            self.status == IGNORED
+        }
+    }
+
+    fn is_clean_file(&self) -> bool {
+        CLEAN_SET.contains(&self.status.as_str())
+    }
+
     fn get_rfd_from_row<S: TreeRowOps>(store: &S, iter: &TreeIter) -> Option<RelatedFileData> {
         let relation = store.get_value(iter, RELATION).get::<String>().unwrap();
         if relation.len() == 0 {
@@ -195,6 +257,7 @@ impl FsObjectIfce for ScmFsoData {
             name: name.to_string(),
             path: path.to_string(),
             status: NO_STATUS.to_string(),
+            clean_status: NO_STATUS.to_string(),
             related_file_data: None,
             is_dir: is_dir,
         }
@@ -205,6 +268,7 @@ impl FsObjectIfce for ScmFsoData {
             name: dir_entry.file_name(),
             path: dir_entry.path().to_string_lossy().into_owned(),
             status: NO_STATUS.to_string(),
+            clean_status: NO_STATUS.to_string(),
             related_file_data: None,
             is_dir: dir_entry.is_dir(),
         }
@@ -220,6 +284,13 @@ impl FsObjectIfce for ScmFsoData {
         let cell = gtk::CellRendererPixbuf::new();
         col.pack_start(&cell, false);
         col.add_attribute(&cell, "icon-name", ICON);
+
+        let cell = gtk::CellRendererText::new();
+        cell.set_property_editable(false);
+        col.pack_start(&cell, false);
+        col.add_attribute(&cell, "text", STATUS);
+        col.add_attribute(&cell, "foreground", FOREGROUND);
+        col.add_attribute(&cell, "style", STYLE);
 
         let cell = gtk::CellRendererText::new();
         cell.set_property_editable(false);
@@ -428,6 +499,7 @@ impl Snapshot {
             num_dir_components: self.num_dir_components,
             file_status_data: Rc::clone(&self.file_status_data),
             relevant_keys_iter: self.relevant_keys.iter(),
+            already_seen: HashSet::new(),
         }
     }
 
@@ -435,7 +507,7 @@ impl Snapshot {
         let relevant_keys: Vec<String> = self
             .file_status_data
             .keys()
-            .filter(|k| k.path_starts_with(dir_path))
+            .filter(|k| k.path_starts_with(&dir_path))
             .map(|s| s.to_string())
             .collect();
         let mut status_set = HashSet::new();
@@ -460,22 +532,24 @@ struct SnapshotIterator<'a> {
     num_dir_components: usize,
     file_status_data: FileStatusData,
     relevant_keys_iter: Iter<'a, String>,
+    already_seen: HashSet<String>,
 }
 
 impl<'a> Iterator for SnapshotIterator<'a> {
     type Item = (String, String, bool, String, Option<RelatedFileData>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        // TODO: fix snapshot iterator
         loop {
             if let Some(file_path) = self.relevant_keys_iter.next() {
                 let (status, related_file_data) = self.file_status_data.get(&*file_path).unwrap();
-                let mut components = file_path.path_components();
-                // git doesn't include "./" but have to for read_dir() so add for compatibility
-                components.insert(0, StrPathComponent::CurDir);
+                let components = file_path.path_components();
                 let is_dir =
                     components.len() > self.num_dir_components + 1 || file_path.path_is_dir();
                 let name = components[self.num_dir_components].to_string();
+                if self.already_seen.contains(&name) {
+                    continue;
+                };
+                self.already_seen.insert(name.clone());
                 let path = components[..self.num_dir_components + 1].to_string_path();
                 return Some((
                     name,
@@ -498,11 +572,15 @@ fn get_snapshot_text() -> (String, Vec<u8>) {
         .arg("--ignored")
         .arg("--untracked=all")
         .arg("--ignore-submodules=none")
-        .output().expect("get_snapshota_text() failed");
-    if output.status.success(){
+        .output()
+        .expect("get_snapshota_text() failed");
+    if output.status.success() {
         let mut hasher = Hasher::new(Algorithm::SHA256);
-        hasher.write_all(&output.stdout);
-        (String::from_utf8_lossy(&output.stdout).to_string(), hasher.finish())
+        hasher.write_all(&output.stdout).expect("hasher blew up!!!");
+        (
+            String::from_utf8_lossy(&output.stdout).to_string(),
+            hasher.finish(),
+        )
     } else {
         ("".to_string(), vec![])
     }
@@ -535,7 +613,8 @@ macro_rules! parse_line {
             None
         };
         (
-            path.as_str().to_string(),
+            // git doesn't include "./" but we have to for read_dir() so add for compatibility
+            format!(".{}{}", MAIN_SEPARATOR, path.as_str()),
             $line[..2].to_string(),
             related_file_data,
         )
@@ -649,9 +728,6 @@ where
             for dir_entry in dir_entries {
                 let path = dir_entry.path().to_string_path();
                 hasher.write_all(&path.into_bytes()).unwrap();
-                if !self.show_hidden && dir_entry.file_name().starts_with(".") {
-                    continue;
-                }
                 let name = dir_entry.file_name();
                 if dir_entry.is_dir() {
                     let path = dir_entry.path().to_string_lossy().into_owned();
@@ -667,14 +743,27 @@ where
             }
             for (name, path, is_dir, status, related_file_data) in self.snapshot.iter() {
                 if is_dir {
-                    if !dirs_map.contains_key(&name) {
-                        dirs_map.insert(name.clone(), FSOI::new(&name, &path, is_dir));
-                    }
                     let snapshot = self.snapshot.narrowed_for_dir_path(&path);
-                    self.sub_dirs.insert(
-                        name,
-                        GitFsDbDir::<FSOI>::new(&path, snapshot, self.show_hidden, self.hide_clean),
-                    );
+                    let status = snapshot.status.clone();
+                    let clean_status = snapshot.clean_status.clone();
+                    if let Some(dir_dat) = dirs_map.get_mut(&name) {
+                        dir_dat.set_status(&status);
+                        dir_dat.set_clean_status(&clean_status);
+                    } else {
+                        let mut dir_dat = FSOI::new(&name, &path, is_dir);
+                        dir_dat.set_status(&status);
+                        dir_dat.set_clean_status(&clean_status);
+                        dirs_map.insert(name.clone(), dir_dat);
+                        self.sub_dirs.insert(
+                            name,
+                            GitFsDbDir::<FSOI>::new(
+                                &path,
+                                snapshot,
+                                self.show_hidden,
+                                self.hide_clean,
+                            ),
+                        );
+                    }
                 } else if let Some(file_data) = files_map.get_mut(&name) {
                     file_data.set_status(&status);
                     file_data.set_related_file_data(&related_file_data);
@@ -685,9 +774,16 @@ where
                     dirs_map.insert(name, file_data);
                 }
             }
-            // TODO: filter based on show_hidden and hide_clean
-            let mut dirs: Vec<FSOI> = dirs_map.drain().map(|(_, y)| y).collect();
-            let mut files: Vec<FSOI> = files_map.drain().map(|(_, y)| y).collect();
+            let mut dirs: Vec<FSOI> = dirs_map
+                .drain()
+                .map(|(_, y)| y)
+                .filter(|x| x.is_visible(self.show_hidden, self.hide_clean))
+                .collect();
+            let mut files: Vec<FSOI> = files_map
+                .drain()
+                .map(|(_, y)| y)
+                .filter(|x| x.is_visible(self.show_hidden, self.hide_clean))
+                .collect();
             dirs.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
             files.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
             self.dirs_data = Rc::new(dirs);
@@ -725,12 +821,13 @@ where
     curr_dir: RefCell<String>, // so we can tell if there's a change of current directory
 }
 
+// TODO: put in mechanisms to only recalculate snapshot when there are changes
 impl<FSOI> FsDbIfce<FSOI> for GitFsDb<FSOI>
 where
     FSOI: FsObjectIfce + ScmFsoDataIfce,
 {
     fn honours_hide_clean() -> bool {
-        false
+        true
     }
 
     fn honours_show_hidden() -> bool {
@@ -741,7 +838,7 @@ where
         let curr_dir = str_path_current_dir_or_panic();
         let (text, _) = get_snapshot_text();
         let snapshot = extract_snapshot_from_text(&text);
-        let base_dir = GitFsDbDir::<FSOI>::new("./", snapshot, false, false); // paths are relative
+        let base_dir = GitFsDbDir::<FSOI>::new(".", snapshot, false, false); // paths are relative
         Self {
             base_dir: RefCell::new(base_dir),
             curr_dir: RefCell::new(curr_dir),
@@ -773,7 +870,7 @@ where
         let (text, _) = get_snapshot_text();
         let snapshot = extract_snapshot_from_text(&text);
         *self.curr_dir.borrow_mut() = str_path_current_dir_or_panic();
-        *self.base_dir.borrow_mut() = GitFsDbDir::new("./", snapshot, false, false);
+        *self.base_dir.borrow_mut() = GitFsDbDir::new(".", snapshot, false, false);
     }
 }
 
@@ -790,7 +887,7 @@ where
         if base_dir.show_hidden != show_hidden || base_dir.hide_clean != hide_clean {
             let (text, _) = get_snapshot_text();
             let snapshot = extract_snapshot_from_text(&text);
-            *base_dir = GitFsDbDir::new("./", snapshot, show_hidden, hide_clean);
+            *base_dir = GitFsDbDir::new(".", snapshot, show_hidden, hide_clean);
         }
     }
 }
