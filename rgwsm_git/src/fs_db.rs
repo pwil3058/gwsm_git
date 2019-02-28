@@ -541,16 +541,19 @@ impl<'a> Iterator for SnapshotIterator<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         loop {
             if let Some(file_path) = self.relevant_keys_iter.next() {
-                let (status, related_file_data) = self.file_status_data.get(&*file_path).unwrap();
                 let components = file_path.path_components();
-                let is_dir =
-                    components.len() > self.num_dir_components + 1 || file_path.path_is_dir();
+                if components.len() == self.num_dir_components {
+                    // This is me and I'm a submodule
+                    continue;
+                }
+                let (status, related_file_data) = self.file_status_data.get(&*file_path).unwrap();
+                let path = components[..self.num_dir_components + 1].to_string_path();
+                let is_dir = components.len() > self.num_dir_components + 1 || path.path_is_dir();
                 let name = components[self.num_dir_components].to_string();
                 if self.already_seen.contains(&name) {
                     continue;
                 };
                 self.already_seen.insert(name.clone());
-                let path = components[..self.num_dir_components + 1].to_string_path();
                 return Some((
                     name,
                     path,
@@ -778,35 +781,35 @@ where
                     dirs_map.insert(name, file_data);
                 }
             }
-            self.dirs_data_unfiltered = dirs_map
-                .drain()
-                .map(|(_, y)| y)
-                .collect();
-            self.files_data_unfiltered = files_map
-                .drain()
-                .map(|(_, y)| y)
-                .collect();
-            self.dirs_data_unfiltered.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
-            self.files_data_unfiltered.sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
+            self.dirs_data_unfiltered = dirs_map.drain().map(|(_, y)| y).collect();
+            self.files_data_unfiltered = files_map.drain().map(|(_, y)| y).collect();
+            self.dirs_data_unfiltered
+                .sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
+            self.files_data_unfiltered
+                .sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
             self.filter_data()
         }
         self.hash_digest = Some(hasher.finish());
     }
 
     fn filter_data(&mut self) {
-        let dirs_filtered = self.dirs_data_unfiltered.iter()
+        let dirs_filtered = self
+            .dirs_data_unfiltered
+            .iter()
             .filter(|x| x.is_visible(self.show_hidden, self.hide_clean))
             .map(|x| x.clone())
             .collect();
         self.dirs_data = Rc::new(dirs_filtered);
-        let files_filtered = self.files_data_unfiltered.iter()
+        let files_filtered = self
+            .files_data_unfiltered
+            .iter()
             .filter(|x| x.is_visible(self.show_hidden, self.hide_clean))
             .map(|x| x.clone())
             .collect();
         self.files_data = Rc::new(files_filtered);
     }
 
-    fn set_visibility(&mut self, show_hidden: bool, hide_clean: bool ) {
+    fn set_visibility(&mut self, show_hidden: bool, hide_clean: bool) {
         self.show_hidden = show_hidden;
         self.hide_clean = hide_clean;
         for sub_dir in self.sub_dirs.values_mut() {
