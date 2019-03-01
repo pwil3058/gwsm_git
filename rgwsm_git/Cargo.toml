@@ -15,5 +15,5 @@ glib = "0.7.0"
 gtk = "0.6.0"
 pango-sys = "0.8.0"
 
-pw_gix = { path = "../pw_gix" }
-pw_pathux = { path = "../pw_pathux" }
+pw_gix = { path = "../../../CRATES/rs_pw_gix.git" }
+pw_pathux = { path = "../../../CRATES/rs_pw_pathux.git" }
