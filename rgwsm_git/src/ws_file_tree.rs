@@ -57,7 +57,8 @@ where
         let view = gtk::TreeView::new();
         let store = gtk::TreeStore::new(&FSOI::tree_store_spec());
         view.set_model(&store);
-        let scrolled_window = gtk::ScrolledWindow::new(None, None);
+        let adj: Option<&gtk::Adjustment> = None;
+        let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
         scrolled_window.add(&view);
         v_box.pack_start(&scrolled_window, true, true, 0);
         let show_hidden = gtk::CheckButton::new_with_label("Show Hidden");
