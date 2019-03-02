@@ -18,6 +18,7 @@ extern crate git2;
 extern crate lazy_static;
 extern crate regex;
 
+extern crate gdk_pixbuf;
 extern crate gio;
 extern crate gtk;
 extern crate pango_sys;
@@ -39,12 +40,15 @@ use pw_pathux::str_path::str_path_current_dir_or_panic;
 
 mod config;
 mod fs_db;
+mod icon;
 mod ws_file_tree;
 
 fn activate(app: &gtk::Application) {
     let window = gtk::ApplicationWindow::new(app);
     // TODO: mechansim to change title when directory changes
     window.set_title(&format!("gwsm_git: {}", str_path_current_dir_or_panic()));
+    let app_icon = icon::rgwsmgit_pixbuf();
+    window.set_icon(Some(&app_icon));
     if let Some(geometry) = recollections::recall("main_window:geometry") {
         window.parse_geometry(&geometry);
     } else {
