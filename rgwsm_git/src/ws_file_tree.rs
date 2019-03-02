@@ -20,6 +20,7 @@ use gtk::prelude::*;
 
 use pw_gix::file_tree::*;
 use pw_gix::fs_db::*;
+use pw_gix::timeout;
 use pw_gix::wrapper::*;
 
 use crate::fs_db::*;
@@ -36,6 +37,7 @@ where
     auto_expand: bool,
     show_hidden: gtk::CheckButton,
     hide_clean: gtk::CheckButton,
+    controlled_timeout_cycle: Rc<timeout::ControlledTimeoutCycle>,
     phantom: PhantomData<FSOI>,
 }
 
@@ -85,6 +87,7 @@ where
             auto_expand: auto_expand,
             show_hidden: show_hidden,
             hide_clean: hide_clean,
+            controlled_timeout_cycle: timeout::ControlledTimeoutCycle::new("Auto Update", true, 10),
             phantom: PhantomData,
         });
         let owft_clone = Rc::clone(&owft);
@@ -102,6 +105,11 @@ where
         owft.hide_clean.connect_toggled(move |_| {
             owft_clone.update_dir(".", None);
         });
+        let owft_clone = Rc::clone(&owft);
+        owft.controlled_timeout_cycle
+            .register_callback(Box::new(move || {
+                owft_clone.update(false);
+            }));
         owft.repopulate();
         owft.view.show_all();
         scrolled_window.show_all();
