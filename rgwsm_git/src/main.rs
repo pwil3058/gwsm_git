@@ -38,6 +38,7 @@ use pw_gix::wrapper::*;
 
 use pw_pathux::str_path::str_path_current_dir_or_panic;
 
+mod branches;
 mod config;
 mod fs_db;
 mod icon;

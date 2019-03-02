@@ -42,7 +42,7 @@ impl EventNotifier {
         token
     }
 
-    pub fn del_notification(&self, token: u64) {
+    pub fn del_notification_cb(&self, token: u64) {
         let callbacks = self.callbacks.lock().unwrap();
         let position = callbacks.borrow().iter().position(|x| x.0 == token);
         if let Some(position) = position {
