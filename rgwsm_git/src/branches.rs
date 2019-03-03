@@ -23,9 +23,9 @@ use gtk::prelude::*;
 use crypto_hash::{Algorithm, Hasher};
 use regex::Regex;
 
-use pw_gix::gtkx::list_store::{
-    invalid_digest, BufferedUpdate, Digest, Row, RowBuffer, RowBufferCore,
-};
+use pw_gix::gtkx::list_store::{BufferedUpdate, Row, RowBuffer, RowBufferCore};
+use pw_gix::timeout;
+use pw_gix::wrapper::*;
 
 #[derive(Debug, Default)]
 struct BranchesRawData {
@@ -103,6 +103,17 @@ struct BranchesRowBuffer {
     row_buffer_core: Rc<RefCell<RowBufferCore<BranchesRawData>>>,
 }
 
+impl BranchesRowBuffer {
+    fn new() -> Self {
+        let core = RowBufferCore::<BranchesRawData>::default();
+        let buffer = Self {
+            row_buffer_core: Rc::new(RefCell::new(core)),
+        };
+        buffer.init();
+        buffer
+    }
+}
+
 impl RowBuffer<BranchesRawData> for BranchesRowBuffer {
     fn get_core(&self) -> Rc<RefCell<RowBufferCore<BranchesRawData>>> {
         self.row_buffer_core.clone()
@@ -121,7 +132,7 @@ impl RowBuffer<BranchesRawData> for BranchesRowBuffer {
             merged_set.insert(line[2..].trim_right());
         }
         let mut rows: Vec<Row> = Vec::new();
-        for line in core.raw_data.merged_branches_text.lines() {
+        for line in core.raw_data.all_branches_text.lines() {
             rows.push(extract_branch_row(&line, &merged_set))
         }
         core.rows = Rc::new(rows);
@@ -129,10 +140,106 @@ impl RowBuffer<BranchesRawData> for BranchesRowBuffer {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+struct BranchesNameListStore {
+    list_store: gtk::ListStore,
+    branches_row_buffer: Rc<RefCell<BranchesRowBuffer>>,
+}
+
+impl BufferedUpdate<BranchesRawData, gtk::ListStore> for BranchesNameListStore {
+    fn get_list_store(&self) -> gtk::ListStore {
+        self.list_store.clone()
+    }
+
+    fn get_row_buffer(&self) -> Rc<RefCell<RowBuffer<BranchesRawData>>> {
+        self.branches_row_buffer.clone()
+    }
+}
+
+impl BranchesNameListStore {
+    pub fn new() -> BranchesNameListStore {
+        Self {
+            list_store: gtk::ListStore::new(&[gtk::Type::String; 5]),
+            branches_row_buffer: Rc::new(RefCell::new(BranchesRowBuffer::new())),
+        }
+    }
+}
+
+pub struct BranchesNameTable {
+    pub view: gtk::TreeView,
+    list_store: RefCell<BranchesNameListStore>,
+    controlled_timeout_cycle: Rc<timeout::ControlledTimeoutCycle>,
+}
+
+impl_widget_wrapper!(view: gtk::TreeView, BranchesNameTable);
+
+impl BranchesNameTable {
+    pub fn new() -> Rc<BranchesNameTable> {
+        let list_store = RefCell::new(BranchesNameListStore::new());
+
+        let view = gtk::TreeView::new_with_model(&list_store.borrow().get_list_store());
+        view.set_headers_visible(true);
+
+        view.get_selection().set_mode(gtk::SelectionMode::Multiple);
+
+        let col = gtk::TreeViewColumn::new();
+        col.set_title("Name");
+        col.set_expand(false);
+        col.set_resizable(false);
+
+        let cell = gtk::CellRendererText::new();
+        cell.set_property_editable(false);
+        col.pack_start(&cell, false);
+        col.add_attribute(&cell, "markup", 1);
+
+        let cell = gtk::CellRendererText::new();
+        cell.set_property_editable(false);
+        col.pack_start(&cell, false);
+        col.add_attribute(&cell, "markup", 2);
+
+        view.append_column(&col);
+
+        let col = gtk::TreeViewColumn::new();
+        col.set_title("Rev");
+        col.set_expand(false);
+        col.set_resizable(false);
+
+        let cell = gtk::CellRendererText::new();
+        cell.set_property_editable(false);
+        col.pack_start(&cell, false);
+        col.add_attribute(&cell, "text", 3);
+
+        view.append_column(&col);
+
+        let col = gtk::TreeViewColumn::new();
+        col.set_title("Synopsis");
+        col.set_expand(false);
+        col.set_resizable(false);
+
+        let cell = gtk::CellRendererText::new();
+        cell.set_property_editable(false);
+        col.pack_start(&cell, false);
+        col.add_attribute(&cell, "text", 4);
+
+        view.append_column(&col);
+
+        view.show_all();
+
+        list_store.borrow().repopulate();
+
+        let controlled_timeout_cycle =
+            timeout::ControlledTimeoutCycle::new("Auto Update", true, 10);
+
+        let table = Rc::new(BranchesNameTable {
+            view,
+            list_store,
+            controlled_timeout_cycle,
+        });
+        let table_clone = Rc::clone(&table);
+        table
+            .controlled_timeout_cycle
+            .register_callback(Box::new(move || {
+                table_clone.list_store.borrow().update();
+            }));
+        table
     }
 }

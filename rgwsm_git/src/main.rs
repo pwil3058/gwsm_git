@@ -62,8 +62,12 @@ fn activate(app: &gtk::Application) {
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
     let label = gtk::Label::new("GUI is under construction");
     vbox.pack_start(&label, false, false, 0);
+    let paned = gtk::Paned::new(gtk::Orientation::Horizontal);
     let ws_file_tree = ws_file_tree::GitWsFsTree::new(false);
-    vbox.pack_start(&ws_file_tree.pwo(), true, true, 0);
+    paned.add1(&ws_file_tree.pwo());
+    let branches_table = branches::BranchesNameTable::new();
+    paned.add2(&branches_table.pwo());
+    vbox.pack_start(&paned, true, true, 0);
     window.add(&vbox);
     window.show_all();
 }
