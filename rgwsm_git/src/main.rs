@@ -33,6 +33,7 @@ use gtk::prelude::*;
 
 use pw_gix::file_tree::FileTreeIfce;
 use pw_gix::gdkx::format_geometry;
+use pw_gix::gtkx::paned::RememberPosition;
 use pw_gix::recollections;
 use pw_gix::wrapper::*;
 
@@ -72,6 +73,7 @@ fn activate(app: &gtk::Application) {
     notebook.add(&gtk::Label::new("Tags will go here!!"));
     paned.add2(&notebook);
     vbox.pack_start(&paned, true, true, 0);
+    paned.set_position_from_recollections("hpaned:position", 200);
     window.add(&vbox);
     window.show_all();
 }
