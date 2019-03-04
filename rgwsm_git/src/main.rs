@@ -86,7 +86,7 @@ fn activate(app: &gtk::Application) {
     paned_v.add2(&exec.pwo());
     window.add(&vbox);
     window.show_all();
-    exec.exec_cmd("ls");
+    exec.exec_cmd("ls", 0);
 }
 
 fn main() {
