@@ -25,8 +25,11 @@ use shlex;
 
 use pw_gix::wrapper::*;
 
+use bab::enotify::EventNotifier;
+
 pub struct ExecConsole {
     text_view: gtk::TextView,
+    pub event_notifier: Rc<EventNotifier>,
 }
 
 impl_widget_wrapper!(text_view: gtk::TextView, ExecConsole);
@@ -35,6 +38,7 @@ impl ExecConsole {
     pub fn new() -> Rc<Self> {
         let ec = Rc::new(Self {
             text_view: gtk::TextView::new(),
+            event_notifier: Rc::new(EventNotifier::default()),
         });
         ec.append_bold("% ");
         ec
@@ -75,7 +79,7 @@ impl ExecConsole {
         self.append_markup(&markup);
     }
 
-    pub fn exec_cmd(&self, cmd: &str) {
+    pub fn exec_cmd(&self, cmd: &str, events: u64) {
         let dt = DateTime::<Local>::from(SystemTime::now());
         self.append_bold(&format!("{}: ", dt.format("%Y-%m-%d-%H-%M-%S")));
         self.append_cmd(cmd);
@@ -87,7 +91,11 @@ impl ExecConsole {
                 let stderr = String::from_utf8_lossy(&output.stderr);
                 self.append_stderr(&stderr);
                 self.append_bold("% ");
-                if !output.status.success() {
+                if output.status.success() {
+                    if events != 0 {
+                        self.event_notifier.notify_events(events)
+                    }
+                } else {
                     let msg = format!("\"{}\": failed.", cmd);
                     self.warn_user(&msg, Some(&stderr));
                 }

@@ -25,6 +25,7 @@ extern crate gio;
 extern crate gtk;
 extern crate pango_sys;
 
+extern crate bab;
 #[macro_use]
 extern crate pw_gix;
 extern crate pw_pathux;
