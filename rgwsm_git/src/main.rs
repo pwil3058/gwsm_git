@@ -12,11 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+extern crate chrono;
 extern crate crypto_hash;
 extern crate git2;
 #[macro_use]
 extern crate lazy_static;
 extern crate regex;
+extern crate shlex;
 
 extern crate gdk_pixbuf;
 extern crate gio;
@@ -41,6 +43,7 @@ use pw_pathux::str_path::str_path_current_dir_or_panic;
 
 mod branches;
 mod config;
+mod exec;
 mod fs_db;
 mod icon;
 mod ws_file_tree;
@@ -63,19 +66,26 @@ fn activate(app: &gtk::Application) {
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
     let label = gtk::Label::new("GUI is under construction");
     vbox.pack_start(&label, false, false, 0);
-    let paned = gtk::Paned::new(gtk::Orientation::Horizontal);
+    let paned_h = gtk::Paned::new(gtk::Orientation::Horizontal);
     let ws_file_tree = ws_file_tree::GitWsFsTree::new(false);
-    paned.add1(&ws_file_tree.pwo());
+    paned_h.add1(&ws_file_tree.pwo());
     let notebook = gtk::Notebook::new();
     let branches_table = branches::BranchesNameTable::new();
     notebook.add(&branches_table.pwo());
     notebook.set_tab_label_text(&branches_table.pwo(), "Branches");
     notebook.add(&gtk::Label::new("Tags will go here!!"));
-    paned.add2(&notebook);
-    vbox.pack_start(&paned, true, true, 0);
-    paned.set_position_from_recollections("hpaned:position", 200);
+    notebook.set_property_enable_popup(true);
+    paned_h.add2(&notebook);
+    let paned_v = gtk::Paned::new(gtk::Orientation::Vertical);
+    paned_v.add1(&paned_h);
+    vbox.pack_start(&paned_v, true, true, 0);
+    paned_h.set_position_from_recollections("paned_h:position", 200);
+    paned_v.set_position_from_recollections("paned_v:position", 200);
+    let exec = exec::ExecConsole::new();
+    paned_v.add2(&exec.pwo());
     window.add(&vbox);
     window.show_all();
+    exec.exec_cmd("ls");
 }
 
 fn main() {
