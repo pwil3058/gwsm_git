@@ -12,7 +12,7 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use std::collections::HashSet;
 use std::io::Write;
 use std::process::Command;
@@ -164,9 +164,17 @@ impl BranchesNameListStore {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+enum RequiredMapAction {
+    Repopulate,
+    Update,
+    Nothing,
+}
+
 pub struct BranchesNameTable {
     pub view: gtk::TreeView,
     list_store: RefCell<BranchesNameListStore>,
+    required_map_action: Cell<RequiredMapAction>,
     controlled_timeout_cycle: Rc<timeout::ControlledTimeoutCycle>,
 }
 
@@ -229,17 +237,58 @@ impl BranchesNameTable {
         let controlled_timeout_cycle =
             timeout::ControlledTimeoutCycle::new("Auto Update", true, 10);
 
+        let required_map_action = Cell::new(RequiredMapAction::Nothing);
+
         let table = Rc::new(BranchesNameTable {
             view,
             list_store,
+            required_map_action,
             controlled_timeout_cycle,
         });
         let table_clone = Rc::clone(&table);
+        table.controlled_timeout_cycle.register_callback(Box::new(move || table_clone.auto_update()));
+        let table_clone = Rc::clone(&table);
+        table.view.connect_map( move |_| table_clone.on_map_action());
+
         table
-            .controlled_timeout_cycle
-            .register_callback(Box::new(move || {
-                table_clone.list_store.borrow().update();
-            }));
-        table
+    }
+
+    fn auto_update(&self) {
+        match self.required_map_action.get() {
+            RequiredMapAction::Nothing => self.update(),
+            _ => (),
+        }
+    }
+
+    fn on_map_action(&self) {
+        match self.required_map_action.get () {
+            RequiredMapAction::Repopulate => {
+                self.repopulate();
+                self.required_map_action.set(RequiredMapAction::Nothing);
+            }
+            RequiredMapAction::Update => {
+                self.update();
+                self.required_map_action.set(RequiredMapAction::Nothing);
+            }
+            RequiredMapAction::Nothing => ()
+        }
+    }
+
+    pub fn repopulate(&self) {
+        if self.view.get_mapped() {
+            self.list_store.borrow().repopulate();
+            self.required_map_action.set(RequiredMapAction::Nothing)
+        } else {
+            self.required_map_action.set(RequiredMapAction::Repopulate)
+        }
+    }
+
+    pub fn update(&self) {
+        if self.view.get_mapped() {
+            self.list_store.borrow().update();
+            self.required_map_action.set(RequiredMapAction::Nothing)
+        } else if self.required_map_action.get() != RequiredMapAction::Repopulate {
+            self.required_map_action.set(RequiredMapAction::Update)
+        }
     }
 }

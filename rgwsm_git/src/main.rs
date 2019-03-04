@@ -65,8 +65,12 @@ fn activate(app: &gtk::Application) {
     let paned = gtk::Paned::new(gtk::Orientation::Horizontal);
     let ws_file_tree = ws_file_tree::GitWsFsTree::new(false);
     paned.add1(&ws_file_tree.pwo());
+    let notebook = gtk::Notebook::new();
     let branches_table = branches::BranchesNameTable::new();
-    paned.add2(&branches_table.pwo());
+    notebook.add(&branches_table.pwo());
+    notebook.set_tab_label_text(&branches_table.pwo(), "Branches");
+    notebook.add(&gtk::Label::new("Tags will go here!!"));
+    paned.add2(&notebook);
     vbox.pack_start(&paned, true, true, 0);
     window.add(&vbox);
     window.show_all();

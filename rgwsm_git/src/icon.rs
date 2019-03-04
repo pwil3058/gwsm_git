@@ -91,7 +91,7 @@ pub fn rgwsmgit_pixbuf() -> gdk_pixbuf::Pixbuf {
     gdk_pixbuf::Pixbuf::new_from_xpm_data(RGWSMGIT_XPM)
 }
 
-pub fn rgwsmgit_image(size: i32) -> gtk::Image {
+pub fn _rgwsmgit_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) =
         rgwsmgit_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
