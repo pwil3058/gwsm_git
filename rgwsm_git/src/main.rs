@@ -25,7 +25,6 @@ extern crate gio;
 extern crate gtk;
 extern crate pango_sys;
 
-extern crate bab;
 #[macro_use]
 extern crate pw_gix;
 extern crate pw_pathux;
@@ -33,6 +32,7 @@ extern crate pw_pathux;
 use gio::ApplicationExt;
 use gio::ApplicationExtManual;
 use gtk::prelude::*;
+use gtk::prelude::MenuShellExt;
 
 use pw_gix::file_tree::FileTreeIfce;
 use pw_gix::gdkx::format_geometry;
@@ -45,6 +45,7 @@ use pw_pathux::str_path::str_path_current_dir_or_panic;
 mod branches;
 mod config;
 mod exec;
+mod events;
 mod fs_db;
 mod icon;
 mod submodules;
@@ -65,7 +66,27 @@ fn activate(app: &gtk::Application) {
         recollections::remember("main_window:geometry", &format_geometry(event));
         false
     });
+    let exec = exec::ExecConsole::new();
+    let w = window.clone();
+    exec.event_notifier.add_notification_cb(
+        events::EV_CHANGE_DIR,
+        Box::new(move |_| {w.set_title(&format!("gwsm_git: {}", str_path_current_dir_or_panic()))})
+    );
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
+    let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    vbox.pack_start(&hbox, false, false, 0);
+    let menu = gtk::Menu::new();
+    menu.append(&exec.chdir_menu_item);
+    exec.chdir_menu_item.show();
+    let menu_item = gtk::MenuItem::new_with_label("Files");
+    menu_item.set_submenu(&menu);
+    let menu_bar = gtk::MenuBar::new();
+    menu_bar.show();
+    hbox.pack_start(&menu_bar, false, false, 0);
+    menu_bar.add(&menu_item);
+    menu.show_all();
+    menu_item.show_all();
+    hbox.show_all();
     let label = gtk::Label::new("GUI is under construction");
     vbox.pack_start(&label, false, false, 0);
     let paned_h = gtk::Paned::new(gtk::Orientation::Horizontal);
@@ -83,7 +104,6 @@ fn activate(app: &gtk::Application) {
     vbox.pack_start(&paned_v, true, true, 0);
     paned_h.set_position_from_recollections("paned_h:position", 200);
     paned_v.set_position_from_recollections("paned_v:position", 200);
-    let exec = exec::ExecConsole::new();
     paned_v.add2(&exec.pwo());
     window.add(&vbox);
     window.show_all();

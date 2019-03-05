@@ -1,6 +1,5 @@
 [workspace]
 
 members = [
-    "bab",
     "rgwsm_git",
 ]

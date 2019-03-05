@@ -30,8 +30,7 @@ use pw_gix::wrapper::*;
 
 use pw_pathux::str_path::*;
 
-use bab::enotify::EventNotifier;
-
+use crate::events::{self, EventNotifier};
 use crate::submodules;
 
 pub const SAV_NOT_IN_REPO: u64 = SAV_SELN_MASK + 1;
@@ -60,21 +59,37 @@ fn get_repo_workdir_for_path(dir_path: &str) -> Option<String> {
 }
 
 pub struct ExecConsole {
+    scrolled_window: gtk::ScrolledWindow,
     text_view: gtk::TextView,
+    pub chdir_menu_item: gtk::MenuItem,
     pub event_notifier: Rc<EventNotifier>,
     pub changed_condns_notifier: Rc<ChangedCondnsNotifier>,
 }
 
-impl_widget_wrapper!(text_view: gtk::TextView, ExecConsole);
+impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, ExecConsole);
 
 impl ExecConsole {
     pub fn new() -> Rc<Self> {
+        let adj: Option<&gtk::Adjustment> = None;
         let ec = Rc::new(Self {
+            scrolled_window: gtk::ScrolledWindow::new(adj, adj),
             text_view: gtk::TextView::new(),
-            event_notifier: Rc::new(EventNotifier::default()),
+            chdir_menu_item: gtk::MenuItem::new_with_label("Open"),
+            event_notifier: EventNotifier::new(),
             changed_condns_notifier: ChangedCondnsNotifier::new(),
         });
+        ec.scrolled_window.set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Always);
+        ec.scrolled_window.add(&ec.text_view);
         ec.append_bold("% ");
+        let ec_clone = Rc::clone(&ec);
+        ec.chdir_menu_item.connect_activate(
+            move |_| {
+                if let Some(path) = ec_clone.ask_dir_path(Some("Directory Path"), None, false) {
+                    ec_clone.chdir(&path.to_string_lossy().to_string());
+                }
+            }
+        );
+
         ec
     }
 
@@ -118,7 +133,7 @@ impl ExecConsole {
 
     fn append_stderr(&self, text: &str) {
         let markup = format!(
-            r###"<span foreground="AA0000" font_family="monospace">{}</span>"###,
+            r###"<span foreground="#AA0000" font_family="monospace">{}</span>"###,
             text
         );
         self.append_markup(&markup);
@@ -185,6 +200,7 @@ impl ExecConsole {
     }
 
     pub fn chdir(&self, new_dir_path: &str) {
+        // TODO: add notification of events to chdir()
         self.append_cmd(&format!("chdir {}", shlex::quote(new_dir_path)));
         let mut adj_dir_path: String = new_dir_path.to_string();
         let mut adjusted = false;
@@ -222,6 +238,7 @@ impl ExecConsole {
                     self.append_bold("% ");
                 }
                 self.check_repo_states();
+                self.event_notifier.notify_events(events::EV_CHANGE_DIR);
             }
         }
     }
