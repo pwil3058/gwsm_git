@@ -36,6 +36,7 @@ use gtk::prelude::MenuShellExt;
 
 use pw_gix::file_tree::FileTreeIfce;
 use pw_gix::gdkx::format_geometry;
+use pw_gix::gtkx::list_store::MapManagedUpdate;
 use pw_gix::gtkx::paned::RememberPosition;
 use pw_gix::recollections;
 use pw_gix::wrapper::*;
@@ -91,9 +92,15 @@ fn activate(app: &gtk::Application) {
     vbox.pack_start(&label, false, false, 0);
     let paned_h = gtk::Paned::new(gtk::Orientation::Horizontal);
     let ws_file_tree = ws_file_tree::GitWsFsTree::new(false);
+    let wsft = ws_file_tree.clone();
+    exec.event_notifier.add_notification_cb(
+        events::EV_CHANGE_DIR,
+        Box::new(move |_| { wsft.repopulate() })
+    );
     paned_h.add1(&ws_file_tree.pwo());
     let notebook = gtk::Notebook::new();
-    let branches_table = branches::BranchesNameTable::new();
+    let branches_table = branches::BranchesNameTable::new(Some(&exec.event_notifier));
+    let bt = branches_table.clone();
     notebook.add(&branches_table.pwo());
     notebook.set_tab_label_text(&branches_table.pwo(), "Branches");
     notebook.add(&gtk::Label::new("Tags will go here!!"));

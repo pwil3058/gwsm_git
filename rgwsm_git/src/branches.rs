@@ -29,6 +29,8 @@ use pw_gix::gtkx::list_store::{
 use pw_gix::timeout;
 use pw_gix::wrapper::*;
 
+use crate::events::{self, EventNotifier};
+
 #[derive(Debug, Default)]
 struct BranchesRawData {
     all_branches_text: String,
@@ -196,7 +198,7 @@ impl MapManagedUpdate<BranchesNameListStore, BranchesRawData, gtk::ListStore>
 }
 
 impl BranchesNameTable {
-    pub fn new() -> Rc<BranchesNameTable> {
+    pub fn new(event_notifier: Option<&Rc<EventNotifier>>) -> Rc<BranchesNameTable> {
         let list_store = RefCell::new(BranchesNameListStore::new());
 
         let view = gtk::TreeView::new_with_model(&list_store.borrow().get_list_store());
@@ -266,6 +268,13 @@ impl BranchesNameTable {
             .register_callback(Box::new(move || table_clone.auto_update()));
         let table_clone = Rc::clone(&table);
         table.view.connect_map(move |_| table_clone.on_map_action());
+        if let Some(event_notifier) = event_notifier {
+            let table_clone = Rc::clone(&table);
+            event_notifier.add_notification_cb(
+                events::EV_CHANGE_DIR,
+                Box::new(move |_| { table_clone.repopulate() })
+            );
+        }
 
         table
     }
