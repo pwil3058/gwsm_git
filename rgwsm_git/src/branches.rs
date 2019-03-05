@@ -30,6 +30,7 @@ use pw_gix::timeout;
 use pw_gix::wrapper::*;
 
 use crate::events::{self, EventNotifier};
+use crate::exec::ExecConsole;
 
 #[derive(Debug, Default)]
 struct BranchesRawData {
@@ -172,6 +173,7 @@ pub struct BranchesNameTable {
     view: gtk::TreeView,
     list_store: RefCell<BranchesNameListStore>,
     required_map_action: Cell<RequiredMapAction>,
+    exec_console: Rc<ExecConsole>,
     controlled_timeout_cycle: Rc<timeout::ControlledTimeoutCycle>,
 }
 
@@ -198,7 +200,7 @@ impl MapManagedUpdate<BranchesNameListStore, BranchesRawData, gtk::ListStore>
 }
 
 impl BranchesNameTable {
-    pub fn new(event_notifier: Option<&Rc<EventNotifier>>) -> Rc<BranchesNameTable> {
+    pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<BranchesNameTable> {
         let list_store = RefCell::new(BranchesNameListStore::new());
 
         let view = gtk::TreeView::new_with_model(&list_store.borrow().get_list_store());
@@ -260,6 +262,7 @@ impl BranchesNameTable {
             view,
             list_store,
             required_map_action,
+            exec_console: Rc::clone(exec_console),
             controlled_timeout_cycle,
         });
         let table_clone = Rc::clone(&table);
@@ -268,13 +271,11 @@ impl BranchesNameTable {
             .register_callback(Box::new(move || table_clone.auto_update()));
         let table_clone = Rc::clone(&table);
         table.view.connect_map(move |_| table_clone.on_map_action());
-        if let Some(event_notifier) = event_notifier {
-            let table_clone = Rc::clone(&table);
-            event_notifier.add_notification_cb(
-                events::EV_CHANGE_DIR,
-                Box::new(move |_| { table_clone.repopulate() })
-            );
-        }
+        let table_clone = Rc::clone(&table);
+        table.exec_console.event_notifier.add_notification_cb(
+            events::EV_CHANGE_DIR,
+            Box::new(move |_| { table_clone.repopulate() })
+        );
 
         table
     }

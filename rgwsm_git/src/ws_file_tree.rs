@@ -24,6 +24,7 @@ use pw_gix::timeout;
 use pw_gix::wrapper::*;
 
 use crate::events::{self, EventNotifier};
+use crate::exec;
 use crate::fs_db::*;
 
 pub struct GenWsFsTree<FSDB, FSOI>
@@ -39,7 +40,7 @@ where
     show_hidden: gtk::CheckButton,
     hide_clean: gtk::CheckButton,
     controlled_timeout_cycle: Rc<timeout::ControlledTimeoutCycle>,
-    event_notifier: Rc<EventNotifier>,
+    exec_console: Rc<exec::ExecConsole>,
     phantom: PhantomData<FSOI>,
 }
 
@@ -87,7 +88,7 @@ where
     FSOI: FsObjectIfce + 'static,
 {
     pub fn new(
-        event_notifier: Option<&Rc<EventNotifier>>,
+        exec_console: &Rc<exec::ExecConsole>,
         auto_expand: bool,
     ) -> Rc<Self> {
         let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
@@ -114,11 +115,6 @@ where
         for col in FSOI::tree_view_columns() {
             view.append_column(&col);
         }
-        let event_notifier = if let Some(event_notifier) = event_notifier {
-            Rc::clone(event_notifier)
-        } else {
-            EventNotifier::new()
-        };
         let owft = Rc::new(Self {
             v_box: v_box,
             view: view,
@@ -127,7 +123,7 @@ where
             auto_expand: auto_expand,
             show_hidden: show_hidden,
             hide_clean: hide_clean,
-            event_notifier: event_notifier,
+            exec_console: Rc::clone(&exec_console),
             controlled_timeout_cycle: timeout::ControlledTimeoutCycle::new("Auto Update", true, 10),
             phantom: PhantomData,
         });
@@ -152,7 +148,7 @@ where
                 owft_clone.update(false);
             }));
         let owft_clone = Rc::clone(&owft);
-        owft.event_notifier.add_notification_cb(
+        owft.exec_console.event_notifier.add_notification_cb(
             events::EV_CHANGE_DIR,
             Box::new(move |_| { owft_clone.repopulate() })
         );
