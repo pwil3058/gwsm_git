@@ -25,6 +25,7 @@ use git2;
 use shlex;
 
 use pw_gix::sav_state::*;
+use pw_gix::timeout;
 use pw_gix::wrapper::*;
 
 use pw_pathux::str_path::*;
@@ -38,8 +39,12 @@ pub const SAV_NOT_IN_SUBMODULE: u64 = SAV_NOT_IN_REPO << 2;
 pub const SAV_IN_SUBMODULE: u64 = SAV_NOT_IN_REPO << 3;
 pub const SAV_NOT_HAS_SUBMODULES: u64 = SAV_NOT_IN_REPO << 4;
 pub const SAV_HAS_SUBMODULES: u64 = SAV_NOT_IN_REPO << 5;
-pub const SAV_REPO_STATE_MASK: u64 = SAV_NOT_IN_REPO | SAV_IN_REPO |
-    SAV_NOT_IN_SUBMODULE | SAV_IN_SUBMODULE | SAV_NOT_HAS_SUBMODULES | SAV_HAS_SUBMODULES;
+pub const SAV_REPO_STATE_MASK: u64 = SAV_NOT_IN_REPO
+    | SAV_IN_REPO
+    | SAV_NOT_IN_SUBMODULE
+    | SAV_IN_SUBMODULE
+    | SAV_NOT_HAS_SUBMODULES
+    | SAV_HAS_SUBMODULES;
 
 fn is_repo_workdir(dir_path: &str) -> bool {
     git2::Repository::open(&dir_path.path_absolute().unwrap()).is_ok()
@@ -63,6 +68,7 @@ pub struct ExecConsole {
     pub chdir_menu_item: gtk::MenuItem,
     pub event_notifier: Rc<EventNotifier>,
     pub changed_condns_notifier: Rc<ChangedCondnsNotifier>,
+    auto_update: Rc<timeout::ControlledTimeoutCycle>,
 }
 
 impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, ExecConsole);
@@ -76,18 +82,24 @@ impl ExecConsole {
             chdir_menu_item: gtk::MenuItem::new_with_label("Open"),
             event_notifier: EventNotifier::new(),
             changed_condns_notifier: ChangedCondnsNotifier::new(),
+            auto_update: timeout::ControlledTimeoutCycle::new("Auto Update", true, 10),
         });
-        ec.scrolled_window.set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Always);
+        ec.scrolled_window
+            .set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Always);
         ec.scrolled_window.add(&ec.text_view);
         ec.append_bold("% ");
         let ec_clone = Rc::clone(&ec);
-        ec.chdir_menu_item.connect_activate(
-            move |_| {
-                if let Some(path) = ec_clone.ask_dir_path(Some("Directory Path"), None, false) {
-                    ec_clone.chdir(&path.to_string_lossy().to_string());
-                }
+        ec.auto_update.register_callback(Box::new(move || {
+            ec_clone
+                .event_notifier
+                .notify_events(events::EV_AUTO_UPDATE);
+        }));
+        let ec_clone = Rc::clone(&ec);
+        ec.chdir_menu_item.connect_activate(move |_| {
+            if let Some(path) = ec_clone.ask_dir_path(Some("Directory Path"), None, false) {
+                ec_clone.chdir(&path.to_string_lossy().to_string());
             }
-        );
+        });
 
         ec
     }
@@ -195,7 +207,8 @@ impl ExecConsole {
             condns: condns,
             mask: SAV_REPO_STATE_MASK,
         };
-        self.changed_condns_notifier.notify_changed_condns(masked_condns);
+        self.changed_condns_notifier
+            .notify_changed_condns(masked_condns);
     }
 
     pub fn chdir(&self, new_dir_path: &str) {
