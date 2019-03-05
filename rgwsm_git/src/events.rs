@@ -15,8 +15,8 @@
 use std::cell::{Cell, RefCell};
 use std::rc::Rc;
 
-pub const EV_AUTO_UPDATE: u64 = 2 ^ 0;
-pub const EV_CHANGE_DIR: u64 = 2 ^ 1;
+pub const EV_AUTO_UPDATE: u64 = 1 << 0;
+pub const EV_CHANGE_DIR: u64 = 1 << 1;
 
 pub struct EventNotifier {
     callbacks: RefCell<Vec<(u64, u64, Box<Fn(u64)>)>>,
