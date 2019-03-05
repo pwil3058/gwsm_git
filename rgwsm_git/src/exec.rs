@@ -32,9 +32,16 @@ use pw_pathux::str_path::*;
 
 use bab::enotify::EventNotifier;
 
+use crate::submodules;
+
 pub const SAV_NOT_IN_REPO: u64 = SAV_SELN_MASK + 1;
-pub const SAV_IN_REPO: u64 = SAV_SELN_MASK << 1;
-pub const SAV_REPO_MASK: u64 = SAV_NOT_IN_REPO | SAV_IN_REPO;
+pub const SAV_IN_REPO: u64 = SAV_NOT_IN_REPO << 1;
+pub const SAV_NOT_IN_SUBMODULE: u64 = SAV_NOT_IN_REPO << 2;
+pub const SAV_IN_SUBMODULE: u64 = SAV_NOT_IN_REPO << 3;
+pub const SAV_NOT_HAS_SUBMODULES: u64 = SAV_NOT_IN_REPO << 4;
+pub const SAV_HAS_SUBMODULES: u64 = SAV_NOT_IN_REPO << 5;
+pub const SAV_REPO_STATE_MASK: u64 = SAV_NOT_IN_REPO | SAV_IN_REPO |
+    SAV_NOT_IN_SUBMODULE | SAV_IN_SUBMODULE | SAV_NOT_HAS_SUBMODULES | SAV_HAS_SUBMODULES;
 
 fn is_repo_workdir(dir_path: &str) -> bool {
     git2::Repository::open(&dir_path.path_absolute().unwrap()).is_ok()
@@ -153,6 +160,30 @@ impl ExecConsole {
         }
     }
 
+    pub fn check_repo_states(&self) {
+        let mut condns: u64 = 0;
+        if is_repo_workdir(".") {
+            condns = SAV_IN_REPO;
+            if submodules::is_git_submodule(None) {
+                condns |= SAV_IN_SUBMODULE;
+            } else {
+                condns |= SAV_NOT_IN_SUBMODULE;
+            }
+            if submodules::submodule_count() > 0 {
+                condns |= SAV_HAS_SUBMODULES;
+            } else {
+                condns |= SAV_NOT_HAS_SUBMODULES;
+            }
+        } else {
+            condns = SAV_NOT_IN_REPO | SAV_NOT_IN_SUBMODULE | SAV_NOT_HAS_SUBMODULES;
+        }
+        let masked_condns = MaskedCondns {
+            condns: condns,
+            mask: SAV_REPO_STATE_MASK,
+        };
+        self.changed_condns_notifier.notify_changed_condns(masked_condns);
+    }
+
     pub fn chdir(&self, new_dir_path: &str) {
         self.append_cmd(&format!("chdir {}", shlex::quote(new_dir_path)));
         let mut adj_dir_path: String = new_dir_path.to_string();
@@ -175,12 +206,6 @@ impl ExecConsole {
             }
             Ok(_) => {
                 if in_repo {
-                    let masked_condns = MaskedCondns {
-                        condns: SAV_IN_REPO,
-                        mask: SAV_REPO_MASK,
-                    };
-                    self.changed_condns_notifier
-                        .notify_changed_condns(masked_condns);
                     if adjusted {
                         let string = format!(
                             "Now in valid repo directory: {}.\n",
@@ -194,14 +219,9 @@ impl ExecConsole {
                         self.append_bold("% ");
                     }
                 } else {
-                    let masked_condns = MaskedCondns {
-                        condns: SAV_NOT_IN_REPO,
-                        mask: SAV_REPO_MASK,
-                    };
-                    self.changed_condns_notifier
-                        .notify_changed_condns(masked_condns);
                     self.append_bold("% ");
                 }
+                self.check_repo_states();
             }
         }
     }

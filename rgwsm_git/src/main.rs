@@ -47,6 +47,7 @@ mod config;
 mod exec;
 mod fs_db;
 mod icon;
+mod submodules;
 mod ws_file_tree;
 
 fn activate(app: &gtk::Application) {
