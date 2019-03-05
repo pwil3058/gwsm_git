@@ -23,6 +23,7 @@ use pw_gix::fs_db::*;
 use pw_gix::timeout;
 use pw_gix::wrapper::*;
 
+use crate::events::{self, EventNotifier};
 use crate::fs_db::*;
 
 pub struct GenWsFsTree<FSDB, FSOI>
@@ -38,6 +39,7 @@ where
     show_hidden: gtk::CheckButton,
     hide_clean: gtk::CheckButton,
     controlled_timeout_cycle: Rc<timeout::ControlledTimeoutCycle>,
+    event_notifier: Rc<EventNotifier>,
     phantom: PhantomData<FSOI>,
 }
 
@@ -54,7 +56,40 @@ where
     FSDB: FsDbIfce<FSOI> + 'static,
     FSOI: FsObjectIfce + 'static,
 {
-    fn new(auto_expand: bool) -> Rc<Self> {
+    fn view(&self) -> &gtk::TreeView {
+        &self.view
+    }
+
+    fn store(&self) -> &gtk::TreeStore {
+        &self.store
+    }
+
+    fn fs_db(&self) -> &FSDB {
+        &self.fs_db
+    }
+
+    fn auto_expand(&self) -> bool {
+        self.auto_expand
+    }
+
+    fn show_hidden(&self) -> bool {
+        self.show_hidden.get_active()
+    }
+
+    fn hide_clean(&self) -> bool {
+        self.hide_clean.get_active()
+    }
+}
+
+impl<FSDB, FSOI> GenWsFsTree<FSDB, FSOI>
+where
+    FSDB: FsDbIfce<FSOI> + 'static,
+    FSOI: FsObjectIfce + 'static,
+{
+    pub fn new(
+        event_notifier: Option<&Rc<EventNotifier>>,
+        auto_expand: bool,
+    ) -> Rc<Self> {
         let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         let view = gtk::TreeView::new();
         let store = gtk::TreeStore::new(&FSOI::tree_store_spec());
@@ -79,6 +114,11 @@ where
         for col in FSOI::tree_view_columns() {
             view.append_column(&col);
         }
+        let event_notifier = if let Some(event_notifier) = event_notifier {
+            Rc::clone(event_notifier)
+        } else {
+            EventNotifier::new()
+        };
         let owft = Rc::new(Self {
             v_box: v_box,
             view: view,
@@ -87,6 +127,7 @@ where
             auto_expand: auto_expand,
             show_hidden: show_hidden,
             hide_clean: hide_clean,
+            event_notifier: event_notifier,
             controlled_timeout_cycle: timeout::ControlledTimeoutCycle::new("Auto Update", true, 10),
             phantom: PhantomData,
         });
@@ -110,33 +151,14 @@ where
             .register_callback(Box::new(move || {
                 owft_clone.update(false);
             }));
+        let owft_clone = Rc::clone(&owft);
+        owft.event_notifier.add_notification_cb(
+            events::EV_CHANGE_DIR,
+            Box::new(move |_| { owft_clone.repopulate() })
+        );
         owft.repopulate();
         owft.view.show_all();
         scrolled_window.show_all();
         owft
-    }
-
-    fn view(&self) -> &gtk::TreeView {
-        &self.view
-    }
-
-    fn store(&self) -> &gtk::TreeStore {
-        &self.store
-    }
-
-    fn fs_db(&self) -> &FSDB {
-        &self.fs_db
-    }
-
-    fn auto_expand(&self) -> bool {
-        self.auto_expand
-    }
-
-    fn show_hidden(&self) -> bool {
-        self.show_hidden.get_active()
-    }
-
-    fn hide_clean(&self) -> bool {
-        self.hide_clean.get_active()
     }
 }

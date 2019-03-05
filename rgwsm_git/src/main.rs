@@ -91,12 +91,7 @@ fn activate(app: &gtk::Application) {
     let label = gtk::Label::new("GUI is under construction");
     vbox.pack_start(&label, false, false, 0);
     let paned_h = gtk::Paned::new(gtk::Orientation::Horizontal);
-    let ws_file_tree = ws_file_tree::GitWsFsTree::new(false);
-    let wsft = ws_file_tree.clone();
-    exec.event_notifier.add_notification_cb(
-        events::EV_CHANGE_DIR,
-        Box::new(move |_| { wsft.repopulate() })
-    );
+    let ws_file_tree = ws_file_tree::GitWsFsTree::new(Some(&exec.event_notifier), false);
     paned_h.add1(&ws_file_tree.pwo());
     let notebook = gtk::Notebook::new();
     let branches_table = branches::BranchesNameTable::new(Some(&exec.event_notifier));
