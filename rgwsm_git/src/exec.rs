@@ -15,7 +15,6 @@
 use std::env;
 use std::process::Command;
 use std::rc::Rc;
-use std::string::FromUtf8Error;
 use std::time::SystemTime;
 
 use gtk;
@@ -139,7 +138,7 @@ impl ExecConsole {
         self.append_markup(&markup);
     }
 
-    fn append_stdin(&self, text: &str) {
+    fn _append_stdin(&self, text: &str) {
         let markup = format!(
             r###"<span foreground="00AA00" font_family="monospace">{}</span>"###,
             text
@@ -176,7 +175,7 @@ impl ExecConsole {
     }
 
     pub fn check_repo_states(&self) {
-        let mut condns: u64 = 0;
+        let mut condns: u64;
         if is_repo_workdir(".") {
             condns = SAV_IN_REPO;
             if submodules::is_git_submodule(None) {

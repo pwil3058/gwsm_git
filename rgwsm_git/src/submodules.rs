@@ -43,7 +43,7 @@ pub fn submodule_count() -> usize {
     }
 }
 
-fn get_submodule_paths_rawdata() -> (String, Vec<u8>) {
+fn _get_submodule_paths_rawdata() -> (String, Vec<u8>) {
     let mut hasher = Hasher::new(Algorithm::SHA256);
     let text: String;
     let output = Command::new("git")

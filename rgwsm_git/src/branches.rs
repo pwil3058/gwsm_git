@@ -29,7 +29,7 @@ use pw_gix::gtkx::list_store::{
 use pw_gix::timeout;
 use pw_gix::wrapper::*;
 
-use crate::events::{self, EventNotifier};
+use crate::events;
 use crate::exec::ExecConsole;
 
 #[derive(Debug, Default)]

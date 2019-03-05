@@ -34,9 +34,7 @@ use gio::ApplicationExtManual;
 use gtk::prelude::*;
 use gtk::prelude::MenuShellExt;
 
-use pw_gix::file_tree::FileTreeIfce;
 use pw_gix::gdkx::format_geometry;
-use pw_gix::gtkx::list_store::MapManagedUpdate;
 use pw_gix::gtkx::paned::RememberPosition;
 use pw_gix::recollections;
 use pw_gix::wrapper::*;
@@ -95,7 +93,6 @@ fn activate(app: &gtk::Application) {
     paned_h.add1(&ws_file_tree.pwo());
     let notebook = gtk::Notebook::new();
     let branches_table = branches::BranchesNameTable::new(&exec);
-    let bt = branches_table.clone();
     notebook.add(&branches_table.pwo());
     notebook.set_tab_label_text(&branches_table.pwo(), "Branches");
     notebook.add(&gtk::Label::new("Tags will go here!!"));

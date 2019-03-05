@@ -23,7 +23,7 @@ use pw_gix::fs_db::*;
 use pw_gix::timeout;
 use pw_gix::wrapper::*;
 
-use crate::events::{self, EventNotifier};
+use crate::events;
 use crate::exec;
 use crate::fs_db::*;
 
