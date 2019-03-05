@@ -37,7 +37,10 @@ pub fn submodule_count() -> usize {
         .output()
         .expect("submodule_count() failed");
     if output.status.success() {
-        String::from_utf8_lossy(&output.stdout).to_string().lines().count()
+        String::from_utf8_lossy(&output.stdout)
+            .to_string()
+            .lines()
+            .count()
     } else {
         0
     }
@@ -53,9 +56,7 @@ fn _get_submodule_paths_rawdata() -> (String, Vec<u8>) {
         .output()
         .expect("getting all branches text failed");
     if output.status.success() {
-        hasher
-            .write_all(&output.stdout)
-            .expect("hasher blew up!!!");
+        hasher.write_all(&output.stdout).expect("hasher blew up!!!");
         text = String::from_utf8_lossy(&output.stdout).to_string();
     } else {
         text = "".to_string();

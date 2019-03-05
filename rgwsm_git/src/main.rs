@@ -31,8 +31,8 @@ extern crate pw_pathux;
 
 use gio::ApplicationExt;
 use gio::ApplicationExtManual;
-use gtk::prelude::*;
 use gtk::prelude::MenuShellExt;
+use gtk::prelude::*;
 
 use pw_gix::gdkx::format_geometry;
 use pw_gix::gtkx::paned::RememberPosition;
@@ -43,8 +43,8 @@ use pw_pathux::str_path::str_path_current_dir_or_panic;
 
 mod branches;
 mod config;
-mod exec;
 mod events;
+mod exec;
 mod fs_db;
 mod icon;
 mod submodules;
@@ -69,7 +69,7 @@ fn activate(app: &gtk::Application) {
     let w = window.clone();
     exec.event_notifier.add_notification_cb(
         events::EV_CHANGE_DIR,
-        Box::new(move |_| {w.set_title(&format!("gwsm_git: {}", str_path_current_dir_or_panic()))})
+        Box::new(move |_| w.set_title(&format!("gwsm_git: {}", str_path_current_dir_or_panic()))),
     );
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
     let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);

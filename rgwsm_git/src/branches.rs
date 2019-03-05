@@ -274,7 +274,7 @@ impl BranchesNameTable {
         let table_clone = Rc::clone(&table);
         table.exec_console.event_notifier.add_notification_cb(
             events::EV_CHANGE_DIR,
-            Box::new(move |_| { table_clone.repopulate() })
+            Box::new(move |_| table_clone.repopulate()),
         );
 
         table

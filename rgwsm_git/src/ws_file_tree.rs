@@ -87,10 +87,7 @@ where
     FSDB: FsDbIfce<FSOI> + 'static,
     FSOI: FsObjectIfce + 'static,
 {
-    pub fn new(
-        exec_console: &Rc<exec::ExecConsole>,
-        auto_expand: bool,
-    ) -> Rc<Self> {
+    pub fn new(exec_console: &Rc<exec::ExecConsole>, auto_expand: bool) -> Rc<Self> {
         let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         let view = gtk::TreeView::new();
         let store = gtk::TreeStore::new(&FSOI::tree_store_spec());
@@ -150,7 +147,7 @@ where
         let owft_clone = Rc::clone(&owft);
         owft.exec_console.event_notifier.add_notification_cb(
             events::EV_CHANGE_DIR,
-            Box::new(move |_| { owft_clone.repopulate() })
+            Box::new(move |_| owft_clone.repopulate()),
         );
         owft.repopulate();
         owft.view.show_all();
