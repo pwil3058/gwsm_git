@@ -26,7 +26,6 @@ use regex::Regex;
 use pw_gix::gtkx::list_store::{
     BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
 };
-use pw_gix::timeout;
 use pw_gix::wrapper::*;
 
 use crate::events;
@@ -174,7 +173,6 @@ pub struct BranchesNameTable {
     list_store: RefCell<BranchesNameListStore>,
     required_map_action: Cell<RequiredMapAction>,
     exec_console: Rc<ExecConsole>,
-    controlled_timeout_cycle: Rc<timeout::ControlledTimeoutCycle>,
 }
 
 impl_widget_wrapper!(view: gtk::TreeView, BranchesNameTable);
@@ -253,9 +251,6 @@ impl BranchesNameTable {
 
         list_store.borrow().repopulate();
 
-        let controlled_timeout_cycle =
-            timeout::ControlledTimeoutCycle::new("Auto Update", true, 10);
-
         let required_map_action = Cell::new(RequiredMapAction::Nothing);
 
         let table = Rc::new(BranchesNameTable {
@@ -263,12 +258,12 @@ impl BranchesNameTable {
             list_store,
             required_map_action,
             exec_console: Rc::clone(exec_console),
-            controlled_timeout_cycle,
         });
         let table_clone = Rc::clone(&table);
-        table
-            .controlled_timeout_cycle
-            .register_callback(Box::new(move || table_clone.auto_update()));
+        table.exec_console.event_notifier.add_notification_cb(
+            events::EV_AUTO_UPDATE,
+            Box::new(move |_| table_clone.auto_update()),
+        );
         let table_clone = Rc::clone(&table);
         table.view.connect_map(move |_| table_clone.on_map_action());
         let table_clone = Rc::clone(&table);

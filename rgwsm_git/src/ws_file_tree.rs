@@ -20,7 +20,6 @@ use gtk::prelude::*;
 
 use pw_gix::file_tree::*;
 use pw_gix::fs_db::*;
-use pw_gix::timeout;
 use pw_gix::wrapper::*;
 
 use crate::events;
@@ -39,7 +38,6 @@ where
     auto_expand: bool,
     show_hidden: gtk::CheckButton,
     hide_clean: gtk::CheckButton,
-    controlled_timeout_cycle: Rc<timeout::ControlledTimeoutCycle>,
     exec_console: Rc<exec::ExecConsole>,
     phantom: PhantomData<FSOI>,
 }
@@ -121,7 +119,6 @@ where
             show_hidden: show_hidden,
             hide_clean: hide_clean,
             exec_console: Rc::clone(&exec_console),
-            controlled_timeout_cycle: timeout::ControlledTimeoutCycle::new("Auto Update", true, 10),
             phantom: PhantomData,
         });
         let owft_clone = Rc::clone(&owft);
@@ -140,10 +137,12 @@ where
             owft_clone.update_dir(".", None);
         });
         let owft_clone = Rc::clone(&owft);
-        owft.controlled_timeout_cycle
-            .register_callback(Box::new(move || {
+        owft.exec_console.event_notifier.add_notification_cb(
+            events::EV_AUTO_UPDATE,
+            Box::new(move |_| {
                 owft_clone.update(false);
-            }));
+            }),
+        );
         let owft_clone = Rc::clone(&owft);
         owft.exec_console.event_notifier.add_notification_cb(
             events::EV_CHANGE_DIR,
