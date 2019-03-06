@@ -18,6 +18,7 @@ use std::rc::Rc;
 pub const EV_AUTO_UPDATE: u64 = 1 << 0;
 pub const EV_CHANGE_DIR: u64 = 1 << 1;
 pub const EV_CHECKOUT: u64 = 1 << 2;
+pub const EV_FILES_CHANGE: u64 = 1 << 3;
 
 pub struct EventNotifier {
     callbacks: RefCell<Vec<(u64, u64, Box<Fn(u64)>)>>,

@@ -117,15 +117,15 @@ fn get_deco(status: &str) -> &(i32, &'static str) {
         .unwrap_or(&(PANGO_STYLE_NORMAL, "black"))
 }
 
-const NAME: i32 = 0;
-const PATH: i32 = 1;
-const STATUS: i32 = 2;
-const RELATED_FILE: i32 = 3;
-const RELATION: i32 = 4;
-const ICON: i32 = 5;
-const FOREGROUND: i32 = 6;
-const STYLE: i32 = 7;
-const IS_DIR: i32 = 8;
+pub const NAME: i32 = 0;
+pub const PATH: i32 = 1;
+pub const STATUS: i32 = 2;
+pub const RELATED_FILE: i32 = 3;
+pub const RELATION: i32 = 4;
+pub const ICON: i32 = 5;
+pub const FOREGROUND: i32 = 6;
+pub const STYLE: i32 = 7;
+pub const IS_DIR: i32 = 8;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct RelatedFileData {

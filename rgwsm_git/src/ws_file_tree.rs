@@ -12,19 +12,24 @@
 //See the License for the specific language governing permissions and
 //limitations under the License.
 
+use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
 use gtk;
 use gtk::prelude::*;
 
+use shlex;
+
 use pw_gix::file_tree::*;
 use pw_gix::fs_db::*;
+use pw_gix::gtkx::menu::ManagedMenu;
+use pw_gix::sav_state::*;
 use pw_gix::wrapper::*;
 
 use crate::events;
 use crate::exec;
-use crate::fs_db::*;
+use crate::fs_db::{self, GitFsDb, ScmFsoData};
 
 pub struct GenWsFsTree<FSDB, FSOI>
 where
@@ -39,6 +44,8 @@ where
     show_hidden: gtk::CheckButton,
     hide_clean: gtk::CheckButton,
     exec_console: Rc<exec::ExecConsole>,
+    popup_menu: ManagedMenu,
+    hovered_fso_path: RefCell<Option<String>>,
     phantom: PhantomData<FSOI>,
 }
 
@@ -107,9 +114,18 @@ where
             v_box.pack_start(&h_box, false, false, 0);
         }
         view.set_headers_visible(false);
+        view.get_selection().set_mode(gtk::SelectionMode::Multiple);
         for col in FSOI::tree_view_columns() {
             view.append_column(&col);
         }
+
+        let popup_menu = ManagedMenu::new(
+            WidgetStatesControlled::Sensitivity,
+            Some(&view.get_selection()),
+            Some(&exec_console.changed_condns_notifier),
+            &vec![],
+        );
+
         let owft = Rc::new(Self {
             v_box: v_box,
             view: view,
@@ -119,6 +135,8 @@ where
             show_hidden: show_hidden,
             hide_clean: hide_clean,
             exec_console: Rc::clone(&exec_console),
+            popup_menu: popup_menu,
+            hovered_fso_path: RefCell::new(None),
             phantom: PhantomData,
         });
         let owft_clone = Rc::clone(&owft);
@@ -138,7 +156,7 @@ where
         });
         let owft_clone = Rc::clone(&owft);
         owft.exec_console.event_notifier.add_notification_cb(
-            events::EV_AUTO_UPDATE | events::EV_CHECKOUT,
+            events::EV_AUTO_UPDATE | events::EV_CHECKOUT | events::EV_FILES_CHANGE,
             Box::new(move |_| {
                 owft_clone.update(false);
             }),
@@ -148,9 +166,70 @@ where
             events::EV_CHANGE_DIR,
             Box::new(move |_| owft_clone.repopulate()),
         );
+        let owft_clone = Rc::clone(&owft);
+        owft
+            .popup_menu
+            .append_item(
+                "add",
+                "Add",
+                "Add to the selected/indicated file(s) to the index",
+                exec::SAV_IN_REPO + SAV_SELN_MADE_OR_HOVER_OK,
+            )
+            .connect_activate(move |_| {
+                let selection = owft_clone.view.get_selection();
+                let (tree_paths, store) = selection.get_selected_rows();
+                let fso_paths = if tree_paths.len() > 0 {
+                    let mut count = 0;
+                    let mut fso_paths = String::new();
+                    for tree_path in tree_paths.iter() {
+                        if let Some(iter) = store.get_iter(&tree_path) {
+                            if let Some(fso_path) = store.get_value(&iter, fs_db::PATH).get::<String>() {
+                                if count > 0 {
+                                    fso_paths.push_str(" ");
+                                }
+                                count += 1;
+                                fso_paths.push_str(&shlex::quote(&fso_path));
+                            }
+                        }
+                    }
+                    if count > 0 {
+                        Some(fso_paths)
+                    } else {
+                        None
+                    }
+                } else {
+                    owft_clone.hovered_fso_path.borrow().clone()
+                };
+                if let Some(fso_paths) = fso_paths {
+                    let cmd = format!("git add {}", fso_paths);
+                    owft_clone.exec_console.exec_cmd(&cmd, events::EV_FILES_CHANGE);
+                }
+            });
+        let owft_clone = owft.clone();
+        owft.view.connect_button_press_event(move |view, event| {
+            if event.get_button() == 3 {
+                let fso_path = get_row_item_for_event!(view, event, String, fs_db::PATH);
+                owft_clone.set_hovered_fso_path(fso_path);
+                owft_clone.popup_menu.popup_at_event(event);
+                return Inhibit(true);
+            } else if event.get_button() == 2 {
+                owft_clone.view.get_selection().unselect_all();
+                return Inhibit(true);
+            }
+            Inhibit(false)
+        });
         owft.repopulate();
         owft.view.show_all();
         scrolled_window.show_all();
         owft
+    }
+
+    fn set_hovered_fso_path(&self, path: Option<String>) {
+        let condns = self
+            .view
+            .get_selection()
+            .get_masked_conditions_with_hover_ok(path.is_some());
+        self.popup_menu.update_condns(condns);
+        *self.hovered_fso_path.borrow_mut() = path;
     }
 }
