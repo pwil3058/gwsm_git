@@ -84,6 +84,7 @@ impl ExecConsole {
             changed_condns_notifier: ChangedCondnsNotifier::new(0),
             auto_update: timeout::ControlledTimeoutCycle::new("Auto Update", true, 10),
         });
+        ec.text_view.set_editable(false);
         ec.scrolled_window
             .set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Always);
         ec.scrolled_window.add(&ec.text_view);
