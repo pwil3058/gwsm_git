@@ -27,7 +27,7 @@ use pw_gix::gtkx::list_store::{
     BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
 };
 use pw_gix::gtkx::menu::ManagedMenu;
-use pw_gix::sav_state::WidgetStatesControlled;
+use pw_gix::sav_state::*;
 use pw_gix::wrapper::*;
 
 use crate::events;
@@ -291,7 +291,7 @@ impl BranchesNameTable {
                 "checkout",
                 "Checkout",
                 "Switch to the selected/indicated branch",
-                exec::SAV_IN_REPO,
+                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
                 let selection = table_clone.view.get_selection();
@@ -305,33 +305,38 @@ impl BranchesNameTable {
                     );
                 }
             });
-        let table_c = table.clone();
+        let table_clone = table.clone();
         table.view.connect_button_press_event(move |view, event| {
             if event.get_button() == 3 {
                 let posn = event.get_position();
                 let x = posn.0 as i32;
                 let y = posn.1 as i32;
-                // TODO: add a SAV_STATE for hovered data being available
-                *table_c.hovered_branch.borrow_mut() = None;
+                table_clone.set_hovered_branch(None);
                 if let Some(location) = view.get_path_at_pos(x, y) {
                     if let Some(path) = location.0 {
                         if let Some(store) = view.get_model() {
                             if let Some(iter) = store.get_iter(&path) {
                                 let branch = store.get_value(&iter, 0).get::<String>().unwrap();
-                                *table_c.hovered_branch.borrow_mut() = Some(branch);
+                                table_clone.set_hovered_branch(Some(branch));
                             }
                         }
                     }
                 }
-                table_c.popup_menu.popup_at_event(event);
+                table_clone.popup_menu.popup_at_event(event);
                 return Inhibit(true);
             } else if event.get_button() == 2 {
-                table_c.view.get_selection().unselect_all();
+                table_clone.view.get_selection().unselect_all();
                 return Inhibit(true);
             }
             Inhibit(false)
         });
 
         table
+    }
+
+    fn set_hovered_branch(&self, branch: Option<String>) {
+        let condns = self.view.get_selection().get_masked_conditions_with_hover_ok(branch.is_some());
+        self.popup_menu.update_condns(condns);
+        *self.hovered_branch.borrow_mut() = branch;
     }
 }
