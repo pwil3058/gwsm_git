@@ -26,10 +26,12 @@ use regex::Regex;
 use pw_gix::gtkx::list_store::{
     BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
 };
+use pw_gix::gtkx::menu::ManagedMenu;
+use pw_gix::sav_state::WidgetStatesControlled;
 use pw_gix::wrapper::*;
 
 use crate::events;
-use crate::exec::ExecConsole;
+use crate::exec::{self, ExecConsole};
 
 #[derive(Debug, Default)]
 struct BranchesRawData {
@@ -133,7 +135,7 @@ impl RowBuffer<BranchesRawData> for BranchesRowBuffer {
         let mut core = self.row_buffer_core.borrow_mut();
         let mut merged_set: HashSet<&str> = HashSet::new();
         for line in core.raw_data.merged_branches_text.lines() {
-            merged_set.insert(line[2..].trim_right());
+            merged_set.insert(line[2..].trim_end());
         }
         let mut rows: Vec<Row> = Vec::new();
         for line in core.raw_data.all_branches_text.lines() {
@@ -173,6 +175,8 @@ pub struct BranchesNameTable {
     list_store: RefCell<BranchesNameListStore>,
     required_map_action: Cell<RequiredMapAction>,
     exec_console: Rc<ExecConsole>,
+    popup_menu: ManagedMenu,
+    hovered_branch: RefCell<Option<String>>,
 }
 
 impl_widget_wrapper!(view: gtk::TreeView, BranchesNameTable);
@@ -204,7 +208,7 @@ impl BranchesNameTable {
         let view = gtk::TreeView::new_with_model(&list_store.borrow().get_list_store());
         view.set_headers_visible(true);
 
-        view.get_selection().set_mode(gtk::SelectionMode::Multiple);
+        view.get_selection().set_mode(gtk::SelectionMode::Single);
 
         let col = gtk::TreeViewColumn::new();
         col.set_title("Name");
@@ -253,11 +257,20 @@ impl BranchesNameTable {
 
         let required_map_action = Cell::new(RequiredMapAction::Nothing);
 
+        let popup_menu = ManagedMenu::new(
+            WidgetStatesControlled::Sensitivity,
+            Some(&view.get_selection()),
+            Some(&exec_console.changed_condns_notifier),
+            &vec![],
+        );
+
         let table = Rc::new(BranchesNameTable {
             view,
             list_store,
             required_map_action,
             exec_console: Rc::clone(exec_console),
+            popup_menu: popup_menu,
+            hovered_branch: RefCell::new(None),
         });
         let table_clone = Rc::clone(&table);
         table.exec_console.event_notifier.add_notification_cb(
@@ -271,6 +284,53 @@ impl BranchesNameTable {
             events::EV_CHANGE_DIR,
             Box::new(move |_| table_clone.repopulate()),
         );
+        let table_clone = Rc::clone(&table);
+        table
+            .popup_menu
+            .append_item(
+                "checkout",
+                "Checkout",
+                "Switch to the selected/indicated branch",
+                exec::SAV_IN_REPO,
+            )
+            .connect_activate(move |_| {
+                let selection = table_clone.view.get_selection();
+                if let Some((store, iter)) = selection.get_selected() {
+                    let branch = store.get_value(&iter, 0).get::<String>().unwrap();
+                    println!("checkout selected: {:?}", branch);
+                } else {
+                    println!(
+                        "checkout hovered: {:?}",
+                        table_clone.hovered_branch.borrow()
+                    );
+                }
+            });
+        let table_c = table.clone();
+        table.view.connect_button_press_event(move |view, event| {
+            if event.get_button() == 3 {
+                let posn = event.get_position();
+                let x = posn.0 as i32;
+                let y = posn.1 as i32;
+                // TODO: add a SAV_STATE for hovered data being available
+                *table_c.hovered_branch.borrow_mut() = None;
+                if let Some(location) = view.get_path_at_pos(x, y) {
+                    if let Some(path) = location.0 {
+                        if let Some(store) = view.get_model() {
+                            if let Some(iter) = store.get_iter(&path) {
+                                let branch = store.get_value(&iter, 0).get::<String>().unwrap();
+                                *table_c.hovered_branch.borrow_mut() = Some(branch);
+                            }
+                        }
+                    }
+                }
+                table_c.popup_menu.popup_at_event(event);
+                return Inhibit(true);
+            } else if event.get_button() == 2 {
+                table_c.view.get_selection().unselect_all();
+                return Inhibit(true);
+            }
+            Inhibit(false)
+        });
 
         table
     }

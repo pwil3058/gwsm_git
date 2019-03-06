@@ -81,7 +81,7 @@ impl ExecConsole {
             text_view: gtk::TextView::new(),
             chdir_menu_item: gtk::MenuItem::new_with_label("Open"),
             event_notifier: EventNotifier::new(),
-            changed_condns_notifier: ChangedCondnsNotifier::new(),
+            changed_condns_notifier: ChangedCondnsNotifier::new(0),
             auto_update: timeout::ControlledTimeoutCycle::new("Auto Update", true, 10),
         });
         ec.scrolled_window
@@ -100,6 +100,7 @@ impl ExecConsole {
                 ec_clone.chdir(&path.to_string_lossy().to_string());
             }
         });
+        ec.check_repo_states();
 
         ec
     }
