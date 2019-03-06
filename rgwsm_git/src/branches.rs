@@ -295,14 +295,14 @@ impl BranchesNameTable {
             )
             .connect_activate(move |_| {
                 let selection = table_clone.view.get_selection();
-                if let Some((store, iter)) = selection.get_selected() {
-                    let branch = store.get_value(&iter, 0).get::<String>().unwrap();
-                    println!("checkout selected: {:?}", branch);
+                let branch = if let Some((store, iter)) = selection.get_selected() {
+                    store.get_value(&iter, 0).get::<String>()
                 } else {
-                    println!(
-                        "checkout hovered: {:?}",
-                        table_clone.hovered_branch.borrow()
-                    );
+                    table_clone.hovered_branch.borrow().clone()
+                };
+                if let Some(branch) = branch {
+                    let cmd = format!("git checkout {}", branch);
+                    table_clone.exec_console.exec_cmd(&cmd, events::EV_CHECKOUT);
                 }
             });
         let table_clone = table.clone();
@@ -316,8 +316,8 @@ impl BranchesNameTable {
                     if let Some(path) = location.0 {
                         if let Some(store) = view.get_model() {
                             if let Some(iter) = store.get_iter(&path) {
-                                let branch = store.get_value(&iter, 0).get::<String>().unwrap();
-                                table_clone.set_hovered_branch(Some(branch));
+                                let branch = store.get_value(&iter, 0).get::<String>();
+                                table_clone.set_hovered_branch(branch);
                             }
                         }
                     }
@@ -335,7 +335,10 @@ impl BranchesNameTable {
     }
 
     fn set_hovered_branch(&self, branch: Option<String>) {
-        let condns = self.view.get_selection().get_masked_conditions_with_hover_ok(branch.is_some());
+        let condns = self
+            .view
+            .get_selection()
+            .get_masked_conditions_with_hover_ok(branch.is_some());
         self.popup_menu.update_condns(condns);
         *self.hovered_branch.borrow_mut() = branch;
     }
