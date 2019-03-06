@@ -308,20 +308,8 @@ impl BranchesNameTable {
         let table_clone = table.clone();
         table.view.connect_button_press_event(move |view, event| {
             if event.get_button() == 3 {
-                let posn = event.get_position();
-                let x = posn.0 as i32;
-                let y = posn.1 as i32;
-                table_clone.set_hovered_branch(None);
-                if let Some(location) = view.get_path_at_pos(x, y) {
-                    if let Some(path) = location.0 {
-                        if let Some(store) = view.get_model() {
-                            if let Some(iter) = store.get_iter(&path) {
-                                let branch = store.get_value(&iter, 0).get::<String>();
-                                table_clone.set_hovered_branch(branch);
-                            }
-                        }
-                    }
-                }
+                let branch = get_row_item_for_event!(view, event, String, 0);
+                table_clone.set_hovered_branch(branch);
                 table_clone.popup_menu.popup_at_event(event);
                 return Inhibit(true);
             } else if event.get_button() == 2 {
