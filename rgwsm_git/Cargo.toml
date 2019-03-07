@@ -18,5 +18,6 @@ glib = "0.7.0"
 gtk = "0.6.0"
 pango-sys = "0.8.0"
 
+cub_diff_lib = { path = "../../../CRATES/rs_cub_diff_lib.git"}
 pw_gix = { path = "../../../CRATES/rs_pw_gix.git" }
 pw_pathux = { path = "../../../CRATES/rs_pw_pathux.git" }
