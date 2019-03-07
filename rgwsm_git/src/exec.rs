@@ -105,7 +105,12 @@ impl ExecConsole {
         }));
         let ec_clone = Rc::clone(&ec);
         ec.chdir_menu_item.connect_activate(move |_| {
-            if let Some(path) = ec_clone.ask_dir_path(Some("Directory Path"), None, false) {
+            if let Some(path) = ec_clone.browse_path(
+                Some("Directory Path"),
+                None,
+                gtk::FileChooserAction::CreateFolder,
+                false,
+            ) {
                 ec_clone.chdir(&path.to_string_lossy().to_string());
             }
         });
