@@ -167,8 +167,7 @@ where
             Box::new(move |_| owft_clone.repopulate()),
         );
         let owft_clone = Rc::clone(&owft);
-        owft
-            .popup_menu
+        owft.popup_menu
             .append_item(
                 "add",
                 "Add",
@@ -183,7 +182,9 @@ where
                     let mut fso_paths = String::new();
                     for tree_path in tree_paths.iter() {
                         if let Some(iter) = store.get_iter(&tree_path) {
-                            if let Some(fso_path) = store.get_value(&iter, fs_db::PATH).get::<String>() {
+                            if let Some(fso_path) =
+                                store.get_value(&iter, fs_db::PATH).get::<String>()
+                            {
                                 if count > 0 {
                                     fso_paths.push_str(" ");
                                 }
@@ -202,7 +203,9 @@ where
                 };
                 if let Some(fso_paths) = fso_paths {
                     let cmd = format!("git add {}", fso_paths);
-                    owft_clone.exec_console.exec_cmd(&cmd, events::EV_FILES_CHANGE);
+                    owft_clone
+                        .exec_console
+                        .exec_cmd(&cmd, events::EV_FILES_CHANGE);
                 }
             });
         let owft_clone = owft.clone();

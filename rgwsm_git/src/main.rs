@@ -41,6 +41,7 @@ use pw_gix::wrapper::*;
 
 use pw_pathux::str_path::str_path_current_dir_or_panic;
 
+mod action_icons;
 mod branches;
 mod config;
 mod events;
@@ -86,6 +87,10 @@ fn activate(app: &gtk::Application) {
     menu.show_all();
     menu_item.show_all();
     hbox.show_all();
+    let action_hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    vbox.pack_start(&action_hbox, false, false, 0);
+    let branch_button = branches::BranchButton::new(&exec);
+    action_hbox.pack_start(&branch_button.pwo(), true, true, 0);
     let label = gtk::Label::new("GUI is under construction");
     vbox.pack_start(&label, false, false, 0);
     let paned_h = gtk::Paned::new(gtk::Orientation::Horizontal);

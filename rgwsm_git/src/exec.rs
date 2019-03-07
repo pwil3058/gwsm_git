@@ -68,6 +68,7 @@ pub struct ExecConsole {
     pub chdir_menu_item: gtk::MenuItem,
     pub event_notifier: Rc<EventNotifier>,
     pub changed_condns_notifier: Rc<ChangedCondnsNotifier>,
+    pub managed_buttons: Rc<ConditionalWidgetGroups<gtk::Button>>,
     auto_update: Rc<timeout::ControlledTimeoutCycle>,
 }
 
@@ -75,13 +76,20 @@ impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, ExecConsole);
 
 impl ExecConsole {
     pub fn new() -> Rc<Self> {
+        let changed_condns_notifier = ChangedCondnsNotifier::new(0);
+        let managed_buttons = ConditionalWidgetGroups::<gtk::Button>::new(
+            WidgetStatesControlled::Sensitivity,
+            None,
+            Some(&changed_condns_notifier),
+        );
         let adj: Option<&gtk::Adjustment> = None;
         let ec = Rc::new(Self {
             scrolled_window: gtk::ScrolledWindow::new(adj, adj),
             text_view: gtk::TextView::new(),
             chdir_menu_item: gtk::MenuItem::new_with_label("Open"),
             event_notifier: EventNotifier::new(),
-            changed_condns_notifier: ChangedCondnsNotifier::new(0),
+            changed_condns_notifier: changed_condns_notifier,
+            managed_buttons: managed_buttons,
             auto_update: timeout::ControlledTimeoutCycle::new("Auto Update", true, 10),
         });
         ec.text_view.set_editable(false);

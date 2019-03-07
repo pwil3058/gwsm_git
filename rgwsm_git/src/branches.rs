@@ -30,6 +30,7 @@ use pw_gix::gtkx::menu::ManagedMenu;
 use pw_gix::sav_state::*;
 use pw_gix::wrapper::*;
 
+use crate::action_icons;
 use crate::events;
 use crate::exec::{self, ExecConsole};
 
@@ -274,7 +275,7 @@ impl BranchesNameTable {
         });
         let table_clone = Rc::clone(&table);
         table.exec_console.event_notifier.add_notification_cb(
-            events::EV_AUTO_UPDATE,
+            events::EV_AUTO_UPDATE | events::EV_BRANCHES_CHANGE,
             Box::new(move |_| table_clone.auto_update()),
         );
         let table_clone = Rc::clone(&table);
@@ -302,7 +303,9 @@ impl BranchesNameTable {
                 };
                 if let Some(branch) = branch {
                     let cmd = format!("git checkout {}", branch);
-                    table_clone.exec_console.exec_cmd(&cmd, events::EV_CHECKOUT);
+                    table_clone
+                        .exec_console
+                        .exec_cmd(&cmd, events::EV_BRANCHES_CHANGE | events::EV_CHECKOUT);
                 }
             });
         let table_clone = table.clone();
@@ -329,5 +332,67 @@ impl BranchesNameTable {
             .get_masked_conditions_with_hover_ok(branch.is_some());
         self.popup_menu.update_condns(condns);
         *self.hovered_branch.borrow_mut() = branch;
+    }
+}
+
+pub struct BranchButton {
+    button: gtk::Button,
+    exec_console: Rc<ExecConsole>,
+}
+
+impl_widget_wrapper!(button: gtk::Button, BranchButton);
+
+impl BranchButton {
+    pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
+        let button = gtk::Button::new();
+        button.set_tooltip_text(Some(
+            "Create a branch based on the current HEAD and (optionally) check it out",
+        ));
+        button.set_image(&action_icons::branch_image(24));
+        exec_console
+            .managed_buttons
+            .add_widget("branch", &button, exec::SAV_IN_REPO);
+        let bb = Rc::new(Self {
+            button: button,
+            exec_console: Rc::clone(&exec_console),
+        });
+
+        let bb_clone = Rc::clone(&bb);
+        bb.button
+            .connect_clicked(move |_| bb_clone.create_new_branch_cb());
+
+        bb
+    }
+
+    fn create_new_branch_cb(&self) {
+        let dialog = self.new_dialog_with_buttons(
+            Some("New Branch"),
+            gtk::DialogFlags::DESTROY_WITH_PARENT,
+            CANCEL_OK_BUTTONS,
+        );
+        dialog.set_default_response(gtk::ResponseType::Ok);
+        let branch_name = gtk::Entry::new();
+        branch_name.set_activates_default(true);
+        let checkout_new_branch = gtk::CheckButton::new_with_label("Checkout?");
+        let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 2);
+        hbox.pack_start(&gtk::Label::new(Some("Name:")), false, false, 0);
+        hbox.pack_start(&branch_name, true, true, 0);
+        hbox.pack_start(&checkout_new_branch, false, false, 0);
+        dialog.get_content_area().pack_start(&hbox, false, false, 0);
+        dialog.get_content_area().show_all();
+        let result = dialog.run();
+        if gtk::ResponseType::from(result) == gtk::ResponseType::Ok {
+            if let Some(branch_name) = branch_name.get_text() {
+                if checkout_new_branch.get_active() {
+                    let cmd = format!("git checkout -b {}", branch_name);
+                    self.exec_console
+                        .exec_cmd(&cmd, events::EV_BRANCHES_CHANGE | events::EV_CHECKOUT);
+                } else {
+                    let cmd = format!("git branch {}", branch_name);
+                    self.exec_console.exec_cmd(&cmd, events::EV_BRANCHES_CHANGE);
+                }
+            }
+        }
+        dialog.destroy();
     }
 }
