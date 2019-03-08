@@ -54,19 +54,72 @@ impl DiffButton {
     }
 
     fn show_diff_cb(&self) {
-        let title = format!("diff: {}", str_path::str_path_current_dir_or_rel_home_panic());
+        let title = format!(
+            "diff: {}",
+            str_path::str_path_current_dir_or_rel_home_panic()
+        );
         let dialog = self.new_dialog_with_buttons(
             Some(&title),
             gtk::DialogFlags::DESTROY_WITH_PARENT,
             &[("Close", gtk::ResponseType::Close)],
         );
-        dialog.get_content_area().pack_start(&gtk::Label::new("diff notebook will go here"), false, false, 0);
+        let wdtw = WdDiffTextWidget::new();
+        dialog
+            .get_content_area()
+            .pack_start(&wdtw.pwo(), false, false, 0);
         dialog.get_content_area().show_all();
         dialog.set_default_response(gtk::ResponseType::Close);
-        dialog.connect_response(
-            |dialog, _| dialog.destroy()
-        );
+        dialog.connect_response(|dialog, _| dialog.destroy());
         dialog.show()
+    }
+}
+
+struct WdDiffTextWidget {
+    v_box: gtk::Box,
+    diff_rb: gtk::RadioButton,
+    diff_staged_rb: gtk::RadioButton,
+    diff_head_rb: gtk::RadioButton,
+}
+
+impl_widget_wrapper!(v_box: gtk::Box, WdDiffTextWidget);
+
+impl WdDiffTextWidget {
+    fn new() -> Rc<Self> {
+        let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        let diff_rb = gtk::RadioButton::new_with_label("git diff");
+        let diff_staged_rb =
+            gtk::RadioButton::new_with_label_from_widget(&diff_rb, "git diff --staged");
+        let diff_head_rb = gtk::RadioButton::new_with_label_from_widget(&diff_rb, "git diff HEAD");
+        let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        h_box.pack_start(&diff_rb, false, false, 0);
+        h_box.pack_start(&diff_staged_rb, false, false, 0);
+        h_box.pack_start(&diff_head_rb, false, false, 0);
+        v_box.pack_start(&h_box, false, false, 0);
+        v_box.pack_start(&gtk::Label::new("diff notebook goes here"), true, true, 0);
+        let wdtw = Rc::new(Self {
+            v_box,
+            diff_rb,
+            diff_staged_rb,
+            diff_head_rb,
+        });
+        // NB: only update when active to stop double update
+        wdtw.diff_rb.connect_toggled(|rb| {
+            if rb.get_active() {
+                println!("update")
+            }
+        });
+        wdtw.diff_staged_rb.connect_toggled(|rb| {
+            if rb.get_active() {
+                println!("update")
+            }
+        });
+        wdtw.diff_head_rb.connect_toggled(|rb| {
+            if rb.get_active() {
+                println!("update")
+            }
+        });
+
+        wdtw
     }
 }
 
