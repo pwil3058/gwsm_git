@@ -15,7 +15,7 @@
 use gdk_pixbuf;
 use gtk;
 
-/* XPM */
+// XPM
 static BRANCH_XPM: &[&str] = &[
     "64 64 3 1",
     "A	c #000000",
@@ -93,6 +93,93 @@ pub fn branch_pixbuf() -> gdk_pixbuf::Pixbuf {
 
 pub fn branch_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) = branch_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
+    {
+        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+    } else {
+        panic!("File: {:?} Line: {:?}", file!(), line!())
+    }
+}
+
+// XPM
+static DIFF_XPM: &[&str] = &[
+"64 64 4 1",
+"R c #FF0000",
+"G c #00AA00",
+"B c #000000",
+"  c None",
+
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"BBBBBBBBBBBBBBBBBBBB  BBBBBBBBBBBBBBBBBBBB  BBBBBBBBBBBBBBBBBBBB",
+"BRRRRRRRRRRRRRRRRRRB  BRRRRRRRRRRRRRRRRRRB  BRRRRRRRRRRRRRRRRRRB",
+"BRRRRRRRRRRRRRRRRRRB  BRRRRRRRRRRRRRRRRRRB  BRRRRRRRRRRRRRRRRRRB",
+"BRRRRRRRRRRRRRRRRRRB  BRRRRRRRRRRRRRRRRRRB  BRRRRRRRRRRRRRRRRRRB",
+"BRRRRRRRRRRRRRRRRRRB  BRRRRRRRRRRRRRRRRRRB  BRRRRRRRRRRRRRRRRRRB",
+"BRRRRRRRRRRRRRRRRRRB  BRRRRRRRRRRRRRRRRRRB  BRRRRRRRRRRRRRRRRRRB",
+"BRRRRRRRRRRRRRRRRRRB  BRRRRRRRRRRRRRRRRRRB  BRRRRRRRRRRRRRRRRRRB",
+"BBBBBBBBBBBBBBBBBBBB  BBBBBBBBBBBBBBBBBBBB  BBBBBBBBBBBBBBBBBBBB",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"      BBBBBBBB              BBBBBBBB              BBBBBBBB      ",
+"      BGGGGGGB              BGGGGGGB              BGGGGGGB      ",
+"      BGGGGGGB              BGGGGGGB              BGGGGGGB      ",
+"      BGGGGGGB              BGGGGGGB              BGGGGGGB      ",
+"      BGGGGGGB              BGGGGGGB              BGGGGGGB      ",
+"      BGGGGGGB              BGGGGGGB              BGGGGGGB      ",
+"BBBBBBBGGGGGGBBBBBBB  BBBBBBBGGGGGGBBBBBBB  BBBBBBBGGGGGGBBBBBBB",
+"BGGGGGGGGGGGGGGGGGGB  BGGGGGGGGGGGGGGGGGGB  BGGGGGGGGGGGGGGGGGGB",
+"BGGGGGGGGGGGGGGGGGGB  BGGGGGGGGGGGGGGGGGGB  BGGGGGGGGGGGGGGGGGGB",
+"BGGGGGGGGGGGGGGGGGGB  BGGGGGGGGGGGGGGGGGGB  BGGGGGGGGGGGGGGGGGGB",
+"BGGGGGGGGGGGGGGGGGGB  BGGGGGGGGGGGGGGGGGGB  BGGGGGGGGGGGGGGGGGGB",
+"BGGGGGGGGGGGGGGGGGGB  BGGGGGGGGGGGGGGGGGGB  BGGGGGGGGGGGGGGGGGGB",
+"BBBBBBBGGGGGGBBBBBBB  BBBBBBBGGGGGGBBBBBBB  BBBBBBBGGGGGGBBBBBBB",
+"      BGGGGGGB              BGGGGGGB              BGGGGGGB      ",
+"      BGGGGGGB              BGGGGGGB              BGGGGGGB      ",
+"      BGGGGGGB              BGGGGGGB              BGGGGGGB      ",
+"      BGGGGGGB              BGGGGGGB              BGGGGGGB      ",
+"      BGGGGGGB              BGGGGGGB              BGGGGGGB      ",
+"      BBBBBBBB              BBBBBBBB              BBBBBBBB      ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                ",
+"                                                                "
+];
+
+pub fn diff_pixbuf() -> gdk_pixbuf::Pixbuf {
+    gdk_pixbuf::Pixbuf::new_from_xpm_data(DIFF_XPM)
+}
+
+pub fn diff_image(size: i32) -> gtk::Image {
+    if let Some(pixbuf) = diff_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
         gtk::Image::new_from_pixbuf(Some(&pixbuf))
     } else {
