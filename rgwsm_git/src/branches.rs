@@ -348,7 +348,9 @@ impl BranchButton {
         button.set_tooltip_text(Some(
             "Create a branch based on the current HEAD and (optionally) check it out",
         ));
-        button.set_image(&action_icons::branch_image(24));
+        button.set_image(&action_icons::branch_image(32));
+        button.set_image_position(gtk::PositionType::Top);
+        button.set_label("branch");
         exec_console
             .managed_buttons
             .add_widget("branch", &button, exec::SAV_IN_REPO);
@@ -367,7 +369,7 @@ impl BranchButton {
     fn create_new_branch_cb(&self) {
         let dialog = self.new_dialog_with_buttons(
             Some("New Branch"),
-            gtk::DialogFlags::DESTROY_WITH_PARENT,
+            gtk::DialogFlags::DESTROY_WITH_PARENT | gtk::DialogFlags::MODAL,
             CANCEL_OK_BUTTONS,
         );
         dialog.set_default_response(gtk::ResponseType::Ok);
@@ -381,6 +383,7 @@ impl BranchButton {
         dialog.get_content_area().pack_start(&hbox, false, false, 0);
         dialog.get_content_area().show_all();
         let result = dialog.run();
+        dialog.hide();
         if gtk::ResponseType::from(result) == gtk::ResponseType::Ok {
             if let Some(branch_name) = branch_name.get_text() {
                 if checkout_new_branch.get_active() {
