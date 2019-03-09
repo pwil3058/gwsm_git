@@ -41,8 +41,6 @@ use pw_gix::gtkx::paned::RememberPosition;
 use pw_gix::recollections;
 use pw_gix::wrapper::*;
 
-use pw_pathux::str_path::str_path_current_dir_or_panic;
-
 mod action_icons;
 mod branches;
 mod config;

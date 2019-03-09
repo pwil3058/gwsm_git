@@ -23,9 +23,10 @@ use gtk::prelude::*;
 use crypto_hash::{Algorithm, Hasher};
 
 use cub_diff_gui_lib::diff::DiffPlusNotebook;
+use cub_diff_lib::diff::DiffPlusParser;
+use cub_diff_lib::lines::*;
 use pw_gix::gtkx::dialog::RememberDialogSize;
 use pw_gix::wrapper::*;
-use pw_pathux::str_path;
 
 use crate::action_icons;
 use crate::config;
@@ -36,7 +37,7 @@ pub struct DiffButton {
     button: gtk::Button,
     dialog: RefCell<Option<gtk::Dialog>>,
     wdtw: Rc<WdDiffTextWidget>,
-    exec_console: Rc<ExecConsole>,
+    _exec_console: Rc<ExecConsole>,
 }
 
 impl_widget_wrapper!(button: gtk::Button, DiffButton);
@@ -58,7 +59,7 @@ impl DiffButton {
             button: button,
             dialog: RefCell::new(None),
             wdtw: WdDiffTextWidget::new(exec_console),
-            exec_console: Rc::clone(&exec_console),
+            _exec_console: Rc::clone(&exec_console),
         });
 
         let db_clone = Rc::clone(&db);
@@ -68,10 +69,8 @@ impl DiffButton {
                 if let Some(ref dialog) = *db_clone.dialog.borrow() {
                     dialog.set_title(&config::window_title(Some("diff")))
                 }
-                // TODO: tell WdDiffTextWidget to repopulate()
             }),
         );
-        // TODO: tell WdDiffTextWidget to update/repopulate when appropriate
 
         let db_clone = Rc::clone(&db);
         db.button.connect_clicked(move |_| db_clone.show_diff_cb());
@@ -119,6 +118,7 @@ struct WdDiffTextWidget {
     diff_notebook: Rc<DiffPlusNotebook>,
     current_digest: RefCell<Vec<u8>>,
     exec_console: Rc<ExecConsole>,
+    diff_plus_parser: DiffPlusParser,
 }
 
 impl_widget_wrapper!(v_box: gtk::Box, WdDiffTextWidget);
@@ -145,6 +145,7 @@ impl WdDiffTextWidget {
             diff_notebook: diff_notebook,
             current_digest: RefCell::new(Vec::new()),
             exec_console: Rc::clone(&exec_console),
+            diff_plus_parser: DiffPlusParser::new(),
         });
         // NB: only update when active to stop double update
         let wdtw_clone = Rc::clone(&wdtw);
@@ -185,9 +186,7 @@ impl WdDiffTextWidget {
 
     fn get_diff_text(&self) -> (String, Vec<u8>) {
         let mut cmd = Command::new("git");
-        cmd.arg("diff")
-            .arg("--no-ext-diff")
-            .arg("-M");
+        cmd.arg("diff").arg("--no-ext-diff").arg("-M");
         if self.diff_staged_rb.get_active() {
             cmd.arg("--staged");
         } else if self.diff_head_rb.get_active() {
@@ -209,7 +208,14 @@ impl WdDiffTextWidget {
     fn repopulate(&self) {
         let (text, new_digest) = self.get_diff_text();
         *self.current_digest.borrow_mut() = new_digest;
-        self.diff_notebook.update(&text);
+        let lines = Lines::from_string(&text);
+        match self.diff_plus_parser.parse_lines(&lines) {
+            Ok(ref diff_pluses) => self.diff_notebook.repopulate(&diff_pluses),
+            Err(err) => {
+                self.diff_notebook.repopulate(&vec![]);
+                self.report_error("Malformed diff text", &err);
+            }
+        }
     }
 
     fn update(&self) {
@@ -217,7 +223,14 @@ impl WdDiffTextWidget {
         let go_ahead = new_digest != *self.current_digest.borrow();
         if go_ahead {
             *self.current_digest.borrow_mut() = new_digest;
-            self.diff_notebook.update(&text);
+            let lines = Lines::from_string(&text);
+            match self.diff_plus_parser.parse_lines(&lines) {
+                Ok(ref diff_pluses) => self.diff_notebook.update(&diff_pluses),
+                Err(err) => {
+                    self.diff_notebook.update(&vec![]);
+                    self.report_error("Malformed diff text", &err);
+                }
+            }
         }
     }
 }
