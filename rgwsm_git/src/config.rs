@@ -15,7 +15,9 @@
 use std::env;
 use std::path::PathBuf;
 
-use pw_pathux;
+use pw_pathux::{self, str_path};
+
+pub const APP_NAME: &str = "rgwsm_git";
 
 const DEFAULT_CONFIG_DIR_PATH: &str = "~/.config/rgwsm_git";
 
@@ -29,6 +31,19 @@ pub fn abs_default_config_dir_path() -> PathBuf {
             file!(),
             line!()
         ),
+    }
+}
+
+pub fn window_title(sub_title: Option<&str>) -> String {
+    let curr_dir = if let Ok(dir_path) = str_path::str_path_current_dir_rel_home() {
+        dir_path
+    } else {
+        str_path::str_path_current_dir_or_panic()
+    };
+    if let Some(sub_title) = sub_title {
+        format!("{}::{}: {}", APP_NAME, sub_title, curr_dir)
+    } else {
+        format!("{}: {}", APP_NAME, curr_dir)
     }
 }
 

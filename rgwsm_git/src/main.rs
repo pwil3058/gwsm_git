@@ -56,7 +56,7 @@ mod ws_file_tree;
 fn activate(app: &gtk::Application) {
     let window = gtk::ApplicationWindow::new(app);
     // TODO: mechansim to change title when directory changes
-    window.set_title(&format!("gwsm_git: {}", str_path_current_dir_or_panic()));
+    window.set_title(&config::window_title(None));
     let app_icon = icon::rgwsmgit_pixbuf();
     window.set_icon(Some(&app_icon));
     if let Some(geometry) = recollections::recall("main_window:geometry") {
@@ -72,7 +72,7 @@ fn activate(app: &gtk::Application) {
     let w = window.clone();
     exec.event_notifier.add_notification_cb(
         events::EV_CHANGE_DIR,
-        Box::new(move |_| w.set_title(&format!("gwsm_git: {}", str_path_current_dir_or_panic()))),
+        Box::new(move |_| w.set_title(&config::window_title(None))),
     );
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
     let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
