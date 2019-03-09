@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::cell::RefCell;
 use std::rc::Rc;
 
 use gtk;
@@ -21,10 +22,14 @@ use pw_gix::wrapper::*;
 use pw_pathux::str_path;
 
 use crate::action_icons;
+use crate::config;
+use crate::events;
 use crate::exec::{self, ExecConsole};
 
 pub struct DiffButton {
     button: gtk::Button,
+    dialog: RefCell<Option<gtk::Dialog>>,
+    wdtw: Rc<WdDiffTextWidget>,
     exec_console: Rc<ExecConsole>,
 }
 
@@ -42,10 +47,25 @@ impl DiffButton {
         exec_console
             .managed_buttons
             .add_widget("diff", &button, exec::SAV_IN_REPO);
+
         let db = Rc::new(Self {
             button: button,
+            dialog: RefCell::new(None),
+            wdtw: WdDiffTextWidget::new(),
             exec_console: Rc::clone(&exec_console),
         });
+
+        let db_clone = Rc::clone(&db);
+        exec_console.event_notifier.add_notification_cb(
+            events::EV_CHANGE_DIR,
+            Box::new(move |_| {
+                if let Some(ref dialog) = *db_clone.dialog.borrow() {
+                    dialog.set_title(&config::window_title(Some("diff")))
+                }
+                // TODO: tell WdDiffTextWidget to repopulate()
+            }),
+        );
+        // TODO: tell WdDiffTextWidget to update/repopulate when appropriate
 
         let db_clone = Rc::clone(&db);
         db.button.connect_clicked(move |_| db_clone.show_diff_cb());
@@ -54,23 +74,33 @@ impl DiffButton {
     }
 
     fn show_diff_cb(&self) {
-        let title = format!(
-            "diff: {}",
-            str_path::str_path_current_dir_or_rel_home_panic()
-        );
-        let dialog = self.new_dialog_with_buttons(
-            Some(&title),
-            gtk::DialogFlags::DESTROY_WITH_PARENT,
-            &[("Close", gtk::ResponseType::Close)],
-        );
-        let wdtw = WdDiffTextWidget::new();
-        dialog
-            .get_content_area()
-            .pack_start(&wdtw.pwo(), false, false, 0);
-        dialog.get_content_area().show_all();
-        dialog.set_default_response(gtk::ResponseType::Close);
-        dialog.connect_response(|dialog, _| dialog.destroy());
-        dialog.show()
+        let needs_dialog = self.dialog.borrow().is_none();
+        if needs_dialog {
+            let dialog = self.new_dialog_with_buttons(
+                Some(&config::window_title(Some("diff"))),
+                gtk::DialogFlags::DESTROY_WITH_PARENT,
+                &[("Close", gtk::ResponseType::Close)],
+            );
+            dialog
+                .get_content_area()
+                .pack_start(&self.wdtw.pwo(), false, false, 0);
+            dialog.get_content_area().show_all();
+            dialog.set_default_response(gtk::ResponseType::Close);
+            dialog.connect_response(|dialog, response| {
+                if response == gtk::ResponseType::Close {
+                    dialog.close()
+                }
+            });
+            dialog.connect_delete_event(move |dialog, _| {
+                dialog.hide_on_delete();
+                gtk::Inhibit(true)
+            });
+            *self.dialog.borrow_mut() = Some(dialog);
+        }
+        if let Some(ref dialog) = *self.dialog.borrow() {
+            dialog.show_all();
+            dialog.present()
+        }
     }
 }
 
