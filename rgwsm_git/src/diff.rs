@@ -23,6 +23,7 @@ use gtk::prelude::*;
 use crypto_hash::{Algorithm, Hasher};
 
 use cub_diff_gui_lib::diff::DiffPlusNotebook;
+use pw_gix::gtkx::dialog::RememberDialogSize;
 use pw_gix::wrapper::*;
 use pw_pathux::str_path;
 
@@ -91,6 +92,7 @@ impl DiffButton {
                 .pack_start(&self.wdtw.pwo(), false, false, 0);
             dialog.get_content_area().show_all();
             dialog.set_default_response(gtk::ResponseType::Close);
+            dialog.set_size_from_recollections("view::diff", (300, 200));
             dialog.connect_response(|dialog, response| {
                 if response == gtk::ResponseType::Close {
                     dialog.close()
