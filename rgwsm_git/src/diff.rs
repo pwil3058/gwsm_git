@@ -13,11 +13,16 @@
 // limitations under the License.
 
 use std::cell::RefCell;
+use std::io::Write;
+use std::process::Command;
 use std::rc::Rc;
 
 use gtk;
 use gtk::prelude::*;
 
+use crypto_hash::{Algorithm, Hasher};
+
+use cub_diff_gui_lib::diff::DiffPlusNotebook;
 use pw_gix::wrapper::*;
 use pw_pathux::str_path;
 
@@ -51,7 +56,7 @@ impl DiffButton {
         let db = Rc::new(Self {
             button: button,
             dialog: RefCell::new(None),
-            wdtw: WdDiffTextWidget::new(),
+            wdtw: WdDiffTextWidget::new(exec_console),
             exec_console: Rc::clone(&exec_console),
         });
 
@@ -109,12 +114,15 @@ struct WdDiffTextWidget {
     diff_rb: gtk::RadioButton,
     diff_staged_rb: gtk::RadioButton,
     diff_head_rb: gtk::RadioButton,
+    diff_notebook: Rc<DiffPlusNotebook>,
+    current_digest: RefCell<Vec<u8>>,
+    exec_console: Rc<ExecConsole>,
 }
 
 impl_widget_wrapper!(v_box: gtk::Box, WdDiffTextWidget);
 
 impl WdDiffTextWidget {
-    fn new() -> Rc<Self> {
+    fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         let diff_rb = gtk::RadioButton::new_with_label("git diff");
         let diff_staged_rb =
@@ -125,40 +133,89 @@ impl WdDiffTextWidget {
         h_box.pack_start(&diff_staged_rb, false, false, 0);
         h_box.pack_start(&diff_head_rb, false, false, 0);
         v_box.pack_start(&h_box, false, false, 0);
-        v_box.pack_start(&gtk::Label::new("diff notebook goes here"), true, true, 0);
+        let diff_notebook = DiffPlusNotebook::new();
+        v_box.pack_start(&diff_notebook.pwo(), true, true, 0);
         let wdtw = Rc::new(Self {
             v_box,
             diff_rb,
             diff_staged_rb,
             diff_head_rb,
+            diff_notebook: diff_notebook,
+            current_digest: RefCell::new(Vec::new()),
+            exec_console: Rc::clone(&exec_console),
         });
         // NB: only update when active to stop double update
-        wdtw.diff_rb.connect_toggled(|rb| {
+        let wdtw_clone = Rc::clone(&wdtw);
+        wdtw.diff_rb.connect_toggled(move |rb| {
             if rb.get_active() {
-                println!("update")
+                wdtw_clone.update();
             }
         });
-        wdtw.diff_staged_rb.connect_toggled(|rb| {
+        let wdtw_clone = Rc::clone(&wdtw);
+        wdtw.diff_staged_rb.connect_toggled(move |rb| {
             if rb.get_active() {
-                println!("update")
+                wdtw_clone.update();
             }
         });
-        wdtw.diff_head_rb.connect_toggled(|rb| {
+        let wdtw_clone = Rc::clone(&wdtw);
+        wdtw.diff_head_rb.connect_toggled(move |rb| {
             if rb.get_active() {
-                println!("update")
+                wdtw_clone.update();
             }
         });
+        let wdtw_clone = Rc::clone(&wdtw);
+        wdtw.exec_console.event_notifier.add_notification_cb(
+            events::EV_AUTO_UPDATE | events::EV_CHECKOUT | events::EV_FILES_CHANGE,
+            Box::new(move |_| {
+                wdtw_clone.update();
+            }),
+        );
+        let wdtw_clone = Rc::clone(&wdtw);
+        wdtw.exec_console.event_notifier.add_notification_cb(
+            events::EV_CHANGE_DIR,
+            Box::new(move |_| {
+                wdtw_clone.repopulate();
+            }),
+        );
 
         wdtw
     }
-}
 
-#[cfg(test)]
-mod tests {
-    //use super::*;
+    fn get_diff_text(&self) -> (String, Vec<u8>) {
+        let mut cmd = Command::new("git");
+        cmd.arg("diff")
+            .arg("--no-ext-diff")
+            .arg("-M");
+        if self.diff_staged_rb.get_active() {
+            cmd.arg("--staged");
+        } else if self.diff_head_rb.get_active() {
+            cmd.arg("HEAD");
+        }
+        let output = cmd.output().expect("\"git diff\" blew up");
+        if output.status.success() {
+            let mut hasher = Hasher::new(Algorithm::SHA256);
+            hasher.write_all(&output.stdout).expect("hasher blew up!!!");
+            (
+                String::from_utf8_lossy(&output.stdout).to_string(),
+                hasher.finish(),
+            )
+        } else {
+            ("".to_string(), vec![])
+        }
+    }
 
-    #[test]
-    fn it_works() {
-        assert!(false);
+    fn repopulate(&self) {
+        let (text, new_digest) = self.get_diff_text();
+        *self.current_digest.borrow_mut() = new_digest;
+        self.diff_notebook.update(&text);
+    }
+
+    fn update(&self) {
+        let (text, new_digest) = self.get_diff_text();
+        let go_ahead = new_digest != *self.current_digest.borrow();
+        if go_ahead {
+            *self.current_digest.borrow_mut() = new_digest;
+            self.diff_notebook.update(&text);
+        }
     }
 }
