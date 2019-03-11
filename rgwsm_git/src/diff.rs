@@ -135,7 +135,7 @@ impl WdDiffTextWidget {
         h_box.pack_start(&diff_staged_rb, false, false, 0);
         h_box.pack_start(&diff_head_rb, false, false, 0);
         v_box.pack_start(&h_box, false, false, 0);
-        let diff_notebook = DiffPlusNotebook::new();
+        let diff_notebook = DiffPlusNotebook::new(1);
         v_box.pack_start(&diff_notebook.pwo(), true, true, 0);
         let wdtw = Rc::new(Self {
             v_box,
