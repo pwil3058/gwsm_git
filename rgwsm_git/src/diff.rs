@@ -62,7 +62,8 @@ impl DiffButton {
             _exec_console: Rc::clone(&exec_console),
         });
         db.wdtw.repopulate();
-        db.window.set_geometry_from_recollections("ws::diff:display", (400, 600));
+        db.window
+            .set_geometry_from_recollections("ws::diff:display", (400, 600));
         db.window.set_destroy_with_parent(true);
         db.window.set_title(&config::window_title(Some("diff")));
         db.window.connect_delete_event(move |w, _| {
@@ -77,12 +78,15 @@ impl DiffButton {
         exec_console.event_notifier.add_notification_cb(
             events::EV_CHANGE_DIR,
             Box::new(move |_| {
-                db_clone.window.set_title(&config::window_title(Some("diff")));
+                db_clone
+                    .window
+                    .set_title(&config::window_title(Some("diff")));
             }),
         );
 
         let db_clone = Rc::clone(&db);
-        db.button.connect_clicked(move |_| db_clone.window.present());
+        db.button
+            .connect_clicked(move |_| db_clone.window.present());
 
         db
     }
