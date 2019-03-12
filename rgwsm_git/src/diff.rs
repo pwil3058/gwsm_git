@@ -25,7 +25,7 @@ use crypto_hash::{Algorithm, Hasher};
 use cub_diff_gui_lib::diff::DiffPlusNotebook;
 use cub_diff_lib::diff::DiffPlusParser;
 use cub_diff_lib::lines::*;
-use pw_gix::gtkx::dialog::RememberDialogSize;
+use pw_gix::gtkx::window::RememberGeometry;
 use pw_gix::wrapper::*;
 
 use crate::action_icons;
@@ -35,7 +35,7 @@ use crate::exec::{self, ExecConsole};
 
 pub struct DiffButton {
     button: gtk::Button,
-    dialog: RefCell<Option<gtk::Dialog>>,
+    window: gtk::Window,
     wdtw: Rc<WdDiffTextWidget>,
     _exec_console: Rc<ExecConsole>,
 }
@@ -57,56 +57,34 @@ impl DiffButton {
 
         let db = Rc::new(Self {
             button: button,
-            dialog: RefCell::new(None),
+            window: gtk::Window::new(gtk::WindowType::Toplevel),
             wdtw: WdDiffTextWidget::new(exec_console),
             _exec_console: Rc::clone(&exec_console),
         });
+        db.wdtw.repopulate();
+        db.window.set_geometry_from_recollections("ws::diff:display", (400, 600));
+        db.window.set_destroy_with_parent(true);
+        db.window.set_title(&config::window_title(Some("diff")));
+        db.window.connect_delete_event(move |w, _| {
+            w.hide_on_delete();
+            gtk::Inhibit(true)
+        });
+        db.window.add(&db.wdtw.pwo());
+        db.window.show_all();
+        db.window.hide();
 
         let db_clone = Rc::clone(&db);
         exec_console.event_notifier.add_notification_cb(
             events::EV_CHANGE_DIR,
             Box::new(move |_| {
-                if let Some(ref dialog) = *db_clone.dialog.borrow() {
-                    dialog.set_title(&config::window_title(Some("diff")))
-                }
+                db_clone.window.set_title(&config::window_title(Some("diff")));
             }),
         );
 
         let db_clone = Rc::clone(&db);
-        db.button.connect_clicked(move |_| db_clone.show_diff_cb());
+        db.button.connect_clicked(move |_| db_clone.window.present());
 
         db
-    }
-
-    fn show_diff_cb(&self) {
-        let needs_dialog = self.dialog.borrow().is_none();
-        if needs_dialog {
-            let dialog = self.new_dialog_with_buttons(
-                Some(&config::window_title(Some("diff"))),
-                gtk::DialogFlags::DESTROY_WITH_PARENT,
-                &[("Close", gtk::ResponseType::Close)],
-            );
-            dialog
-                .get_content_area()
-                .pack_start(&self.wdtw.pwo(), false, false, 0);
-            dialog.get_content_area().show_all();
-            dialog.set_default_response(gtk::ResponseType::Close);
-            dialog.set_size_from_recollections("view::diff", (300, 200));
-            dialog.connect_response(|dialog, response| {
-                if response == gtk::ResponseType::Close {
-                    dialog.close()
-                }
-            });
-            dialog.connect_delete_event(move |dialog, _| {
-                dialog.hide_on_delete();
-                gtk::Inhibit(true)
-            });
-            *self.dialog.borrow_mut() = Some(dialog);
-        }
-        if let Some(ref dialog) = *self.dialog.borrow() {
-            dialog.show_all();
-            dialog.present()
-        }
     }
 }
 
@@ -136,6 +114,7 @@ impl WdDiffTextWidget {
         h_box.pack_start(&diff_head_rb, false, false, 0);
         v_box.pack_start(&h_box, false, false, 0);
         let diff_notebook = DiffPlusNotebook::new(1);
+        h_box.pack_end(&diff_notebook.tws_count_display().pwo(), false, false, 0);
         v_box.pack_start(&diff_notebook.pwo(), true, true, 0);
         let wdtw = Rc::new(Self {
             v_box,
