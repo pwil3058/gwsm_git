@@ -175,33 +175,7 @@ where
                 exec::SAV_IN_REPO + SAV_SELN_MADE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
-                let selection = owft_clone.view.get_selection();
-                let (tree_paths, store) = selection.get_selected_rows();
-                let fso_paths = if tree_paths.len() > 0 {
-                    let mut count = 0;
-                    let mut fso_paths = String::new();
-                    for tree_path in tree_paths.iter() {
-                        if let Some(iter) = store.get_iter(&tree_path) {
-                            if let Some(fso_path) =
-                                store.get_value(&iter, fs_db::PATH).get::<String>()
-                            {
-                                if count > 0 {
-                                    fso_paths.push_str(" ");
-                                }
-                                count += 1;
-                                fso_paths.push_str(&shlex::quote(&fso_path));
-                            }
-                        }
-                    }
-                    if count > 0 {
-                        Some(fso_paths)
-                    } else {
-                        None
-                    }
-                } else {
-                    owft_clone.hovered_fso_path.borrow().clone()
-                };
-                if let Some(fso_paths) = fso_paths {
+                if let Some(fso_paths) = owft_clone.get_chosen_file_paths_string() {
                     let cmd = format!("git add {}", fso_paths);
                     owft_clone
                         .exec_console
@@ -211,7 +185,13 @@ where
         let owft_clone = owft.clone();
         owft.view.connect_button_press_event(move |view, event| {
             if event.get_button() == 3 {
-                let fso_path = get_row_item_for_event!(view, event, String, fs_db::PATH);
+                let fso_path = if let Some(fso_path) =
+                    get_row_item_for_event!(view, event, String, fs_db::PATH)
+                {
+                    Some(shlex::quote(&fso_path).to_string())
+                } else {
+                    None
+                };
                 owft_clone.set_hovered_fso_path(fso_path);
                 owft_clone.popup_menu.popup_at_event(event);
                 return Inhibit(true);
@@ -234,5 +214,32 @@ where
             .get_masked_conditions_with_hover_ok(path.is_some());
         self.popup_menu.update_condns(condns);
         *self.hovered_fso_path.borrow_mut() = path;
+    }
+
+    fn get_chosen_file_paths_string(&self) -> Option<String> {
+        let selection = self.view.get_selection();
+        let (tree_paths, store) = selection.get_selected_rows();
+        if tree_paths.len() > 0 {
+            let mut count = 0;
+            let mut fso_paths = String::new();
+            for tree_path in tree_paths.iter() {
+                if let Some(iter) = store.get_iter(&tree_path) {
+                    if let Some(fso_path) = store.get_value(&iter, fs_db::PATH).get::<String>() {
+                        if count > 0 {
+                            fso_paths.push_str(" ");
+                        }
+                        count += 1;
+                        fso_paths.push_str(&shlex::quote(&fso_path));
+                    }
+                }
+            }
+            if count > 0 {
+                Some(fso_paths)
+            } else {
+                None
+            }
+        } else {
+            self.hovered_fso_path.borrow().clone()
+        }
     }
 }
