@@ -576,7 +576,7 @@ fn get_snapshot_text() -> (String, Vec<u8>) {
         .arg("--untracked=all")
         .arg("--ignore-submodules=none")
         .output()
-        .expect("get_snapshota_text() failed");
+        .expect("get_snapshot_text() failed");
     if output.status.success() {
         let mut hasher = Hasher::new(Algorithm::SHA256);
         hasher.write_all(&output.stdout).expect("hasher blew up!!!");
@@ -935,5 +935,268 @@ where
             base_dir.set_visibility(show_hidden, hide_clean);
             base_dir.re_filter_data();
         }
+    }
+}
+
+#[derive(Debug)]
+struct GitIndexDbDir<FSOI>
+where
+    FSOI: FsObjectIfce + ScmFsoDataIfce + Clone,
+{
+    path: String,
+    hide_clean: bool,
+    dirs_data_unfiltered: Vec<FSOI>,
+    files_data_unfiltered: Vec<FSOI>,
+    dirs_data: Rc<Vec<FSOI>>,
+    files_data: Rc<Vec<FSOI>>,
+    sub_dirs: HashMap<String, GitIndexDbDir<FSOI>>,
+    status_set: HashSet<String>,
+}
+
+fn first_status_in_list_in_set(
+    status_list: &[&'static str],
+    status_set: &HashSet<String>,
+) -> &'static str {
+    for status in status_list.iter() {
+        if status_set.contains(&status.to_string()) {
+            return status;
+        }
+    }
+    NO_STATUS
+}
+
+impl<FSOI> GitIndexDbDir<FSOI>
+where
+    FSOI: FsObjectIfce + ScmFsoDataIfce + Clone,
+{
+    fn new(path: &str, status: &str, hide_clean: bool) -> Self {
+        let mut status_set = HashSet::new();
+        status_set.insert(status.to_string());
+        Self {
+            path: path.to_string(),
+            hide_clean: hide_clean,
+            dirs_data_unfiltered: vec![],
+            files_data_unfiltered: vec![],
+            dirs_data: Rc::new(vec![]),
+            files_data: Rc::new(vec![]),
+            sub_dirs: HashMap::new(),
+            status_set: status_set,
+        }
+    }
+
+    fn add_file(
+        &mut self,
+        path_components: &[StrPathComponent],
+        status: &str,
+        related_file_data: &Option<RelatedFileData>,
+    ) {
+        println!(
+            "add: {:?}, {}, {:?}",
+            &path_components, status, related_file_data
+        );
+        self.status_set.insert(status.to_string());
+        let name = path_components[0].to_string();
+        let path = self.path.path_join(&name);
+        // NB: handle the case where this may be a submodule directory
+        if path_components.len() > 1 || path.path_is_dir() {
+            if !self.sub_dirs.contains_key(&name) {
+                let dir = Self::new(&path, status, self.hide_clean);
+                self.sub_dirs.insert(name.to_string(), dir);
+            }
+            if path_components.len() > 1 {
+                self.sub_dirs.get_mut(&name).expect("wtf?").add_file(
+                    &path_components[1..],
+                    status,
+                    related_file_data,
+                );
+            }
+        } else {
+            let mut file_data = FSOI::new(&name, &path, false);
+            file_data.set_status(status);
+            file_data.set_related_file_data(related_file_data);
+            self.files_data_unfiltered.push(file_data);
+        }
+    }
+
+    fn find_dir(&self, components: &[StrPathComponent]) -> Option<&GitIndexDbDir<FSOI>> {
+        println!("find: {:?}", &components);
+        if components.len() == 0 {
+            Some(self)
+        } else {
+            assert!(components[0].is_normal());
+            let name = components[0].to_string();
+            match self.sub_dirs.get(&name) {
+                Some(subdir) => subdir.find_dir(&components[1..]),
+                None => None,
+            }
+        }
+    }
+
+    fn finalize(&mut self) {
+        self.files_data_unfiltered
+            .sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
+        for (name, sub_dir) in self.sub_dirs.iter_mut() {
+            sub_dir.finalize();
+            let mut dir_data = FSOI::new(&name, &sub_dir.path, true);
+            let status = first_status_in_list_in_set(&ORDERED_DIR_STATUS_LIST, &sub_dir.status_set);
+            dir_data.set_status(&status);
+            let clean_status =
+                first_status_in_list_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &sub_dir.status_set);
+            dir_data.set_clean_status(&clean_status);
+            self.dirs_data_unfiltered.push(dir_data);
+        }
+        self.dirs_data_unfiltered
+            .sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
+        self.filter_data();
+    }
+
+    fn filter_data(&mut self) {
+        let dirs_filtered = self
+            .dirs_data_unfiltered
+            .iter()
+            .filter(|x| x.is_visible(true, self.hide_clean))
+            .map(|x| x.clone())
+            .collect();
+        self.dirs_data = Rc::new(dirs_filtered);
+        let files_filtered = self
+            .files_data_unfiltered
+            .iter()
+            .filter(|x| x.is_visible(true, self.hide_clean))
+            .map(|x| x.clone())
+            .collect();
+        self.files_data = Rc::new(files_filtered);
+    }
+
+    fn set_visibility(&mut self, hide_clean: bool) {
+        self.hide_clean = hide_clean;
+        for sub_dir in self.sub_dirs.values_mut() {
+            sub_dir.set_visibility(hide_clean);
+        }
+    }
+
+    fn re_filter_data(&mut self) {
+        self.filter_data();
+        for sub_dir in self.sub_dirs.values_mut() {
+            sub_dir.filter_data()
+        }
+    }
+}
+
+pub struct GitIndexDb<FSOI>
+where
+    FSOI: FsObjectIfce + ScmFsoDataIfce + Clone,
+{
+    base_dir: RefCell<GitIndexDbDir<FSOI>>,
+    latest_text: RefCell<String>,
+    latest_text_digest: RefCell<Vec<u8>>,
+    populated_digest: RefCell<Vec<u8>>,
+}
+
+fn get_digest_text() -> (String, Vec<u8>) {
+    let output = Command::new("git")
+        .arg("status")
+        .arg("--porcelain")
+        .arg("--untracked-files=no")
+        .arg("--ignore-submodules=none")
+        .output()
+        .expect("get_digest_text() failed");
+    if output.status.success() {
+        let mut hasher = Hasher::new(Algorithm::SHA256);
+        hasher.write_all(&output.stdout).expect("hasher blew up!!!");
+        (
+            String::from_utf8_lossy(&output.stdout).to_string(),
+            hasher.finish(),
+        )
+    } else {
+        ("".to_string(), vec![])
+    }
+}
+
+impl<FSOI> FsDbIfce<FSOI> for GitIndexDb<FSOI>
+where
+    FSOI: FsObjectIfce + ScmFsoDataIfce + Clone,
+{
+    fn honours_hide_clean() -> bool {
+        true
+    }
+
+    fn honours_show_hidden() -> bool {
+        false
+    }
+
+    fn new() -> Self {
+        let (latest_text, latest_text_digest) = get_digest_text();
+        let base_dir = GitIndexDbDir::<FSOI>::new(".", NO_STATUS, false); // paths are relative
+        let gib = Self {
+            base_dir: RefCell::new(base_dir),
+            latest_text: RefCell::new(latest_text),
+            latest_text_digest: RefCell::new(latest_text_digest),
+            populated_digest: RefCell::new(vec![]),
+        };
+        gib.populate();
+
+        gib
+    }
+
+    fn dir_contents(
+        &self,
+        dir_path: &str,
+        _show_hidden: bool,
+        hide_clean: bool,
+    ) -> (Rc<Vec<FSOI>>, Rc<Vec<FSOI>>) {
+        println!("dir_contents({}, {})", dir_path, hide_clean);
+        assert!(dir_path.path_is_relative());
+        self.check_visibility(hide_clean);
+        let components = dir_path.to_string().path_components();
+        assert!(components[0].is_cur_dir());
+        if let Some(ref mut dir) = self.base_dir.borrow_mut().find_dir(&components[0..]) {
+            (Rc::clone(&dir.dirs_data), Rc::clone(&dir.files_data))
+        } else {
+            (Rc::new(vec![]), Rc::new(vec![]))
+        }
+    }
+
+    fn is_current(&self) -> bool {
+        let (text, digest) = get_digest_text();
+        if digest != *self.populated_digest.borrow() {
+            *self.latest_text_digest.borrow_mut() = digest;
+            *self.latest_text.borrow_mut() = text;
+            false
+        } else {
+            true
+        }
+    }
+
+    fn reset(&self) {
+        let hide_clean = self.base_dir.borrow().hide_clean;
+        *self.base_dir.borrow_mut() = GitIndexDbDir::new(".", NO_STATUS, hide_clean);
+        self.populate();
+    }
+}
+
+impl<FSOI> GitIndexDb<FSOI>
+where
+    FSOI: FsObjectIfce + ScmFsoDataIfce + Clone,
+{
+    fn check_visibility(&self, hide_clean: bool) {
+        let mut base_dir = self.base_dir.borrow_mut();
+        if base_dir.hide_clean != hide_clean {
+            base_dir.set_visibility(hide_clean);
+            base_dir.re_filter_data();
+        }
+    }
+
+    fn populate(&self) {
+        let mut base_dir = self.base_dir.borrow_mut();
+        for line in self.latest_text.borrow().lines() {
+            if line.starts_with(" ") {
+                //continue; // not in the index
+            }
+            println!("line: {}", line);
+            let (file_path, status, related_file_data) = parse_line!(line);
+            let path_components = file_path.path_components();
+            base_dir.add_file(&path_components, &status, &related_file_data)
+        }
+        *self.populated_digest.borrow_mut() = self.latest_text_digest.borrow().to_vec();
     }
 }
