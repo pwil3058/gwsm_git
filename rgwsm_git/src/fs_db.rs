@@ -990,10 +990,6 @@ where
         status: &str,
         related_file_data: &Option<RelatedFileData>,
     ) {
-        println!(
-            "add: {:?}, {}, {:?}",
-            &path_components, status, related_file_data
-        );
         self.status_set.insert(status.to_string());
         let name = path_components[0].to_string();
         let path = self.path.path_join(&name);
@@ -1019,7 +1015,6 @@ where
     }
 
     fn find_dir(&self, components: &[StrPathComponent]) -> Option<&GitIndexDbDir<FSOI>> {
-        println!("find: {:?}", &components);
         if components.len() == 0 {
             Some(self)
         } else {
@@ -1144,12 +1139,11 @@ where
         _show_hidden: bool,
         hide_clean: bool,
     ) -> (Rc<Vec<FSOI>>, Rc<Vec<FSOI>>) {
-        println!("dir_contents({}, {})", dir_path, hide_clean);
         assert!(dir_path.path_is_relative());
         self.check_visibility(hide_clean);
         let components = dir_path.to_string().path_components();
         assert!(components[0].is_cur_dir());
-        if let Some(ref mut dir) = self.base_dir.borrow_mut().find_dir(&components[0..]) {
+        if let Some(ref mut dir) = self.base_dir.borrow_mut().find_dir(&components[1..]) {
             (Rc::clone(&dir.dirs_data), Rc::clone(&dir.files_data))
         } else {
             (Rc::new(vec![]), Rc::new(vec![]))
@@ -1190,13 +1184,13 @@ where
         let mut base_dir = self.base_dir.borrow_mut();
         for line in self.latest_text.borrow().lines() {
             if line.starts_with(" ") {
-                //continue; // not in the index
+                continue; // not in the index
             }
-            println!("line: {}", line);
             let (file_path, status, related_file_data) = parse_line!(line);
             let path_components = file_path.path_components();
-            base_dir.add_file(&path_components, &status, &related_file_data)
+            base_dir.add_file(&path_components[1..], &status, &related_file_data)
         }
+        base_dir.finalize();
         *self.populated_digest.borrow_mut() = self.latest_text_digest.borrow().to_vec();
     }
 }
