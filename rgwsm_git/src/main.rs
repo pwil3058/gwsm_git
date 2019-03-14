@@ -44,6 +44,7 @@ use pw_gix::wrapper::*;
 
 mod action_icons;
 mod branches;
+mod commit;
 mod config;
 mod diff;
 mod events;
@@ -102,6 +103,14 @@ fn activate(app: &gtk::Application) {
     );
     let diff_button = diff::DiffButton::new(&exec);
     action_hbox.pack_start(&diff_button.pwo(), false, false, 0);
+    let commit_button = commit::CommitButton::new(&exec);
+    action_hbox.pack_start(&commit_button.pwo(), false, false, 0);
+    action_hbox.pack_start(
+        &gtk::Separator::new(gtk::Orientation::Vertical),
+        false,
+        false,
+        1,
+    );
     let branch_button = branches::BranchButton::new(&exec);
     action_hbox.pack_start(&branch_button.pwo(), false, false, 0);
     let label = gtk::Label::new("GUI is under construction");
