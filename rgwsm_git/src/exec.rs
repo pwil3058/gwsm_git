@@ -201,6 +201,10 @@ impl ExecConsole {
         }
     }
 
+    pub fn in_repo(&self) -> bool {
+        is_repo_workdir(".")
+    }
+
     pub fn check_repo_states(&self) {
         let mut condns: u64;
         if is_repo_workdir(".") {

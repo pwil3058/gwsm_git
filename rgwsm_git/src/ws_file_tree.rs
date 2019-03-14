@@ -221,7 +221,9 @@ where
                     get_row_item_for_tree_path!(view, tree_path, String, fs_db::PATH)
                 {
                     if fso_path.path_is_dir() {
-                        if submodules::is_git_submodule(Some(&fso_path)) {
+                        if submodules::is_git_submodule(Some(&fso_path)) ||
+                            !owft_clone.exec_console.in_repo()
+                        {
                             owft_clone.exec_console.chdir(&fso_path);
                         }
                     } else if fso_path.path_is_file() {
