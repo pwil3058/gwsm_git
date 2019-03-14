@@ -92,6 +92,14 @@ fn activate(app: &gtk::Application) {
     hbox.show_all();
     let action_hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
     vbox.pack_start(&action_hbox, false, false, 0);
+    let submodule_parent_button = submodules::SubmoduleParentButton::new(&exec);
+    action_hbox.pack_start(&submodule_parent_button.pwo(), false, false, 0);
+    action_hbox.pack_start(
+        &gtk::Separator::new(gtk::Orientation::Vertical),
+        false,
+        false,
+        1,
+    );
     let diff_button = diff::DiffButton::new(&exec);
     action_hbox.pack_start(&diff_button.pwo(), false, false, 0);
     let branch_button = branches::BranchButton::new(&exec);

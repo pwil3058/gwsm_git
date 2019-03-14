@@ -27,9 +27,12 @@ use pw_gix::gtkx::menu::ManagedMenu;
 use pw_gix::sav_state::*;
 use pw_gix::wrapper::*;
 
+use pw_pathux::str_path::*;
+
 use crate::events;
 use crate::exec;
 use crate::fs_db::{self, GitFsDb, ScmFsoData};
+use crate::submodules;
 
 pub struct GenWsFsTree<FSDB, FSOI>
 where
@@ -139,21 +142,26 @@ where
             hovered_fso_path: RefCell::new(None),
             phantom: PhantomData,
         });
+
         let owft_clone = Rc::clone(&owft);
         owft.view
             .connect_row_expanded(move |_, dir_iter, _| owft_clone.expand_row(dir_iter));
+
         let owft_clone = Rc::clone(&owft);
         owft.view.connect_row_collapsed(move |_, dir_iter, _| {
             owft_clone.insert_place_holder_if_needed(dir_iter)
         });
+
         let owft_clone = Rc::clone(&owft);
         owft.show_hidden.connect_toggled(move |_| {
             owft_clone.update_dir(".", None);
         });
+
         let owft_clone = Rc::clone(&owft);
         owft.hide_clean.connect_toggled(move |_| {
             owft_clone.update_dir(".", None);
         });
+
         let owft_clone = Rc::clone(&owft);
         owft.exec_console.event_notifier.add_notification_cb(
             events::EV_AUTO_UPDATE | events::EV_CHECKOUT | events::EV_FILES_CHANGE,
@@ -161,11 +169,13 @@ where
                 owft_clone.update(false);
             }),
         );
+
         let owft_clone = Rc::clone(&owft);
         owft.exec_console.event_notifier.add_notification_cb(
             events::EV_CHANGE_DIR,
             Box::new(move |_| owft_clone.repopulate()),
         );
+
         let owft_clone = Rc::clone(&owft);
         owft.popup_menu
             .append_item(
@@ -182,6 +192,7 @@ where
                         .exec_cmd(&cmd, events::EV_FILES_CHANGE);
                 }
             });
+
         let owft_clone = owft.clone();
         owft.view.connect_button_press_event(move |view, event| {
             if event.get_button() == 3 {
@@ -201,6 +212,29 @@ where
             }
             Inhibit(false)
         });
+
+        // Handle double click
+        let owft_clone = owft.clone();
+        owft.view
+            .connect_row_activated(move |view, tree_path, _tree_view_column| {
+                if let Some(fso_path) =
+                    get_row_item_for_tree_path!(view, tree_path, String, fs_db::PATH)
+                {
+                    if fso_path.path_is_dir() {
+                        if submodules::is_git_submodule(Some(&fso_path)) {
+                            owft_clone.exec_console.chdir(&fso_path);
+                        }
+                    } else if fso_path.path_is_file() {
+                        // this will cause deleted files to be ignored
+                        let msg = format!(
+                            "FILE \"{}\" double clicked: WILL open in editor in future",
+                            &fso_path
+                        );
+                        owft_clone.exec_console.inform_user(&msg, None);
+                    }
+                }
+            });
+
         owft.repopulate();
         owft.view.show_all();
         scrolled_window.show_all();

@@ -14,18 +14,40 @@
 
 use std::io::Write;
 use std::process::Command;
+use std::rc::Rc;
 
 use crypto_hash::{Algorithm, Hasher};
+use git2;
 use lazy_static;
 use regex::Regex;
 
+use gtk::prelude::*;
+
+use pw_gix::wrapper::*;
+
 use pw_pathux::str_path::*;
+
+use crate::action_icons;
+use crate::exec::{self, ExecConsole};
 
 pub fn is_git_submodule(dir_path: Option<&str>) -> bool {
     if let Some(dir_path) = dir_path {
         dir_path.path_join(".git").path_is_file()
     } else {
         ".git".path_is_file()
+    }
+}
+
+fn find_submodule_parent() -> Option<String> {
+    assert!(is_git_submodule(None));
+    if let Ok(repo) = git2::Repository::discover("..") {
+        if let Some(wd) = repo.workdir() {
+            Some(wd.to_string_lossy().to_string())
+        } else {
+            None
+        }
+    } else {
+        None
     }
 }
 
@@ -69,12 +91,37 @@ lazy_static! {
         Regex::new(r"\s*([a-fA-F0-9]+)\s+([^(]+)(\s+\S*)?").unwrap();
 }
 
-#[cfg(test)]
-mod tests {
-    //use super::*;
+pub struct SubmoduleParentButton {
+    button: gtk::Button,
+    exec_console: Rc<ExecConsole>,
+}
 
-    #[test]
-    fn it_works() {
-        assert!(false);
+impl_widget_wrapper!(button: gtk::Button, SubmoduleParentButton);
+
+impl SubmoduleParentButton {
+    pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
+        let button = gtk::Button::new();
+        button.set_tooltip_text(Some(
+            "Return to the working directory of this submodule's superproject.",
+        ));
+        button.set_image(&action_icons::superproject_image(32));
+        button.set_image_position(gtk::PositionType::Top);
+        button.set_label("Super");
+        exec_console
+            .managed_buttons
+            .add_widget("chdir_parent", &button, exec::SAV_IN_SUBMODULE);
+        let bb = Rc::new(Self {
+            button: button,
+            exec_console: Rc::clone(&exec_console),
+        });
+
+        let bb_clone = Rc::clone(&bb);
+        bb.button.connect_clicked(move |_| {
+            if let Some(parent_dir) = find_submodule_parent() {
+                bb_clone.exec_console.chdir(&parent_dir)
+            }
+        });
+
+        bb
     }
 }
