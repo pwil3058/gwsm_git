@@ -28,7 +28,6 @@ use gtk::{StaticType, ToValue, TreeIter};
 use pango_sys::{PANGO_STYLE_ITALIC, PANGO_STYLE_NORMAL, PANGO_STYLE_OBLIQUE};
 
 use crypto_hash::{Algorithm, Hasher};
-use git2;
 use regex::Regex;
 
 use pw_gix::fs_db::{FsDbIfce, FsObjectIfce, TreeRowOps};
@@ -451,12 +450,14 @@ lazy_static! {
 }
 
 fn is_ignored_path(path: &str) -> bool {
-    match git2::Repository::open(".") {
-        Ok(repo) => match repo.is_path_ignored(path) {
-            Ok(is_ignored) => is_ignored,
-            Err(_) => false,
-        },
-        Err(_) => false,
+    // TODO: examine caching ignore::gitignore::Gitignore instances
+    use ignore::gitignore::Gitignore;
+    if ".gitignore".path_is_file() {
+        let (git_ignore, _) = Gitignore::new(".gitignore");
+        git_ignore.matched(path, true).is_ignore()
+    } else {
+        let (git_ignore, _) = Gitignore::global();
+        git_ignore.matched(path, true).is_ignore()
     }
 }
 

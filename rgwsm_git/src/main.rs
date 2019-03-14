@@ -15,6 +15,7 @@
 extern crate chrono;
 extern crate crypto_hash;
 extern crate git2;
+extern crate ignore;
 #[macro_use]
 extern crate lazy_static;
 extern crate regex;
