@@ -46,7 +46,7 @@ impl CommitButton {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let button = gtk::Button::new();
         button.set_tooltip_text(Some(
-            "View diffs for the working directory or staged files.",
+            "Open the commit widget.",
         ));
         button.set_image(&action_icons::commit_image(32));
         button.set_image_position(gtk::PositionType::Top);
@@ -106,7 +106,7 @@ impl IndexDiffWidget {
     fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        h_box.pack_start(&gtk::Label::new("message editor goes here"), false, false, 0);
+        h_box.pack_start(&gtk::Label::new("Diffs"), false, false, 0);
         v_box.pack_start(&h_box, false, false, 0);
         let diff_notebook = DiffPlusNotebook::new(1);
         h_box.pack_end(&diff_notebook.tws_count_display().pwo(), false, false, 0);
