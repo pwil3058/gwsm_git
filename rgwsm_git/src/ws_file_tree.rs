@@ -29,6 +29,7 @@ use pw_gix::wrapper::*;
 
 use pw_pathux::str_path::*;
 
+use crate::action_icons;
 use crate::events;
 use crate::exec;
 use crate::fs_db::{self, GitFsDb, ScmFsoData};
@@ -181,6 +182,7 @@ where
             .append_item(
                 "add",
                 "Add",
+                None,
                 "Add to the selected/indicated file(s) to the index",
                 exec::SAV_IN_REPO + SAV_SELN_MADE_OR_HOVER_OK,
             )

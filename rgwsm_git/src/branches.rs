@@ -291,6 +291,7 @@ impl BranchesNameTable {
             .append_item(
                 "checkout",
                 "Checkout",
+                None,
                 "Switch to the selected/indicated branch",
                 exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )

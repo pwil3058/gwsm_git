@@ -158,6 +158,7 @@ where
             .append_item(
                 "unstage",
                 "Unstage",
+                None,
                 "Unstage the selected/indicated file(s) from the index",
                 exec::SAV_IN_REPO + SAV_SELN_MADE_OR_HOVER_OK,
             )
