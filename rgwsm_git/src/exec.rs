@@ -24,6 +24,7 @@ use chrono::prelude::*;
 use git2;
 use shlex;
 
+use pw_gix::recollections;
 use pw_gix::sav_state::*;
 use pw_gix::timeout;
 use pw_gix::wrapper::*;
@@ -264,6 +265,9 @@ impl ExecConsole {
                     } else {
                         self.append_stdout("Now in valid repo directory.\n");
                         self.append_bold("% ");
+                    }
+                    if let Ok(abs_path) = ".".path_absolute() {
+                        recollections::remember("last:git:ws:dir", &abs_path);
                     }
                 } else {
                     self.append_bold("% ");
