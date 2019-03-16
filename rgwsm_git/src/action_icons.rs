@@ -365,7 +365,7 @@ static COMMIT_XPM: &[&str] = &[
     "                        F77777777777777777777777777777777777777F",
     "                        F77777777777777777777777777777777777777F",
     "                        F77777777777777777777777777777777777777F",
-    "                        FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF"
+    "                        FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF",
 ];
 
 pub fn commit_pixbuf() -> gdk_pixbuf::Pixbuf {
@@ -373,8 +373,7 @@ pub fn commit_pixbuf() -> gdk_pixbuf::Pixbuf {
 }
 
 pub fn commit_image(size: i32) -> gtk::Image {
-    if let Some(pixbuf) =
-        commit_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
+    if let Some(pixbuf) = commit_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
         gtk::Image::new_from_pixbuf(Some(&pixbuf))
     } else {

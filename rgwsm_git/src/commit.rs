@@ -46,9 +46,7 @@ impl_widget_wrapper!(button: gtk::Button, CommitButton);
 impl CommitButton {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let button = gtk::Button::new();
-        button.set_tooltip_text(Some(
-            "Open the commit widget.",
-        ));
+        button.set_tooltip_text(Some("Open the commit widget."));
         button.set_image(&action_icons::commit_image(32));
         button.set_image_position(gtk::PositionType::Top);
         button.set_label("commit");
@@ -142,7 +140,10 @@ impl IndexDiffWidget {
 
     fn get_diff_text(&self) -> (String, Vec<u8>) {
         let mut cmd = Command::new("git");
-        cmd.arg("diff").arg("--no-ext-diff").arg("-M").arg("--staged");
+        cmd.arg("diff")
+            .arg("--no-ext-diff")
+            .arg("-M")
+            .arg("--staged");
         let output = cmd.output().expect("\"git diff\" blew up");
         if output.status.success() {
             let mut hasher = Hasher::new(Algorithm::SHA256);
@@ -198,13 +199,21 @@ impl_widget_wrapper!(v_box: gtk::Box, CommitWidget);
 fn get_name_and_email_string() -> String {
     use std::process::Command;
 
-    let output = Command::new("git").arg("config").arg("user.name").output().expect("\"git config user.name\" blew up");
+    let output = Command::new("git")
+        .arg("config")
+        .arg("user.name")
+        .output()
+        .expect("\"git config user.name\" blew up");
     let name = if output.status.success() && output.stdout.len() > 0 {
         String::from_utf8_lossy(&output.stdout).to_string()
     } else {
         "user name".to_string()
     };
-    let output = Command::new("git").arg("config").arg("user.email").output().expect("\"git config user.email\" blew up");
+    let output = Command::new("git")
+        .arg("config")
+        .arg("user.email")
+        .output()
+        .expect("\"git config user.email\" blew up");
     let email = if output.status.success() && output.stdout.len() > 0 {
         String::from_utf8_lossy(&output.stdout).to_string()
     } else {
@@ -219,7 +228,7 @@ fn insert_acked_by_at_cursor(buffer: &gtk::TextBuffer) {
 }
 
 fn insert_signed_off_by_at_cursor(buffer: &gtk::TextBuffer) {
-    let text =  format!("Signed-off-by: {}", get_name_and_email_string());
+    let text = format!("Signed-off-by: {}", get_name_and_email_string());
     buffer.insert_at_cursor(&text)
 }
 
@@ -235,30 +244,26 @@ impl CommitWidget {
         cw.text_view.set_monospace(true);
         cw.text_view.set_show_right_margin(true);
         cw.text_view.set_right_margin_position(71);
-        cw.text_view.connect_populate_popup(|view, widget|
+        cw.text_view.connect_populate_popup(|view, widget| {
             if let Ok(ref menu) = widget.clone().downcast::<gtk::Menu>() {
                 let mi = gtk::MenuItem::new_with_label("Insert Acked-by");
                 let buffer = view.get_buffer().unwrap();
-                mi.connect_activate(move |_|
-                    insert_acked_by_at_cursor(&buffer)
-                );
+                mi.connect_activate(move |_| insert_acked_by_at_cursor(&buffer));
                 menu.append(&mi);
                 let mi = gtk::MenuItem::new_with_label("Insert Signed-off-by");
                 let buffer = view.get_buffer().unwrap();
-                mi.connect_activate(move |_|
-                    insert_signed_off_by_at_cursor(&buffer)
-                );
+                mi.connect_activate(move |_| insert_signed_off_by_at_cursor(&buffer));
                 menu.append(&mi);
                 menu.show_all();
             }
-            //println!("|{:?}, {:?}|", view, widget)
-        );
+        });
 
         let adj: Option<&gtk::Adjustment> = None;
         let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
         scrolled_window.add(&cw.text_view);
         cw.v_box.pack_start(&scrolled_window, true, true, 0);
-        cw.v_box.pack_start(&cw.index_diff_widget.pwo(), true, true, 0);
+        cw.v_box
+            .pack_start(&cw.index_diff_widget.pwo(), true, true, 0);
         cw.v_box.show_all();
 
         cw
