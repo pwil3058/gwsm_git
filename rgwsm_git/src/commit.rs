@@ -195,20 +195,32 @@ struct CommitWidget {
 
 impl_widget_wrapper!(v_box: gtk::Box, CommitWidget);
 
-fn get_name_and_email_string() -> Option<String> {
+fn get_name_and_email_string() -> String {
     use std::process::Command;
 
     let output = Command::new("git").arg("config").arg("user.name").output().expect("\"git config user.name\" blew up");
-    if !output.status.success() {
-        return None
-    }
-    let name = String::from_utf8_lossy(&output.stdout);
+    let name = if output.status.success() && output.stdout.len() > 0 {
+        String::from_utf8_lossy(&output.stdout).to_string()
+    } else {
+        "user name".to_string()
+    };
     let output = Command::new("git").arg("config").arg("user.email").output().expect("\"git config user.email\" blew up");
-    if !output.status.success() {
-        return None
-    }
-    let email = String::from_utf8_lossy(&output.stdout);
-    Some(format!("{} <{}>", name.trim_end(), email.trim_end()))
+    let email = if output.status.success() && output.stdout.len() > 0 {
+        String::from_utf8_lossy(&output.stdout).to_string()
+    } else {
+        "user@somewhere".to_string()
+    };
+    format!("{} <{}>", name.trim_end(), email.trim_end())
+}
+
+fn insert_acked_by_at_cursor(buffer: &gtk::TextBuffer) {
+    let text = format!("Acked-by: {}", get_name_and_email_string());
+    buffer.insert_at_cursor(&text)
+}
+
+fn insert_signed_off_by_at_cursor(buffer: &gtk::TextBuffer) {
+    let text =  format!("Signed-off-by: {}", get_name_and_email_string());
+    buffer.insert_at_cursor(&text)
 }
 
 impl CommitWidget {
@@ -225,24 +237,19 @@ impl CommitWidget {
         cw.text_view.set_right_margin_position(71);
         cw.text_view.connect_populate_popup(|view, widget|
             if let Ok(ref menu) = widget.clone().downcast::<gtk::Menu>() {
-                println!("downcast successful");
-                if let Some(name_and_email) = get_name_and_email_string() {
-                    let text = format!("Acked-by: {}", name_and_email);
-                    let mi = gtk::MenuItem::new_with_label("Insert Ack-by");
-                    let buffer = view.get_buffer().unwrap();
-                    mi.connect_activate(move |_|
-                        buffer.insert_at_cursor(&text)
-                    );
-                    menu.append(&mi);
-                    let text = format!("Signed-off-by: {}", name_and_email);
-                    let mi = gtk::MenuItem::new_with_label("Insert Signed-off-by");
-                    let buffer = view.get_buffer().unwrap();
-                    mi.connect_activate(move |_|
-                        buffer.insert_at_cursor(&text)
-                    );
-                    menu.append(&mi);
-                    menu.show_all();
-                }
+                let mi = gtk::MenuItem::new_with_label("Insert Acked-by");
+                let buffer = view.get_buffer().unwrap();
+                mi.connect_activate(move |_|
+                    insert_acked_by_at_cursor(&buffer)
+                );
+                menu.append(&mi);
+                let mi = gtk::MenuItem::new_with_label("Insert Signed-off-by");
+                let buffer = view.get_buffer().unwrap();
+                mi.connect_activate(move |_|
+                    insert_signed_off_by_at_cursor(&buffer)
+                );
+                menu.append(&mi);
+                menu.show_all();
             }
             //println!("|{:?}, {:?}|", view, widget)
         );
