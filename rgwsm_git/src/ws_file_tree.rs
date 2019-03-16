@@ -29,7 +29,7 @@ use pw_gix::wrapper::*;
 
 use pw_pathux::str_path::*;
 
-use crate::action_icons;
+//use crate::action_icons;
 use crate::events;
 use crate::exec;
 use crate::fs_db::{self, GitFsDb, ScmFsoData};

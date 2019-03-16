@@ -25,6 +25,7 @@ extern crate gdk_pixbuf;
 extern crate gio;
 extern crate gtk;
 extern crate pango_sys;
+extern crate sourceview;
 
 extern crate cub_diff_gui_lib;
 extern crate cub_diff_lib;

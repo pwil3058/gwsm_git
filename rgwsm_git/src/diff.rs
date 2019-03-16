@@ -63,7 +63,7 @@ impl DiffButton {
         });
         db.wdtw.repopulate();
         db.window
-            .set_geometry_from_recollections("ws::diff:display", (400, 600));
+            .set_geometry_from_recollections("ws::diff:display", (700, 500));
         db.window.set_destroy_with_parent(true);
         db.window.set_title(&config::window_title(Some("diff")));
         db.window.connect_delete_event(move |w, _| {

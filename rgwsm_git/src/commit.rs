@@ -19,6 +19,7 @@ use std::rc::Rc;
 
 use gtk;
 use gtk::prelude::*;
+use sourceview::{self, ViewExt};
 
 use crypto_hash::{Algorithm, Hasher};
 
@@ -36,7 +37,7 @@ use crate::exec::{self, ExecConsole};
 pub struct CommitButton {
     button: gtk::Button,
     window: gtk::Window,
-    idw: Rc<IndexDiffWidget>,
+    commit_widget: Rc<CommitWidget>,
     _exec_console: Rc<ExecConsole>,
 }
 
@@ -58,19 +59,18 @@ impl CommitButton {
         let db = Rc::new(Self {
             button: button,
             window: gtk::Window::new(gtk::WindowType::Toplevel),
-            idw: IndexDiffWidget::new(exec_console),
+            commit_widget: CommitWidget::new(exec_console),
             _exec_console: Rc::clone(&exec_console),
         });
-        db.idw.repopulate();
         db.window
-            .set_geometry_from_recollections("commit:window", (400, 600));
+            .set_geometry_from_recollections("commit:window", (700, 600));
         db.window.set_destroy_with_parent(true);
         db.window.set_title(&config::window_title(Some("diff")));
         db.window.connect_delete_event(move |w, _| {
             w.hide_on_delete();
             gtk::Inhibit(true)
         });
-        db.window.add(&db.idw.pwo());
+        db.window.add(&db.commit_widget.pwo());
         db.window.show_all();
         db.window.hide();
 
@@ -135,6 +135,8 @@ impl IndexDiffWidget {
             }),
         );
 
+        idw.repopulate();
+
         idw
     }
 
@@ -181,5 +183,38 @@ impl IndexDiffWidget {
                 }
             }
         }
+    }
+}
+
+struct CommitWidget {
+    v_box: gtk::Box,
+    text_view: sourceview::View,
+    index_diff_widget: Rc<IndexDiffWidget>,
+    _exec_console: Rc<ExecConsole>,
+}
+
+impl_widget_wrapper!(v_box: gtk::Box, CommitWidget);
+
+impl CommitWidget {
+    pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
+        let cw = Rc::new(Self {
+            v_box: gtk::Box::new(gtk::Orientation::Vertical, 0),
+            text_view: sourceview::View::new(),
+            index_diff_widget: IndexDiffWidget::new(exec_console),
+            _exec_console: Rc::clone(&exec_console),
+        });
+
+        cw.text_view.set_monospace(true);
+        cw.text_view.set_show_right_margin(true);
+        cw.text_view.set_right_margin_position(71);
+
+        let adj: Option<&gtk::Adjustment> = None;
+        let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
+        scrolled_window.add(&cw.text_view);
+        cw.v_box.pack_start(&scrolled_window, true, true, 0);
+        cw.v_box.pack_start(&cw.index_diff_widget.pwo(), true, true, 0);
+        cw.v_box.show_all();
+
+        cw
     }
 }

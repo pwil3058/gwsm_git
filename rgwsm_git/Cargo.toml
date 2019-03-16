@@ -18,6 +18,7 @@ gio = "0.6.0"
 glib = "0.7.0"
 gtk = "0.6.0"
 pango-sys = "0.8.0"
+sourceview = "0.6.0"
 
 cub_diff_lib = { path = "../../../CRATES/rs_cub_diff_lib.git"}
 cub_diff_gui_lib = { path = "../../../CRATES/rs_cub_diff_gui_lib.git"}
