@@ -195,6 +195,22 @@ struct CommitWidget {
 
 impl_widget_wrapper!(v_box: gtk::Box, CommitWidget);
 
+fn get_name_and_email_string() -> Option<String> {
+    use std::process::Command;
+
+    let output = Command::new("git").arg("config").arg("user.name").output().expect("\"git config user.name\" blew up");
+    if !output.status.success() {
+        return None
+    }
+    let name = String::from_utf8_lossy(&output.stdout);
+    let output = Command::new("git").arg("config").arg("user.email").output().expect("\"git config user.email\" blew up");
+    if !output.status.success() {
+        return None
+    }
+    let email = String::from_utf8_lossy(&output.stdout);
+    Some(format!("{} <{}>", name.trim_end(), email.trim_end()))
+}
+
 impl CommitWidget {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let cw = Rc::new(Self {
@@ -207,6 +223,29 @@ impl CommitWidget {
         cw.text_view.set_monospace(true);
         cw.text_view.set_show_right_margin(true);
         cw.text_view.set_right_margin_position(71);
+        cw.text_view.connect_populate_popup(|view, widget|
+            if let Ok(ref menu) = widget.clone().downcast::<gtk::Menu>() {
+                println!("downcast successful");
+                if let Some(name_and_email) = get_name_and_email_string() {
+                    let text = format!("Acked-by: {}", name_and_email);
+                    let mi = gtk::MenuItem::new_with_label("Insert Ack-by");
+                    let buffer = view.get_buffer().unwrap();
+                    mi.connect_activate(move |_|
+                        buffer.insert_at_cursor(&text)
+                    );
+                    menu.append(&mi);
+                    let text = format!("Signed-off-by: {}", name_and_email);
+                    let mi = gtk::MenuItem::new_with_label("Insert Signed-off-by");
+                    let buffer = view.get_buffer().unwrap();
+                    mi.connect_activate(move |_|
+                        buffer.insert_at_cursor(&text)
+                    );
+                    menu.append(&mi);
+                    menu.show_all();
+                }
+            }
+            //println!("|{:?}, {:?}|", view, widget)
+        );
 
         let adj: Option<&gtk::Adjustment> = None;
         let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
