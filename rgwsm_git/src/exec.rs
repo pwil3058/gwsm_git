@@ -190,6 +190,10 @@ impl ExecConsole {
                     if events != 0 {
                         self.event_notifier.notify_events(events)
                     }
+                    if stderr.len() > 0 {
+                        let msg = format!("\"{}\": warned.", cmd);
+                        self.inform_user(&msg, Some(&stderr));
+                    }
                 } else {
                     let msg = format!("\"{}\": failed.", cmd);
                     self.warn_user(&msg, Some(&stderr));
