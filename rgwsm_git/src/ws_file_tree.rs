@@ -165,7 +165,10 @@ where
 
         let owft_clone = Rc::clone(&owft);
         owft.exec_console.event_notifier.add_notification_cb(
-            events::EV_AUTO_UPDATE | events::EV_CHECKOUT | events::EV_FILES_CHANGE,
+            events::EV_AUTO_UPDATE
+                | events::EV_CHECKOUT
+                | events::EV_FILES_CHANGE
+                | events::EV_COMMIT,
             Box::new(move |_| {
                 owft_clone.update(false);
             }),

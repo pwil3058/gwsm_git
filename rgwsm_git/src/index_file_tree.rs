@@ -142,7 +142,10 @@ where
         });
         let ift_clone = Rc::clone(&ift);
         ift.exec_console.event_notifier.add_notification_cb(
-            events::EV_AUTO_UPDATE | events::EV_CHECKOUT | events::EV_FILES_CHANGE,
+            events::EV_AUTO_UPDATE
+                | events::EV_CHECKOUT
+                | events::EV_FILES_CHANGE
+                | events::EV_COMMIT,
             Box::new(move |_| {
                 ift_clone.update(false);
             }),

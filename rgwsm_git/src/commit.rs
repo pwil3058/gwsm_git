@@ -191,7 +191,8 @@ struct CommitWidget {
     v_box: gtk::Box,
     text_view: sourceview::View,
     index_diff_widget: Rc<IndexDiffWidget>,
-    _exec_console: Rc<ExecConsole>,
+    exec_console: Rc<ExecConsole>,
+    exec_button: gtk::Button,
 }
 
 impl_widget_wrapper!(v_box: gtk::Box, CommitWidget);
@@ -238,7 +239,50 @@ impl CommitWidget {
             v_box: gtk::Box::new(gtk::Orientation::Vertical, 0),
             text_view: sourceview::View::new(),
             index_diff_widget: IndexDiffWidget::new(exec_console),
-            _exec_console: Rc::clone(&exec_console),
+            exec_console: Rc::clone(&exec_console),
+            exec_button: gtk::Button::new(),
+        });
+
+        let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        h_box.pack_start(&gtk::Label::new("Message"), false, false, 0);
+        h_box.pack_start(
+            &gtk::Box::new(gtk::Orientation::Horizontal, 0),
+            true,
+            true,
+            0,
+        );
+        h_box.pack_end(&cw.exec_button, false, false, 0);
+        cw.v_box.pack_start(&h_box, false, false, 0);
+        cw.exec_button.set_label("Commit");
+        cw.exec_console.managed_buttons.add_widget(
+            "exec_commit",
+            &cw.exec_button,
+            exec::SAV_IN_REPO,
+        );
+
+        let cw_clone = Rc::clone(&cw);
+        cw.exec_button.connect_clicked(move |_| {
+            let buffer = cw_clone
+                .text_view
+                .get_buffer()
+                .expect("get_buffer() failed");
+            let start = buffer.get_start_iter();
+            let end = buffer.get_end_iter();
+            let text = buffer
+                .get_text(&start, &end, false)
+                .expect("get_text() failed");
+            if text.len() > 0 {
+                let cmd = format!("git commit -m {}", shlex::quote(&text));
+                let result = cw_clone.exec_console.exec_cmd(&cmd, events::EV_COMMIT);
+                if let Ok(ref output) = result {
+                    if output.status.success() {
+                        buffer.set_text("")
+                    }
+                }
+                cw_clone.report_any_command_problems(&cmd, &result);
+            } else {
+                cw_clone.warn_user("Commit message is empty!", None);
+            }
         });
 
         cw.text_view.set_monospace(true);

@@ -275,7 +275,7 @@ impl BranchesNameTable {
         });
         let table_clone = Rc::clone(&table);
         table.exec_console.event_notifier.add_notification_cb(
-            events::EV_AUTO_UPDATE | events::EV_BRANCHES_CHANGE,
+            events::EV_AUTO_UPDATE | events::EV_BRANCHES_CHANGE | events::EV_COMMIT,
             Box::new(move |_| table_clone.auto_update()),
         );
         let table_clone = Rc::clone(&table);
