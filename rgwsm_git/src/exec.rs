@@ -13,7 +13,8 @@
 // limitations under the License.
 
 use std::env;
-use std::process::Command;
+use std::io;
+use std::process::{Command, Output};
 use std::rc::Rc;
 use std::time::SystemTime;
 
@@ -174,36 +175,21 @@ impl ExecConsole {
         self.append_markup(&markup);
     }
 
-    pub fn exec_cmd(&self, cmd: &str, events: u64) {
+    pub fn exec_cmd(&self, cmd: &str, events: u64) -> io::Result<Output> {
         let dt = DateTime::<Local>::from(SystemTime::now());
         self.append_bold(&format!("{}: ", dt.format("%Y-%m-%d-%H-%M-%S")));
         self.append_cmd(cmd);
         let cmd_line = shlex::split(cmd).unwrap();
-        match Command::new(&cmd_line[0]).args(&cmd_line[1..]).output() {
-            Ok(output) => {
-                let stdout = String::from_utf8_lossy(&output.stdout);
-                self.append_stdout(&stdout);
-                let stderr = String::from_utf8_lossy(&output.stderr);
-                self.append_stderr(&stderr);
-                self.append_bold("% ");
-                if output.status.success() {
-                    if events != 0 {
-                        self.event_notifier.notify_events(events)
-                    }
-                    if stderr.len() > 0 {
-                        let msg = format!("\"{}\": warned.", cmd);
-                        self.inform_user(&msg, Some(&stderr));
-                    }
-                } else {
-                    let msg = format!("\"{}\": failed.", cmd);
-                    self.warn_user(&msg, Some(&stderr));
-                }
-            }
-            Err(err) => {
-                let msg = format!("\"{}\": blew up!", cmd);
-                self.report_error(&msg, &err);
-            }
+        let output = Command::new(&cmd_line[0]).args(&cmd_line[1..]).output()?;
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        self.append_stdout(&stdout);
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        self.append_stderr(&stderr);
+        self.append_bold("% ");
+        if output.status.success() && events != 0 {
+            self.event_notifier.notify_events(events)
         }
+        Ok(output)
     }
 
     pub fn in_repo(&self) -> bool {

@@ -189,9 +189,10 @@ where
             .connect_activate(move |_| {
                 if let Some(fso_paths) = owft_clone.get_chosen_file_paths_string() {
                     let cmd = format!("git add {}", fso_paths);
-                    owft_clone
+                    let result = owft_clone
                         .exec_console
                         .exec_cmd(&cmd, events::EV_FILES_CHANGE);
+                    owft_clone.report_any_command_problems(&cmd, &result);
                 }
             });
 

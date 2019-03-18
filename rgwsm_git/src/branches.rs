@@ -304,9 +304,10 @@ impl BranchesNameTable {
                 };
                 if let Some(branch) = branch {
                     let cmd = format!("git checkout {}", branch);
-                    table_clone
+                    let result = table_clone
                         .exec_console
                         .exec_cmd(&cmd, events::EV_BRANCHES_CHANGE | events::EV_CHECKOUT);
+                    table_clone.report_any_command_problems(&cmd, &result);
                 }
             });
         let table_clone = table.clone();
@@ -389,11 +390,14 @@ impl BranchButton {
             if let Some(branch_name) = branch_name.get_text() {
                 if checkout_new_branch.get_active() {
                     let cmd = format!("git checkout -b {}", branch_name);
-                    self.exec_console
+                    let result = self
+                        .exec_console
                         .exec_cmd(&cmd, events::EV_BRANCHES_CHANGE | events::EV_CHECKOUT);
+                    self.report_any_command_problems(&cmd, &result);
                 } else {
                     let cmd = format!("git branch {}", branch_name);
-                    self.exec_console.exec_cmd(&cmd, events::EV_BRANCHES_CHANGE);
+                    let result = self.exec_console.exec_cmd(&cmd, events::EV_BRANCHES_CHANGE);
+                    self.report_any_command_problems(&cmd, &result);
                 }
             }
         }

@@ -165,9 +165,10 @@ where
             .connect_activate(move |_| {
                 if let Some(fso_paths) = ift_clone.get_chosen_file_paths_string() {
                     let cmd = format!("git reset HEAD -- {}", fso_paths);
-                    ift_clone
+                    let result = ift_clone
                         .exec_console
                         .exec_cmd(&cmd, events::EV_FILES_CHANGE);
+                    ift_clone.report_any_command_problems(&cmd, &result);
                 }
             });
 
