@@ -193,6 +193,7 @@ struct CommitWidget {
     index_diff_widget: Rc<IndexDiffWidget>,
     exec_console: Rc<ExecConsole>,
     exec_button: gtk::Button,
+    amend_option_button: gtk::CheckButton,
 }
 
 impl_widget_wrapper!(v_box: gtk::Box, CommitWidget);
@@ -233,6 +234,21 @@ fn insert_signed_off_by_at_cursor(buffer: &gtk::TextBuffer) {
     buffer.insert_at_cursor(&text)
 }
 
+fn last_commit_message() -> String {
+    let output = Command::new("git")
+        .arg("log")
+        .arg("-n")
+        .arg("1")
+        .arg("--pretty=format:%s%n%n%b")
+        .output()
+        .expect("getting last commit message text failed");
+    if output.status.success() {
+        String::from_utf8_lossy(&output.stdout).to_string()
+    } else {
+        "".to_string()
+    }
+}
+
 impl CommitWidget {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let cw = Rc::new(Self {
@@ -241,6 +257,7 @@ impl CommitWidget {
             index_diff_widget: IndexDiffWidget::new(exec_console),
             exec_console: Rc::clone(&exec_console),
             exec_button: gtk::Button::new(),
+            amend_option_button: gtk::CheckButton::new_with_label("--amend"),
         });
 
         let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
@@ -252,6 +269,7 @@ impl CommitWidget {
             0,
         );
         h_box.pack_end(&cw.exec_button, false, false, 0);
+        h_box.pack_end(&cw.amend_option_button, false, false, 0);
         cw.v_box.pack_start(&h_box, false, false, 0);
         cw.exec_button.set_label("Commit");
         cw.exec_console.managed_buttons.add_widget(
@@ -259,6 +277,22 @@ impl CommitWidget {
             &cw.exec_button,
             exec::SAV_IN_REPO,
         );
+        cw.exec_console.managed_check_buttons.add_widget(
+            "amend_option",
+            &cw.amend_option_button,
+            exec::SAV_IN_REPO,
+        );
+
+        let cw_clone = Rc::clone(&cw);
+        cw.amend_option_button.connect_toggled(move |cb| {
+            if cb.get_active() {
+                let buffer = cw_clone
+                    .text_view
+                    .get_buffer()
+                    .expect("get_buffer() failed");
+                buffer.insert_at_cursor(&last_commit_message());
+            }
+        });
 
         let cw_clone = Rc::clone(&cw);
         cw.exec_button.connect_clicked(move |_| {
@@ -272,7 +306,11 @@ impl CommitWidget {
                 .get_text(&start, &end, false)
                 .expect("get_text() failed");
             if text.len() > 0 {
-                let cmd = format!("git commit -m {}", shlex::quote(&text));
+                let cmd = if cw_clone.amend_option_button.get_active() {
+                    format!("git commit --amend -m {}", shlex::quote(&text))
+                } else {
+                    format!("git commit -m {}", shlex::quote(&text))
+                };
                 let result = cw_clone.exec_console.exec_cmd(&cmd, events::EV_COMMIT);
                 if let Ok(ref output) = result {
                     if output.status.success() {

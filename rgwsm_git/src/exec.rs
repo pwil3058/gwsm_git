@@ -71,6 +71,7 @@ pub struct ExecConsole {
     pub event_notifier: Rc<EventNotifier>,
     pub changed_condns_notifier: Rc<ChangedCondnsNotifier>,
     pub managed_buttons: Rc<ConditionalWidgetGroups<gtk::Button>>,
+    pub managed_check_buttons: Rc<ConditionalWidgetGroups<gtk::CheckButton>>,
     auto_update: Rc<timeout::ControlledTimeoutCycle>,
 }
 
@@ -84,6 +85,11 @@ impl ExecConsole {
             None,
             Some(&changed_condns_notifier),
         );
+        let managed_check_buttons = ConditionalWidgetGroups::<gtk::CheckButton>::new(
+            WidgetStatesControlled::Sensitivity,
+            None,
+            Some(&changed_condns_notifier),
+        );
         let adj: Option<&gtk::Adjustment> = None;
         let ec = Rc::new(Self {
             scrolled_window: gtk::ScrolledWindow::new(adj, adj),
@@ -92,6 +98,7 @@ impl ExecConsole {
             event_notifier: EventNotifier::new(),
             changed_condns_notifier: changed_condns_notifier,
             managed_buttons: managed_buttons,
+            managed_check_buttons: managed_check_buttons,
             auto_update: timeout::ControlledTimeoutCycle::new("Auto Update", true, 10),
         });
         ec.text_view.set_editable(false);
