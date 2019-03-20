@@ -90,6 +90,7 @@ where
 {
     pub fn new(exec_console: &Rc<exec::ExecConsole>) -> Rc<Self> {
         let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        v_box.pack_start(&gtk::Label::new("Staged Files"), false, false, 0);
         let view = gtk::TreeView::new();
         let store = gtk::TreeStore::new(&FSOI::tree_store_spec());
         view.set_model(&store);
