@@ -53,6 +53,7 @@ mod exec;
 mod fs_db;
 mod icon;
 mod index_file_tree;
+mod remotes;
 mod submodules;
 mod ws_file_tree;
 
@@ -97,7 +98,7 @@ fn activate(app: &gtk::Application) {
     menu.show_all();
     menu_item.show_all();
     hbox.show_all();
-    let action_hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+    let action_hbox = gtk::Box::new(gtk::Orientation::Horizontal, 2);
     vbox.pack_start(&action_hbox, false, false, 0);
     let submodule_parent_button = submodules::SubmoduleParentButton::new(&exec);
     action_hbox.pack_start(&submodule_parent_button.pwo(), false, false, 0);
@@ -119,6 +120,15 @@ fn activate(app: &gtk::Application) {
     );
     let branch_button = branches::BranchButton::new(&exec);
     action_hbox.pack_start(&branch_button.pwo(), false, false, 0);
+    action_hbox.pack_start(
+        &gtk::Separator::new(gtk::Orientation::Vertical),
+        false,
+        false,
+        1,
+    );
+    let simple_remote_buttons = remotes::SimpleRemoteActionButtons::new(&exec);
+    action_hbox.pack_start(&simple_remote_buttons.pwo(), false, false, 0);
+
     let label = gtk::Label::new("GUI is under construction");
     vbox.pack_start(&label, false, false, 0);
     let paned_h_1 = gtk::Paned::new(gtk::Orientation::Horizontal);

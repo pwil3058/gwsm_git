@@ -169,7 +169,8 @@ where
             events::EV_AUTO_UPDATE
                 | events::EV_CHECKOUT
                 | events::EV_FILES_CHANGE
-                | events::EV_COMMIT,
+                | events::EV_COMMIT
+                | events::EV_PULL,
             Box::new(move |_| {
                 owft_clone.update(false);
             }),
