@@ -917,6 +917,7 @@ where
     fn reset(&self) {
         let text = self.latest_text.borrow();
         let snapshot = extract_snapshot_from_text(&text);
+        *self.snapshot_digest.borrow_mut() = self.latest_text_digest.borrow().to_vec();
         *self.curr_dir.borrow_mut() = str_path_current_dir_or_panic();
         *self.base_dir.borrow_mut() = GitFsDbDir::new(".", snapshot, false, false);
     }
