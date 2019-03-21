@@ -23,6 +23,7 @@ pub const EV_BRANCHES_CHANGE: u64 = 1 << 4;
 pub const EV_COMMIT: u64 = 1 << 5;
 pub const EV_PULL: u64 = 1 << 6;
 pub const EV_PUSH: u64 = 1 << 7;
+pub const EV_REMOTES_CHANGE: u64 = 1 << 8;
 
 pub struct EventNotifier {
     callbacks: RefCell<Vec<(u64, u64, Box<Fn(u64)>)>>,
