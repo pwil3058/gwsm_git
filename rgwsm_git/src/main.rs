@@ -144,6 +144,9 @@ fn activate(app: &gtk::Application) {
     let branches_table = branches::BranchesNameTable::new(&exec);
     notebook.add(&branches_table.pwo());
     notebook.set_tab_label_text(&branches_table.pwo(), "Branches");
+    let remotes_table = remotes::RemotesNameTable::new(&exec);
+    notebook.add(&remotes_table.pwo());
+    notebook.set_tab_label_text(&remotes_table.pwo(), "Remotes");
     notebook.add(&gtk::Label::new("Tags will go here!!"));
     notebook.set_property_enable_popup(true);
     paned_h_2.add2(&notebook);

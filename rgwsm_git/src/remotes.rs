@@ -13,7 +13,6 @@
 // limitations under the License.
 
 use std::cell::{Cell, Ref, RefCell};
-use std::collections::HashSet;
 use std::io::Write;
 use std::process::Command;
 use std::rc::Rc;
@@ -175,7 +174,7 @@ impl BufferedUpdate<String, gtk::ListStore> for RemotesNameListStore {
 impl RemotesNameListStore {
     pub fn new() -> RemotesNameListStore {
         Self {
-            list_store: gtk::ListStore::new(&[gtk::Type::String; 5]),
+            list_store: gtk::ListStore::new(&[gtk::Type::String; 3]),
             remotes_row_buffer: Rc::new(RefCell::new(RemotesRowBuffer::new())),
         }
     }
@@ -229,7 +228,7 @@ impl RemotesNameTable {
         let cell = gtk::CellRendererText::new();
         cell.set_property_editable(false);
         col.pack_start(&cell, false);
-        col.add_attribute(&cell, "text", 1);
+        col.add_attribute(&cell, "text", 0);
 
         view.append_column(&col);
 
@@ -241,7 +240,7 @@ impl RemotesNameTable {
         let cell = gtk::CellRendererText::new();
         cell.set_property_editable(false);
         col.pack_start(&cell, false);
-        col.add_attribute(&cell, "text", 2);
+        col.add_attribute(&cell, "text", 1);
 
         view.append_column(&col);
 
@@ -253,7 +252,7 @@ impl RemotesNameTable {
         let cell = gtk::CellRendererText::new();
         cell.set_property_editable(false);
         col.pack_start(&cell, false);
-        col.add_attribute(&cell, "text", 3);
+        col.add_attribute(&cell, "text", 2);
 
         view.append_column(&col);
 
