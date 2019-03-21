@@ -148,7 +148,7 @@ where
                 | events::EV_FILES_CHANGE
                 | events::EV_COMMIT,
             Box::new(move |_| {
-                ift_clone.update(false);
+                ift_clone.update();
             }),
         );
         let ift_clone = Rc::clone(&ift);

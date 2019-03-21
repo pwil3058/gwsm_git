@@ -172,7 +172,7 @@ where
                 | events::EV_COMMIT
                 | events::EV_PULL,
             Box::new(move |_| {
-                owft_clone.update(false);
+                owft_clone.update();
             }),
         );
 

@@ -485,7 +485,7 @@ fn first_status_in_set(
 
 type FileStatusData = Rc<HashMap<String, (String, Option<RelatedFileData>)>>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Snapshot {
     num_dir_components: usize,
     file_status_data: FileStatusData,
@@ -854,9 +854,7 @@ where
 {
     base_dir: RefCell<GitFsDbDir<FSOI>>,
     curr_dir: RefCell<String>, // so we can tell if there's a change of current directory
-    latest_text: RefCell<String>,
     snapshot_digest: RefCell<Vec<u8>>,
-    latest_text_digest: RefCell<Vec<u8>>,
 }
 
 // TODO: put in mechanisms to only recalculate snapshot when there are changes
@@ -880,9 +878,7 @@ where
         Self {
             base_dir: RefCell::new(base_dir),
             curr_dir: RefCell::new(curr_dir),
-            latest_text: RefCell::new("".to_string()),
             snapshot_digest: RefCell::new(snapshot_digest),
-            latest_text_digest: RefCell::new(vec![]),
         }
     }
 
@@ -903,21 +899,33 @@ where
         }
     }
 
-    fn is_current(&self) -> bool {
-        let (text, digest) = get_snapshot_text();
-        if digest != *self.snapshot_digest.borrow() {
-            *self.latest_text_digest.borrow_mut() = digest;
-            *self.latest_text.borrow_mut() = text;
-            false
+    fn update_if_necessary(&self) -> bool {
+        if self.curr_dir_changed() {
+            self.reset();
+            true
         } else {
-            self.curr_dir_unchanged() && self.base_dir.borrow_mut().is_current()
+            let (text, digest) = get_snapshot_text();
+            let mut snapshot_digest = self.snapshot_digest.borrow_mut();
+            if digest != *snapshot_digest {
+                *snapshot_digest = digest;
+                let snapshot = extract_snapshot_from_text(&text);
+                *self.base_dir.borrow_mut() = GitFsDbDir::new(".", snapshot, false, false);
+                true
+            } else if !self.base_dir.borrow_mut().is_current() {
+                let mut base_dir = self.base_dir.borrow_mut();
+                let snapshot = base_dir.snapshot.clone();
+                *base_dir = GitFsDbDir::new(".", snapshot, false, false);
+                true
+            } else {
+                false
+            }
         }
     }
 
     fn reset(&self) {
-        let text = self.latest_text.borrow();
+        let (text, digest) = get_snapshot_text();
         let snapshot = extract_snapshot_from_text(&text);
-        *self.snapshot_digest.borrow_mut() = self.latest_text_digest.borrow().to_vec();
+        *self.snapshot_digest.borrow_mut() = digest;
         *self.curr_dir.borrow_mut() = str_path_current_dir_or_panic();
         *self.base_dir.borrow_mut() = GitFsDbDir::new(".", snapshot, false, false);
     }
@@ -927,8 +935,8 @@ impl<FSOI> GitFsDb<FSOI>
 where
     FSOI: FsObjectIfce + ScmFsoDataIfce + Clone,
 {
-    fn curr_dir_unchanged(&self) -> bool {
-        *self.curr_dir.borrow() == str_path_current_dir_or_panic()
+    fn curr_dir_changed(&self) -> bool {
+        *self.curr_dir.borrow() != str_path_current_dir_or_panic()
     }
 
     fn check_visibility(&self, show_hidden: bool, hide_clean: bool) {
@@ -1084,8 +1092,6 @@ where
     FSOI: FsObjectIfce + ScmFsoDataIfce + Clone,
 {
     base_dir: RefCell<GitIndexDbDir<FSOI>>,
-    latest_text: RefCell<String>,
-    latest_text_digest: RefCell<Vec<u8>>,
     populated_digest: RefCell<Vec<u8>>,
 }
 
@@ -1122,15 +1128,13 @@ where
     }
 
     fn new() -> Self {
-        let (latest_text, latest_text_digest) = get_digest_text();
         let base_dir = GitIndexDbDir::<FSOI>::new(".", NO_STATUS, false); // paths are relative
         let gib = Self {
             base_dir: RefCell::new(base_dir),
-            latest_text: RefCell::new(latest_text),
-            latest_text_digest: RefCell::new(latest_text_digest),
             populated_digest: RefCell::new(vec![]),
         };
-        gib.populate();
+        let (text, text_digest) = get_digest_text();
+        gib.populate(&text, &text_digest);
 
         gib
     }
@@ -1152,21 +1156,19 @@ where
         }
     }
 
-    fn is_current(&self) -> bool {
+    fn update_if_necessary(&self) -> bool {
         let (text, digest) = get_digest_text();
         if digest != *self.populated_digest.borrow() {
-            *self.latest_text_digest.borrow_mut() = digest;
-            *self.latest_text.borrow_mut() = text;
-            false
-        } else {
+            self.populate(&text, &digest);
             true
+        } else {
+            false
         }
     }
 
     fn reset(&self) {
-        let hide_clean = self.base_dir.borrow().hide_clean;
-        *self.base_dir.borrow_mut() = GitIndexDbDir::new(".", NO_STATUS, hide_clean);
-        self.populate();
+        let (text, digest) = get_digest_text();
+        self.populate(&text, &digest);
     }
 }
 
@@ -1182,9 +1184,11 @@ where
         }
     }
 
-    fn populate(&self) {
+    fn populate(&self, text: &str, digest: &[u8]) {
         let mut base_dir = self.base_dir.borrow_mut();
-        for line in self.latest_text.borrow().lines() {
+        let hide_clean = base_dir.hide_clean;
+        *base_dir = GitIndexDbDir::new(".", NO_STATUS, hide_clean);
+        for line in text.lines() {
             if line.starts_with(" ") {
                 continue; // not in the index
             }
@@ -1193,6 +1197,6 @@ where
             base_dir.add_file(&path_components[1..], &status, &related_file_data)
         }
         base_dir.finalize();
-        *self.populated_digest.borrow_mut() = self.latest_text_digest.borrow().to_vec();
+        *self.populated_digest.borrow_mut() = digest.to_vec();
     }
 }
