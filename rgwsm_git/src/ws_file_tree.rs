@@ -179,9 +179,7 @@ where
         let owft_clone = Rc::clone(&owft);
         owft.exec_console.event_notifier.add_notification_cb(
             events::EV_CHANGE_DIR,
-            Box::new(move |_| {
-                owft_clone.repopulate()
-            }),
+            Box::new(move |_| owft_clone.repopulate()),
         );
 
         let owft_clone = Rc::clone(&owft);

@@ -51,10 +51,13 @@ impl SimpleRemoteActionButtons {
             exec_console: Rc::clone(&exec_console),
         });
 
-        srab.simple_pull_button.set_tooltip_text("Initiate a simple default \"git pull\" operation");
-        srab.exec_console
-            .managed_buttons
-            .add_widget("simple pull", &srab.simple_pull_button, exec::SAV_IN_REPO);
+        srab.simple_pull_button
+            .set_tooltip_text("Initiate a simple default \"git pull\" operation");
+        srab.exec_console.managed_buttons.add_widget(
+            "simple pull",
+            &srab.simple_pull_button,
+            exec::SAV_IN_REPO,
+        );
         let srab_clone = Rc::clone(&srab);
         srab.simple_pull_button.connect_clicked(move |_| {
             let cmd = "git pull";
@@ -64,10 +67,13 @@ impl SimpleRemoteActionButtons {
             srab_clone.report_any_command_problems(&cmd, &result);
         });
 
-        srab.simple_push_button.set_tooltip_text("Initiate a simple default \"git push\" operation");
-        srab.exec_console
-            .managed_buttons
-            .add_widget("simple push", &srab.simple_push_button, exec::SAV_IN_REPO);
+        srab.simple_push_button
+            .set_tooltip_text("Initiate a simple default \"git push\" operation");
+        srab.exec_console.managed_buttons.add_widget(
+            "simple push",
+            &srab.simple_push_button,
+            exec::SAV_IN_REPO,
+        );
         let srab_clone = Rc::clone(&srab);
         srab.simple_push_button.connect_clicked(move |_| {
             let cmd = "git push";
@@ -77,14 +83,15 @@ impl SimpleRemoteActionButtons {
             srab_clone.report_any_command_problems(&cmd, &result);
         });
 
-        srab.h_box.pack_start(&srab.simple_pull_button, false, false, 0);
-        srab.h_box.pack_start(&srab.simple_push_button, false, false, 0);
+        srab.h_box
+            .pack_start(&srab.simple_pull_button, false, false, 0);
+        srab.h_box
+            .pack_start(&srab.simple_push_button, false, false, 0);
         srab.h_box.show_all();
 
         srab
     }
 }
-
 
 fn get_raw_data() -> (String, Vec<u8>) {
     let mut hasher = Hasher::new(Algorithm::SHA256);
@@ -95,9 +102,7 @@ fn get_raw_data() -> (String, Vec<u8>) {
         .output()
         .expect("getting all remotes text failed");
     if output.status.success() {
-        hasher
-            .write_all(&output.stdout)
-            .expect("hasher blew up!!!");
+        hasher.write_all(&output.stdout).expect("hasher blew up!!!");
         text = String::from_utf8_lossy(&output.stdout).to_string();
     } else {
         text = "".to_string();
@@ -147,7 +152,11 @@ impl RowBuffer<String> for RemotesRowBuffer {
                 inbound_url = captures.get(2).unwrap().as_str();
             } else {
                 let outbound_url = captures.get(2).unwrap().as_str();
-                let row = vec![name.to_value(), inbound_url.to_value(), outbound_url.to_value()];
+                let row = vec![
+                    name.to_value(),
+                    inbound_url.to_value(),
+                    outbound_url.to_value(),
+                ];
                 rows.push(row);
             }
         }
@@ -191,9 +200,7 @@ pub struct RemotesNameTable {
 
 impl_widget_wrapper!(view: gtk::TreeView, RemotesNameTable);
 
-impl MapManagedUpdate<RemotesNameListStore, String, gtk::ListStore>
-    for RemotesNameTable
-{
+impl MapManagedUpdate<RemotesNameListStore, String, gtk::ListStore> for RemotesNameTable {
     fn buffered_update(&self) -> Ref<RemotesNameListStore> {
         self.list_store.borrow()
     }

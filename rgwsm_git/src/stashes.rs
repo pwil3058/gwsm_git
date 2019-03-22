@@ -46,8 +46,10 @@ impl StashPushWidget {
             text_view: gtk::TextView::new(),
         });
 
-        ctw.v_box.pack_start(&ctw.keep_index_ch_btn, false, false, 0);
-        ctw.v_box.pack_start(&ctw.include_untracked_ch_btn, false, false, 0);
+        ctw.v_box
+            .pack_start(&ctw.keep_index_ch_btn, false, false, 0);
+        ctw.v_box
+            .pack_start(&ctw.include_untracked_ch_btn, false, false, 0);
         ctw.v_box.pack_start(&ctw.all_ch_btn, false, false, 0);
         let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         h_box.pack_start(&gtk::Label::new("Message"), false, false, 0);
@@ -59,25 +61,24 @@ impl StashPushWidget {
         ctw.v_box.show_all();
 
         let ctw_clone = Rc::clone(&ctw);
-        ctw.include_untracked_ch_btn.connect_clicked(move |button|
+        ctw.include_untracked_ch_btn.connect_clicked(move |button| {
             if button.get_active() {
                 ctw_clone.all_ch_btn.set_active(false)
             }
-        );
+        });
 
         let ctw_clone = Rc::clone(&ctw);
-        ctw.all_ch_btn.connect_clicked(move |button|
+        ctw.all_ch_btn.connect_clicked(move |button| {
             if button.get_active() {
                 ctw_clone.include_untracked_ch_btn.set_active(false)
             }
-        );
+        });
 
         ctw
     }
 
     pub fn get_message(&self) -> Option<String> {
-        let buffer = self.text_view.get_buffer()
-            .expect("get_buffer() failed");
+        let buffer = self.text_view.get_buffer().expect("get_buffer() failed");
         let start = buffer.get_start_iter();
         let end = buffer.get_end_iter();
         if let Some(text) = buffer.get_text(&start, &end, false) {
@@ -102,9 +103,7 @@ impl_widget_wrapper!(button: gtk::Button, StashPushButton);
 impl StashPushButton {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let button = gtk::Button::new();
-        button.set_tooltip_text(Some(
-            "Push the current state on to the stash stack",
-        ));
+        button.set_tooltip_text(Some("Push the current state on to the stash stack"));
         button.set_image(&action_icons::stash_push_image(32));
         button.set_image_position(gtk::PositionType::Top);
         button.set_label("stash");
@@ -117,8 +116,7 @@ impl StashPushButton {
         });
 
         let bb_clone = Rc::clone(&bb);
-        bb.button
-            .connect_clicked(move |_| bb_clone.stash_push_cb());
+        bb.button.connect_clicked(move |_| bb_clone.stash_push_cb());
 
         bb
     }
@@ -132,7 +130,9 @@ impl StashPushButton {
         dialog.set_default_response(gtk::ResponseType::Ok);
         dialog.set_size_from_recollections("create:stash:dialog", (600, 330));
         let stash_push_widget = StashPushWidget::new();
-        dialog.get_content_area().pack_start(&stash_push_widget.pwo(), true, true, 0);
+        dialog
+            .get_content_area()
+            .pack_start(&stash_push_widget.pwo(), true, true, 0);
         dialog.get_content_area().show_all();
         let result = dialog.run();
         dialog.hide();
@@ -151,7 +151,9 @@ impl StashPushButton {
                 cmd.push_str(&format!(" -m {}", shlex::quote(&text)));
             }
             let cursor = self.show_busy();
-            let result = self.exec_console.exec_cmd(&cmd, events::EV_STASHES_CHANGE + events::EV_FILES_CHANGE);
+            let result = self
+                .exec_console
+                .exec_cmd(&cmd, events::EV_STASHES_CHANGE + events::EV_FILES_CHANGE);
             self.unshow_busy(cursor);
             self.report_any_command_problems(&cmd, &result);
         }

@@ -459,7 +459,8 @@ pub fn stash_push_pixbuf() -> gdk_pixbuf::Pixbuf {
 }
 
 pub fn stash_push_image(size: i32) -> gtk::Image {
-    if let Some(pixbuf) = stash_push_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
+    if let Some(pixbuf) =
+        stash_push_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
         gtk::Image::new_from_pixbuf(Some(&pixbuf))
     } else {
