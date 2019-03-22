@@ -54,6 +54,7 @@ mod fs_db;
 mod icon;
 mod index_file_tree;
 mod remotes;
+mod stashes;
 mod submodules;
 mod ws_file_tree;
 
@@ -120,6 +121,14 @@ fn activate(app: &gtk::Application) {
     );
     let branch_button = branches::BranchButton::new(&exec);
     action_hbox.pack_start(&branch_button.pwo(), false, false, 0);
+    action_hbox.pack_start(
+        &gtk::Separator::new(gtk::Orientation::Vertical),
+        false,
+        false,
+        1,
+    );
+    let stash_push_button = stashes::StashPushButton::new(&exec);
+    action_hbox.pack_start(&stash_push_button.pwo(), false, false, 0);
     action_hbox.pack_start(
         &gtk::Separator::new(gtk::Orientation::Vertical),
         false,
