@@ -58,6 +58,20 @@ impl StashPushWidget {
         ctw.v_box.pack_start(&scrolled_window, true, true, 0);
         ctw.v_box.show_all();
 
+        let ctw_clone = Rc::clone(&ctw);
+        ctw.include_untracked_ch_btn.connect_clicked(move |button|
+            if button.get_active() {
+                ctw_clone.all_ch_btn.set_active(false)
+            }
+        );
+
+        let ctw_clone = Rc::clone(&ctw);
+        ctw.all_ch_btn.connect_clicked(move |button|
+            if button.get_active() {
+                ctw_clone.include_untracked_ch_btn.set_active(false)
+            }
+        );
+
         ctw
     }
 
