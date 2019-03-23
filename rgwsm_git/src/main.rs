@@ -153,6 +153,9 @@ fn activate(app: &gtk::Application) {
     let branches_table = branches::BranchesNameTable::new(&exec);
     notebook.add(&branches_table.pwo());
     notebook.set_tab_label_text(&branches_table.pwo(), "Branches");
+    let stashes_table = stashes::StashesNameTable::new(&exec);
+    notebook.add(&stashes_table.pwo());
+    notebook.set_tab_label_text(&stashes_table.pwo(), "Stashes");
     let remotes_table = remotes::RemotesNameTable::new(&exec);
     notebook.add(&remotes_table.pwo());
     notebook.set_tab_label_text(&remotes_table.pwo(), "Remotes");

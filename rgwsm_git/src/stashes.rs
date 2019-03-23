@@ -12,14 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::cell::{Cell, Ref, RefCell};
+use std::io::Write;
+use std::process::Command;
 use std::rc::Rc;
 
 use gtk;
 use gtk::prelude::*;
 
+use crypto_hash::{Algorithm, Hasher};
+use regex::Regex;
 use shlex;
 
 use pw_gix::gtkx::dialog::*;
+use pw_gix::gtkx::list_store::{
+    BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
+};
+use pw_gix::gtkx::menu::ManagedMenu;
+use pw_gix::sav_state::*;
 use pw_gix::wrapper::*;
 
 use crate::action_icons;
@@ -158,5 +168,229 @@ impl StashPushButton {
             self.report_any_command_problems(&cmd, &result);
         }
         dialog.destroy();
+    }
+}
+
+fn get_raw_data() -> (String, Vec<u8>) {
+    let mut hasher = Hasher::new(Algorithm::SHA256);
+    let text: String;
+    let output = Command::new("git")
+        .arg("stash")
+        .arg("list")
+        .output()
+        .expect("getting stashes list text failed");
+    if output.status.success() {
+        hasher.write_all(&output.stdout).expect("hasher blew up!!!");
+        text = String::from_utf8_lossy(&output.stdout).to_string();
+    } else {
+        text = "".to_string();
+    }
+    (text, hasher.finish())
+}
+
+lazy_static! {
+    static ref STASH_RE: Regex =
+        Regex::new(r"^(stash@\{\d+\}):\s*([^:]+):(.*)").expect("STASH regex creation failed");
+}
+
+struct StashesRowBuffer {
+    row_buffer_core: Rc<RefCell<RowBufferCore<String>>>,
+}
+
+impl StashesRowBuffer {
+    fn new() -> Self {
+        let core = RowBufferCore::<String>::default();
+        let buffer = Self {
+            row_buffer_core: Rc::new(RefCell::new(core)),
+        };
+        buffer.init();
+        buffer
+    }
+}
+
+impl RowBuffer<String> for StashesRowBuffer {
+    fn get_core(&self) -> Rc<RefCell<RowBufferCore<String>>> {
+        self.row_buffer_core.clone()
+    }
+
+    fn set_raw_data(&self) {
+        let (raw_data, digest) = get_raw_data();
+        let mut core = self.row_buffer_core.borrow_mut();
+        core.set_raw_data(raw_data, digest);
+    }
+
+    fn finalise(&self) {
+        let mut core = self.row_buffer_core.borrow_mut();
+        let mut rows: Vec<Row> = Vec::new();
+        for line in core.raw_data.lines() {
+            let captures = STASH_RE.captures(&line).unwrap();
+            let row = vec![
+                captures.get(1).unwrap().as_str().to_value(),
+                captures.get(2).unwrap().as_str().to_value(),
+                captures.get(3).unwrap().as_str().to_value(),
+            ];
+            rows.push(row);
+        }
+        core.rows = Rc::new(rows);
+        core.set_is_finalised_true();
+    }
+}
+
+struct StashesNameListStore {
+    list_store: gtk::ListStore,
+    stashes_row_buffer: Rc<RefCell<StashesRowBuffer>>,
+}
+
+impl BufferedUpdate<String, gtk::ListStore> for StashesNameListStore {
+    fn get_list_store(&self) -> gtk::ListStore {
+        self.list_store.clone()
+    }
+
+    fn get_row_buffer(&self) -> Rc<RefCell<RowBuffer<String>>> {
+        self.stashes_row_buffer.clone()
+    }
+}
+
+impl StashesNameListStore {
+    pub fn new() -> StashesNameListStore {
+        Self {
+            list_store: gtk::ListStore::new(&[gtk::Type::String; 3]),
+            stashes_row_buffer: Rc::new(RefCell::new(StashesRowBuffer::new())),
+        }
+    }
+}
+
+pub struct StashesNameTable {
+    view: gtk::TreeView,
+    list_store: RefCell<StashesNameListStore>,
+    required_map_action: Cell<RequiredMapAction>,
+    exec_console: Rc<ExecConsole>,
+    popup_menu: ManagedMenu,
+    hovered_stash: RefCell<Option<String>>,
+}
+
+impl_widget_wrapper!(view: gtk::TreeView, StashesNameTable);
+
+impl MapManagedUpdate<StashesNameListStore, String, gtk::ListStore> for StashesNameTable {
+    fn buffered_update(&self) -> Ref<StashesNameListStore> {
+        self.list_store.borrow()
+    }
+
+    fn is_mapped(&self) -> bool {
+        self.view.get_mapped()
+    }
+
+    fn get_required_map_action(&self) -> RequiredMapAction {
+        self.required_map_action.get()
+    }
+
+    fn set_required_map_action(&self, action: RequiredMapAction) {
+        self.required_map_action.set(action);
+    }
+}
+
+impl StashesNameTable {
+    pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<StashesNameTable> {
+        let list_store = RefCell::new(StashesNameListStore::new());
+
+        let view = gtk::TreeView::new_with_model(&list_store.borrow().get_list_store());
+        view.set_headers_visible(true);
+
+        view.get_selection().set_mode(gtk::SelectionMode::Single);
+
+        let col = gtk::TreeViewColumn::new();
+        col.set_title("Name");
+        col.set_expand(false);
+        col.set_resizable(false);
+
+        let cell = gtk::CellRendererText::new();
+        cell.set_property_editable(false);
+        col.pack_start(&cell, false);
+        col.add_attribute(&cell, "text", 0);
+
+        view.append_column(&col);
+
+        let col = gtk::TreeViewColumn::new();
+        col.set_title("Branch");
+        col.set_expand(false);
+        col.set_resizable(false);
+
+        let cell = gtk::CellRendererText::new();
+        cell.set_property_editable(false);
+        col.pack_start(&cell, false);
+        col.add_attribute(&cell, "text", 1);
+
+        view.append_column(&col);
+
+        let col = gtk::TreeViewColumn::new();
+        col.set_title("Commit");
+        col.set_expand(false);
+        col.set_resizable(false);
+
+        let cell = gtk::CellRendererText::new();
+        cell.set_property_editable(false);
+        col.pack_start(&cell, false);
+        col.add_attribute(&cell, "text", 2);
+
+        view.append_column(&col);
+
+        view.show_all();
+
+        list_store.borrow().repopulate();
+
+        let required_map_action = Cell::new(RequiredMapAction::Nothing);
+
+        let popup_menu = ManagedMenu::new(
+            WidgetStatesControlled::Sensitivity,
+            Some(&view.get_selection()),
+            Some(&exec_console.changed_condns_notifier),
+            &vec![],
+        );
+
+        let table = Rc::new(StashesNameTable {
+            view,
+            list_store,
+            required_map_action,
+            exec_console: Rc::clone(exec_console),
+            popup_menu: popup_menu,
+            hovered_stash: RefCell::new(None),
+        });
+        let table_clone = Rc::clone(&table);
+        table.exec_console.event_notifier.add_notification_cb(
+            events::EV_AUTO_UPDATE | events::EV_STASHES_CHANGE,
+            Box::new(move |_| table_clone.auto_update()),
+        );
+        let table_clone = Rc::clone(&table);
+        table.view.connect_map(move |_| table_clone.on_map_action());
+        let table_clone = Rc::clone(&table);
+        table.exec_console.event_notifier.add_notification_cb(
+            events::EV_CHANGE_DIR,
+            Box::new(move |_| table_clone.repopulate()),
+        );
+
+        let table_clone = table.clone();
+        table.view.connect_button_press_event(move |view, event| {
+            if event.get_button() == 3 {
+                let stash = get_row_item_for_event!(view, event, String, 0);
+                table_clone.set_hovered_stash(stash);
+                table_clone.popup_menu.popup_at_event(event);
+                return Inhibit(true);
+            } else if event.get_button() == 2 {
+                table_clone.view.get_selection().unselect_all();
+                return Inhibit(true);
+            }
+            Inhibit(false)
+        });
+
+        table
+    }
+
+    fn set_hovered_stash(&self, stash: Option<String>) {
+        let condns = self
+            .view
+            .get_selection()
+            .get_masked_conditions_with_hover_ok(stash.is_some());
+        self.popup_menu.update_condns(condns);
+        *self.hovered_stash.borrow_mut() = stash;
     }
 }
