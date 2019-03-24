@@ -24,6 +24,10 @@ use crypto_hash::{Algorithm, Hasher};
 use regex::Regex;
 use shlex;
 
+use cub_diff_gui_lib::diff::DiffPlusNotebook;
+use cub_diff_lib::diff::DiffPlusParser;
+use cub_diff_lib::lines::*;
+
 use pw_gix::gtkx::dialog::*;
 use pw_gix::gtkx::list_store::{
     BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
@@ -33,6 +37,7 @@ use pw_gix::sav_state::*;
 use pw_gix::wrapper::*;
 
 use crate::action_icons;
+use crate::config;
 use crate::events;
 use crate::exec::{self, ExecConsole};
 
@@ -382,6 +387,60 @@ impl StashesNameTable {
             Inhibit(false)
         });
 
+        let table_clone = Rc::clone(&table);
+        table
+            .popup_menu
+            .append_item(
+                "show",
+                "Show",
+                Some(&action_icons::stash_show_image(16)),
+                "Show the diff for the selected/indicated stash",
+                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+            )
+            .connect_activate(move |_| {
+                if let Some(stash) = table_clone.get_chosen_stash() {
+                    if let Some(text) = get_stash_diff_text(&stash) {
+                        let lines = Lines::from_string(&text);
+                        let diff_plus_parser = DiffPlusParser::new();
+                        match diff_plus_parser.parse_lines(&lines) {
+                            Ok(ref diff_pluses) => {
+                                let diff_notebook = DiffPlusNotebook::new(1);
+                                diff_notebook.repopulate(&diff_pluses);
+                                let subtitle = format!("diff: {}", stash);
+                                let title = config::window_title(Some(&subtitle));
+                                let dialog = table_clone.new_dialog_with_buttons(
+                                    Some(&title),
+                                    gtk::DialogFlags::DESTROY_WITH_PARENT,
+                                    &[("Close", gtk::ResponseType::Close)],
+                                );
+                                dialog.enable_auto_close();
+                                dialog.get_content_area().pack_start(
+                                    &diff_notebook.pwo(),
+                                    true,
+                                    true,
+                                    0,
+                                );
+                                dialog.get_content_area().pack_start(
+                                    &diff_notebook.tws_count_display().pwo(),
+                                    false,
+                                    false,
+                                    0,
+                                );
+                                dialog.set_size_from_recollections(
+                                    "stash:show:diff:dialog",
+                                    (600, 300),
+                                );
+                                dialog.show()
+                            }
+                            Err(err) => {
+                                let msg = format!("{}: Malformed diff text", stash);
+                                table_clone.report_error(&msg, &err);
+                            }
+                        }
+                    }
+                }
+            });
+
         table
     }
 
@@ -392,5 +451,29 @@ impl StashesNameTable {
             .get_masked_conditions_with_hover_ok(stash.is_some());
         self.popup_menu.update_condns(condns);
         *self.hovered_stash.borrow_mut() = stash;
+    }
+
+    fn get_chosen_stash(&self) -> Option<String> {
+        let selection = self.view.get_selection();
+        if let Some((store, iter)) = selection.get_selected() {
+            store.get_value(&iter, 0).get::<String>()
+        } else {
+            self.hovered_stash.borrow().clone()
+        }
+    }
+}
+
+fn get_stash_diff_text(stash_name: &str) -> Option<String> {
+    let output = Command::new("git")
+        .arg("stash")
+        .arg("show")
+        .arg("-p")
+        .arg(stash_name)
+        .output()
+        .expect("\"git stash show -p <name>\" blew up!!!");
+    if output.status.success() {
+        Some(String::from_utf8_lossy(&output.stdout).to_string())
+    } else {
+        None
     }
 }
