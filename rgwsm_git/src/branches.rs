@@ -289,6 +289,7 @@ impl BranchesNameTable {
             events::EV_CHANGE_DIR,
             Box::new(move |_| table_clone.repopulate()),
         );
+
         let table_clone = Rc::clone(&table);
         table
             .popup_menu
@@ -307,13 +308,66 @@ impl BranchesNameTable {
                     table_clone.hovered_branch.borrow().clone()
                 };
                 if let Some(branch) = branch {
-                    let cmd = format!("git checkout {}", branch);
+                    let cmd = format!("git checkout {}", shlex::quote(&branch));
                     let result = table_clone
                         .exec_console
                         .exec_cmd(&cmd, events::EV_BRANCHES_CHANGE | events::EV_CHECKOUT);
                     table_clone.report_any_command_problems(&cmd, &result);
                 }
             });
+
+        let table_clone = Rc::clone(&table);
+        table
+            .popup_menu
+            .append_item(
+                "merge",
+                "Merge",
+                None,
+                "Merge the selected/indicated branch with the current branch",
+                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+            )
+            .connect_activate(move |_| {
+                let selection = table_clone.view.get_selection();
+                let branch = if let Some((store, iter)) = selection.get_selected() {
+                    store.get_value(&iter, 0).get::<String>()
+                } else {
+                    table_clone.hovered_branch.borrow().clone()
+                };
+                if let Some(branch) = branch {
+                    let cmd = format!("git merge {}", shlex::quote(&branch));
+                    let result = table_clone
+                        .exec_console
+                        .exec_cmd(&cmd, events::EV_BRANCHES_CHANGE | events::EV_FILES_CHANGE);
+                    table_clone.report_any_command_problems(&cmd, &result);
+                }
+            });
+
+        let table_clone = Rc::clone(&table);
+        table
+            .popup_menu
+            .append_item(
+                "delete",
+                "Delete",
+                None,
+                "Delete the selected/indicated branch",
+                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+            )
+            .connect_activate(move |_| {
+                let selection = table_clone.view.get_selection();
+                let branch = if let Some((store, iter)) = selection.get_selected() {
+                    store.get_value(&iter, 0).get::<String>()
+                } else {
+                    table_clone.hovered_branch.borrow().clone()
+                };
+                if let Some(branch) = branch {
+                    let cmd = format!("git branch -d {}", shlex::quote(&branch));
+                    let result = table_clone
+                        .exec_console
+                        .exec_cmd(&cmd, events::EV_BRANCHES_CHANGE | events::EV_FILES_CHANGE);
+                    table_clone.report_any_command_problems(&cmd, &result);
+                }
+            });
+
         let table_clone = table.clone();
         table.view.connect_button_press_event(move |view, event| {
             if event.get_button() == 3 {
