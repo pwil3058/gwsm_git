@@ -441,6 +441,153 @@ impl StashesNameTable {
                 }
             });
 
+        table.popup_menu.append_separator();
+        let table_clone = Rc::clone(&table);
+        table
+            .popup_menu
+            .append_item(
+                "pop",
+                "Pop",
+                Some(&action_icons::stash_pop_image(16)),
+                "Pop and apply the selected/indicated stash",
+                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+            )
+            .connect_activate(move |_| {
+                if let Some(stash) = table_clone.get_chosen_stash() {
+                    let subtitle = format!("Pop Stash: {}", stash);
+                    let title = config::window_title(Some(&subtitle));
+                    let dialog = table_clone.new_dialog_with_buttons(
+                        Some(&title),
+                        gtk::DialogFlags::DESTROY_WITH_PARENT,
+                        CANCEL_OK_BUTTONS,
+                    );
+                    let index_ch_btn = gtk::CheckButton::new_with_label("--index");
+                    let ca = dialog.get_content_area();
+                    ca.pack_start(&index_ch_btn, false, false, 0);
+                    ca.show_all();
+                    dialog.set_size_from_recollections("stash:pop:dialog", (400, 50));
+                    let result = dialog.run();
+                    dialog.hide();
+                    if gtk::ResponseType::from(result) == gtk::ResponseType::Ok {
+                        let cmd = if index_ch_btn.get_active() {
+                            format!("git stash pop --index {}", shlex::quote(&stash))
+                        } else {
+                            format!("git stash pop {}", shlex::quote(&stash))
+                        };
+                        let cursor = table_clone.show_busy();
+                        let result = table_clone
+                            .exec_console
+                            .exec_cmd(&cmd, events::EV_STASHES_CHANGE | events::EV_FILES_CHANGE);
+                        table_clone.unshow_busy(cursor);
+                        table_clone.report_any_command_problems(&cmd, &result);
+                    }
+                    dialog.destroy();
+                }
+            });
+
+        let table_clone = Rc::clone(&table);
+        table
+            .popup_menu
+            .append_item(
+                "apply",
+                "Apply",
+                Some(&action_icons::stash_apply_image(16)),
+                "Apply the selected/indicated stash",
+                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+            )
+            .connect_activate(move |_| {
+                if let Some(stash) = table_clone.get_chosen_stash() {
+                    let subtitle = format!("Apply Stash: {}", stash);
+                    let title = config::window_title(Some(&subtitle));
+                    let dialog = table_clone.new_dialog_with_buttons(
+                        Some(&title),
+                        gtk::DialogFlags::DESTROY_WITH_PARENT,
+                        CANCEL_OK_BUTTONS,
+                    );
+                    let index_ch_btn = gtk::CheckButton::new_with_label("--index");
+                    let ca = dialog.get_content_area();
+                    ca.pack_start(&index_ch_btn, false, false, 0);
+                    ca.show_all();
+                    dialog.set_size_from_recollections("stash:apply:dialog", (400, 50));
+                    let result = dialog.run();
+                    dialog.hide();
+                    if gtk::ResponseType::from(result) == gtk::ResponseType::Ok {
+                        let cmd = if index_ch_btn.get_active() {
+                            format!("git stash apply --index {}", shlex::quote(&stash))
+                        } else {
+                            format!("git stash apply {}", shlex::quote(&stash))
+                        };
+                        let cursor = table_clone.show_busy();
+                        let result = table_clone
+                            .exec_console
+                            .exec_cmd(&cmd, events::EV_STASHES_CHANGE | events::EV_FILES_CHANGE);
+                        table_clone.unshow_busy(cursor);
+                        table_clone.report_any_command_problems(&cmd, &result);
+                    }
+                    dialog.destroy();
+                }
+            });
+
+        let table_clone = Rc::clone(&table);
+        table
+            .popup_menu
+            .append_item(
+                "branch",
+                "Branch",
+                Some(&action_icons::stash_branch_image(16)),
+                "Branch the selected/indicated stash",
+                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+            )
+            .connect_activate(move |_| {
+                if let Some(stash) = table_clone.get_chosen_stash() {
+                    let (response, name) = table_clone.ask_string_cancel_or_ok("Branch Name:");
+                    if response == gtk::ResponseType::Ok {
+                        if let Some(branch) = name {
+                            let cmd = format!(
+                                "git stash branch {} {}",
+                                shlex::quote(&branch),
+                                shlex::quote(&stash)
+                            );
+                            let cursor = table_clone.show_busy();
+                            let result = table_clone.exec_console.exec_cmd(
+                                &cmd,
+                                events::EV_STASHES_CHANGE
+                                    | events::EV_FILES_CHANGE
+                                    | events::EV_BRANCHES_CHANGE,
+                            );
+                            table_clone.unshow_busy(cursor);
+                            table_clone.report_any_command_problems(&cmd, &result);
+                        }
+                    }
+                }
+            });
+
+        table.popup_menu.append_separator();
+        let table_clone = Rc::clone(&table);
+        table
+            .popup_menu
+            .append_item(
+                "drop",
+                "Drop",
+                Some(&action_icons::stash_drop_image(16)),
+                "Drop/delete the selected/indicated stash",
+                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+            )
+            .connect_activate(move |_| {
+                if let Some(stash) = table_clone.get_chosen_stash() {
+                    let cmd = format!("git stash drop {}", shlex::quote(&stash));
+                    let msg = format!("Confirm: {}", cmd);
+                    if table_clone.ask_confirm_action(&msg, None) {
+                        let cursor = table_clone.show_busy();
+                        let result = table_clone
+                            .exec_console
+                            .exec_cmd(&cmd, events::EV_STASHES_CHANGE);
+                        table_clone.unshow_busy(cursor);
+                        table_clone.report_any_command_problems(&cmd, &result);
+                    }
+                }
+            });
+
         table
     }
 
