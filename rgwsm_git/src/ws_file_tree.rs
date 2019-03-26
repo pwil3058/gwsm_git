@@ -14,6 +14,7 @@
 
 use std::cell::RefCell;
 use std::marker::PhantomData;
+use std::process::Command;
 use std::rc::Rc;
 
 use gtk;
@@ -30,6 +31,7 @@ use pw_gix::wrapper::*;
 use pw_pathux::str_path::*;
 
 //use crate::action_icons;
+use crate::edit;
 use crate::events;
 use crate::exec;
 use crate::fs_db::{self, GitFsDb, ScmFsoData};
@@ -236,11 +238,18 @@ where
                         }
                     } else if fso_path.path_is_file() {
                         // this will cause deleted files to be ignored
-                        let msg = format!(
-                            "FILE \"{}\" double clicked: WILL open in editor in future",
-                            &fso_path
-                        );
-                        owft_clone.exec_console.inform_user(&msg, None);
+                        match edit::get_assigned_editor(&fso_path) {
+                            Ok(editor) => {
+                                if let Err(err) = Command::new(&editor).arg(&fso_path).spawn() {
+                                    let msg = format!("{} {}: failed", shlex::quote(&editor), shlex::quote(&fso_path));
+                                    owft_clone.report_error(&msg, &err);
+                                }
+                            }
+                            Err(err) => {
+                                let msg = "Error accessing editor assignment table";
+                                owft_clone.report_error(&msg, &err);
+                            }
+                        }
                     }
                 }
             });

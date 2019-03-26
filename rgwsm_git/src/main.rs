@@ -15,10 +15,12 @@
 extern crate chrono;
 extern crate crypto_hash;
 extern crate git2;
+extern crate glob;
 extern crate ignore;
 #[macro_use]
 extern crate lazy_static;
 extern crate regex;
+extern crate serde_json;
 extern crate shlex;
 
 extern crate gdk_pixbuf;
@@ -48,6 +50,7 @@ mod branches;
 mod commit;
 mod config;
 mod diff;
+mod edit;
 mod events;
 mod exec;
 mod fs_db;
@@ -175,6 +178,7 @@ fn activate(app: &gtk::Application) {
 
 fn main() {
     recollections::init(&config::get_config_dir_path().join("recollections"));
+    edit::init_editor_assignment_table();
     let flags = gio::ApplicationFlags::empty();
     let app = gtk::Application::new("gergibus.pw.nest", flags)
         .unwrap_or_else(|err| panic!("{:?}: line {:?}: {:?}", file!(), line!(), err));
