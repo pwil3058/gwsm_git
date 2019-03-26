@@ -241,7 +241,11 @@ where
                         match edit::get_assigned_editor(&fso_path) {
                             Ok(editor) => {
                                 if let Err(err) = Command::new(&editor).arg(&fso_path).spawn() {
-                                    let msg = format!("{} {}: failed", shlex::quote(&editor), shlex::quote(&fso_path));
+                                    let msg = format!(
+                                        "{} {}: failed",
+                                        shlex::quote(&editor),
+                                        shlex::quote(&fso_path)
+                                    );
                                     owft_clone.report_error(&msg, &err);
                                 }
                             }

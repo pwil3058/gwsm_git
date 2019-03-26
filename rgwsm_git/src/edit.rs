@@ -45,7 +45,6 @@ impl Error for ETError {
             ETError::GlobError(_) => "Glob Pattern Error accessing editor assignment table",
             ETError::JsonError(_) => "Serde Json Error accessing editor assignment table",
         }
-
     }
 
     fn source(&self) -> Option<&(dyn Error + 'static)> {
@@ -116,7 +115,8 @@ fn write_editor_assignment_table(table: &[(String, String)]) -> Result<usize, ET
 
 pub fn init_editor_assignment_table() {
     if !editor_assignment_table_filepath().is_file() {
-        write_editor_assignment_table(&vec![]).expect("failed to initialize editor assignment table");
+        write_editor_assignment_table(&vec![])
+            .expect("failed to initialize editor assignment table");
     }
 }
 

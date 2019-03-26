@@ -88,8 +88,10 @@ fn activate(app: &gtk::Application) {
         Box::new(move |_| w.set_title(&config::window_title(None))),
     );
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
+
     let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
     vbox.pack_start(&hbox, false, false, 0);
+
     let menu = gtk::Menu::new();
     menu.append(&exec.chdir_menu_item);
     exec.chdir_menu_item.show();
@@ -97,11 +99,25 @@ fn activate(app: &gtk::Application) {
     menu_item.set_submenu(&menu);
     let menu_bar = gtk::MenuBar::new();
     menu_bar.show();
-    hbox.pack_start(&menu_bar, false, false, 0);
+    hbox.pack_start(&menu_bar, true, true, 0);
     menu_bar.add(&menu_item);
     menu.show_all();
     menu_item.show_all();
+
+    let config_menu = gtk::Menu::new();
+    let auto_update_check_item = exec.auto_update_check_item();
+    auto_update_check_item.show_all();
+    config_menu.append(&auto_update_check_item);
+    let config_menu_item = gtk::MenuItem::new_with_label("Configuration");
+    config_menu_item.set_submenu(&config_menu);
+    let r_menu_bar = gtk::MenuBar::new();
+    hbox.pack_end(&r_menu_bar, false, false, 0);
+    r_menu_bar.add(&config_menu_item);
+    config_menu.show_all();
+    config_menu_item.show_all();
+
     hbox.show_all();
+
     let action_hbox = gtk::Box::new(gtk::Orientation::Horizontal, 2);
     vbox.pack_start(&action_hbox, false, false, 0);
     let submodule_parent_button = submodules::SubmoduleParentButton::new(&exec);
@@ -140,6 +156,7 @@ fn activate(app: &gtk::Application) {
     );
     let simple_remote_buttons = remotes::SimpleRemoteActionButtons::new(&exec);
     action_hbox.pack_start(&simple_remote_buttons.pwo(), false, false, 0);
+    action_hbox.pack_end(&exec.update_button, false, false, 0);
 
     let label = gtk::Label::new("GUI is under construction");
     vbox.pack_start(&label, false, false, 0);

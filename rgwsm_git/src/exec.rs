@@ -32,6 +32,7 @@ use pw_gix::wrapper::*;
 
 use pw_pathux::str_path::*;
 
+use crate::action_icons;
 use crate::events::{self, EventNotifier};
 use crate::submodules;
 
@@ -67,6 +68,7 @@ fn get_repo_workdir_for_path(dir_path: &str) -> Option<String> {
 pub struct ExecConsole {
     scrolled_window: gtk::ScrolledWindow,
     text_view: gtk::TextView,
+    pub update_button: gtk::Button,
     pub chdir_menu_item: gtk::MenuItem,
     pub event_notifier: Rc<EventNotifier>,
     pub changed_condns_notifier: Rc<ChangedCondnsNotifier>,
@@ -94,6 +96,7 @@ impl ExecConsole {
         let ec = Rc::new(Self {
             scrolled_window: gtk::ScrolledWindow::new(adj, adj),
             text_view: gtk::TextView::new(),
+            update_button: gtk::Button::new_with_label("Update"),
             chdir_menu_item: gtk::MenuItem::new_with_label("Open"),
             event_notifier: EventNotifier::new(),
             changed_condns_notifier: changed_condns_notifier,
@@ -106,12 +109,14 @@ impl ExecConsole {
             .set_policy(gtk::PolicyType::Automatic, gtk::PolicyType::Always);
         ec.scrolled_window.add(&ec.text_view);
         ec.append_bold("% ");
+
         let ec_clone = Rc::clone(&ec);
         ec.auto_update.register_callback(Box::new(move || {
             ec_clone
                 .event_notifier
                 .notify_events(events::EV_AUTO_UPDATE);
         }));
+
         let ec_clone = Rc::clone(&ec);
         ec.chdir_menu_item.connect_activate(move |_| {
             if let Some(path) = ec_clone.browse_path(
@@ -123,9 +128,23 @@ impl ExecConsole {
                 ec_clone.chdir(&path.to_string_lossy().to_string());
             }
         });
+
+        ec.update_button.set_image(&action_icons::update_image(32));
+        ec.update_button.set_image_position(gtk::PositionType::Top);
+        let ec_clone = Rc::clone(&ec);
+        ec.update_button.connect_clicked(move |_| {
+            ec_clone
+                .event_notifier
+                .notify_events(events::EV_AUTO_UPDATE)
+        });
+
         ec.check_repo_states();
 
         ec
+    }
+
+    pub fn auto_update_check_item(&self) -> gtk::CheckMenuItem {
+        self.auto_update.check_menu_item()
     }
 
     fn append_markup(&self, markup: &str) {
