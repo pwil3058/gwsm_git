@@ -105,6 +105,9 @@ fn activate(app: &gtk::Application) {
     menu_item.show_all();
 
     let config_menu = gtk::Menu::new();
+    let editor_assignment_menu_item = edit::EditorAlocationMenuItem::new();
+    editor_assignment_menu_item.pwo().show_all();
+    config_menu.append(&editor_assignment_menu_item.pwo());
     let auto_update_check_item = exec.auto_update_check_item();
     auto_update_check_item.show_all();
     config_menu.append(&auto_update_check_item);

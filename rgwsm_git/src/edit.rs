@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+use std::cell::Cell;
 use std::convert::From;
 use std::env;
 use std::error::Error;
@@ -19,11 +20,20 @@ use std::fmt;
 use std::fs::File;
 use std::io::{self, Read, Write};
 use std::path::PathBuf;
+use std::rc::Rc;
 
 use glob::{Pattern, PatternError};
 use serde_json;
 
+use gtk;
+use gtk::prelude::*;
+
+use pw_gix::gtkx::dialog::AutoClose;
+use pw_gix::sav_state::*;
+use pw_gix::wrapper::*;
+
 use crate::config;
+use crate::exec;
 
 #[derive(Debug)]
 pub enum ETError {
@@ -131,4 +141,257 @@ pub fn get_assigned_editor(file_path: &str) -> Result<String, ETError> {
         }
     }
     Ok(default_editor())
+}
+
+const SAV_MODIFIED: u64 = exec::SAV_HAS_SUBMODULES << 1;
+const SAV_NOT_MODIFIED: u64 = SAV_MODIFIED << 1;
+const SAV_MODIFIED_MASK: u64 = SAV_MODIFIED | SAV_NOT_MODIFIED;
+
+pub struct EditorAllocationTableEditor {
+    v_box: gtk::Box,
+    view: gtk::TreeView,
+    list_store: gtk::ListStore,
+    add_button: gtk::Button,
+    insert_button: gtk::Button,
+    delete_button: gtk::Button,
+    undo_button: gtk::Button,
+    apply_button: gtk::Button,
+    managed_buttons: Rc<ConditionalWidgetGroups<gtk::Button>>,
+    modified: Cell<bool>,
+}
+
+impl_widget_wrapper!(v_box: gtk::Box, EditorAllocationTableEditor);
+
+impl EditorAllocationTableEditor {
+    pub fn new() -> Rc<Self> {
+        let list_store = gtk::ListStore::new(&[gtk::Type::String; 2]);
+        let view = gtk::TreeView::new_with_model(&list_store);
+        let managed_buttons = ConditionalWidgetGroups::<gtk::Button>::new(
+            WidgetStatesControlled::Sensitivity,
+            Some(&view.get_selection()),
+            None,
+        );
+
+        let eate = Rc::new(Self {
+            v_box: gtk::Box::new(gtk::Orientation::Vertical, 0),
+            view: view,
+            list_store: list_store,
+            add_button: gtk::Button::new_with_label("Add"),
+            insert_button: gtk::Button::new_with_label("Insert"),
+            delete_button: gtk::Button::new_with_label("Delete"),
+            undo_button: gtk::Button::new_with_label("Undo"),
+            apply_button: gtk::Button::new_with_label("Apply"),
+            managed_buttons: managed_buttons,
+            modified: Cell::new(false),
+        });
+        eate.set_modified(false);
+
+        eate.view.set_headers_visible(true);
+        eate.view.set_reorderable(true);
+        eate.view.set_grid_lines(gtk::TreeViewGridLines::Both);
+
+        eate.view.get_selection().set_mode(gtk::SelectionMode::Single);
+        eate.view.connect_button_press_event(move |view, event| {
+            if event.get_button() == 2 {
+                view.get_selection().unselect_all();
+                return Inhibit(true);
+            }
+            Inhibit(false)
+        });
+
+        let eate_clone = Rc::clone(&eate);
+        eate.list_store.connect_row_changed(move |_,_,_| eate_clone.set_modified(true));
+        let eate_clone = Rc::clone(&eate);
+        eate.list_store.connect_row_deleted(move |_,_| eate_clone.set_modified(true));
+        let eate_clone = Rc::clone(&eate);
+        eate.list_store.connect_row_inserted(move |_,_,_| eate_clone.set_modified(true));
+
+        let col = gtk::TreeViewColumn::new();
+        col.set_title("File Pattern(s)");
+        col.set_expand(true);
+        col.set_resizable(false);
+
+        let cell = gtk::CellRendererText::new();
+        cell.set_property_editable(true);
+        col.pack_start(&cell, false);
+        col.add_attribute(&cell, "text", 0);
+        let eate_clone = Rc::clone(&eate);
+        cell.connect_edited(move |_, tree_path, new_text| {
+            if let Some(tree_iter) = eate_clone.list_store.get_iter(&tree_path) {
+                eate_clone.list_store.set_value(&tree_iter, 0, &new_text.to_value());
+                eate_clone.set_modified(true);
+            }
+        });
+
+        eate.view.append_column(&col);
+
+        let col = gtk::TreeViewColumn::new();
+        col.set_title("Editor Command");
+        col.set_expand(true);
+        col.set_resizable(false);
+
+        let cell = gtk::CellRendererText::new();
+        cell.set_property_editable(true);
+        col.pack_start(&cell, false);
+        col.add_attribute(&cell, "text", 1);
+        let eate_clone = Rc::clone(&eate);
+        cell.connect_edited(move |_, tree_path, new_text| {
+            if let Some(tree_iter) = eate_clone.list_store.get_iter(&tree_path) {
+                eate_clone.list_store.set_value(&tree_iter, 1, &new_text.to_value());
+                eate_clone.set_modified(true);
+            }
+        });
+
+        eate.view.append_column(&col);
+
+        eate.managed_buttons
+            .add_widget("add", &eate.add_button, SAV_SELN_NONE);
+        let eate_clone = Rc::clone(&eate);
+        eate.add_button.connect_clicked(move |_| {
+            eate_clone.list_store.append();
+        });
+        eate.add_button.set_tooltip_text("Append a new entry to the table.");
+
+        eate.managed_buttons
+            .add_widget("insert", &eate.insert_button, SAV_SELN_UNIQUE);
+        let eate_clone = Rc::clone(&eate);
+        eate.insert_button.connect_clicked(move |_| {
+            if let Some((_, iter)) = eate_clone.view.get_selection().get_selected() {
+                eate_clone.list_store.insert_before(&iter);
+            }
+        });
+        eate.insert_button.set_tooltip_text("Insert a new entry to the table before the selected entry.");
+
+        eate.managed_buttons
+            .add_widget("delete", &eate.delete_button, SAV_SELN_MADE);
+        let eate_clone = Rc::clone(&eate);
+        eate.delete_button.connect_clicked(move |_| {
+            if let Some((_, iter)) = eate_clone.view.get_selection().get_selected() {
+                eate_clone.list_store.remove(&iter);
+            }
+        });
+        eate.delete_button.set_tooltip_text("Remove the selected entry from the table.");
+
+        eate.managed_buttons
+            .add_widget("undo", &eate.undo_button, SAV_MODIFIED);
+        let eate_clone = Rc::clone(&eate);
+        eate.undo_button.connect_clicked(move |_| eate_clone.load_table());
+        eate.undo_button.set_tooltip_text("Undo all unapplied changes in the table.");
+
+        eate.managed_buttons
+            .add_widget("apply", &eate.apply_button, SAV_MODIFIED);
+        let eate_clone = Rc::clone(&eate);
+        eate.apply_button.connect_clicked(move |_| {
+            eate_clone.write_table();
+            eate_clone.load_table();
+        });
+        eate.apply_button.set_tooltip_text("Apply outstanding changes in the table.");
+
+        let adj: Option<&gtk::Adjustment> = None;
+        let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
+        eate.v_box.pack_start(&scrolled_window, true, true, 0);
+        scrolled_window.add(&eate.view);
+        scrolled_window.show_all();
+        let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        h_box.pack_start(&eate.add_button, true, true, 0);
+        h_box.pack_start(&eate.insert_button, true, true, 0);
+        h_box.pack_start(&eate.delete_button, true, true, 0);
+        h_box.pack_start(&eate.undo_button, true, true, 0);
+        h_box.pack_start(&eate.apply_button, true, true, 0);
+        h_box.show_all();
+        eate.v_box.pack_start(&h_box, false, false, 0);
+        eate.v_box.show_all();
+
+        eate
+    }
+
+    fn load_table(&self) {
+        self.list_store.clear();
+        match read_editor_assignment_table() {
+            Ok(table) => {
+                for (globs, editor) in table.iter() {
+                    let t_iter = self.list_store.append();
+                    self.list_store.set_value(&t_iter, 0, &globs.to_value());
+                    self.list_store.set_value(&t_iter, 1, &editor.to_value());
+                }
+            }
+            Err(err) => {
+                let msg = "Problem loading editor assignment table";
+                self.report_error(&msg, &err);
+            }
+        }
+        self.set_modified(false);
+    }
+
+    fn set_modified(&self, val: bool) {
+        self.modified.set(val);
+        if val {
+            let condns = MaskedCondns{condns: SAV_MODIFIED, mask: SAV_MODIFIED_MASK};
+            self.managed_buttons.update_condns(condns);
+        } else {
+            let condns = MaskedCondns{condns: SAV_NOT_MODIFIED, mask: SAV_MODIFIED_MASK};
+            self.managed_buttons.update_condns(condns);
+        }
+    }
+
+    fn write_table(&self) {
+        let mut v: Vec<(String, String)> = vec![];
+        if let Some(t_iter) = self.list_store.get_iter_first() {
+            loop {
+                let globs_v = self.list_store.get_value(&t_iter, 0);
+                let editor_v = self.list_store.get_value(&t_iter, 1);
+                let globs = globs_v
+                    .get::<String>()
+                    .expect("error extracting globs from list store");
+                let editor = editor_v
+                    .get::<String>()
+                    .expect("error extracting editor from list store");
+                let globs = globs.trim().to_string();
+                let editor = editor.trim().to_string();
+                if globs.len() > 0 && editor.len() > 0 {
+                    v.push((globs, editor));
+                }
+                if !self.list_store.iter_next(&t_iter) {
+                    break;
+                }
+            }
+        }
+        if let Err(err) = write_editor_assignment_table(&v) {
+            let msg = "Problem writing editor assignment table";
+            self.report_error(&msg, &err);
+        } else {
+            self.set_modified(false);
+        }
+    }
+}
+
+pub struct EditorAlocationMenuItem {
+    menu_item: gtk::MenuItem,
+}
+
+impl_widget_wrapper!(menu_item: gtk::MenuItem, EditorAlocationMenuItem);
+
+impl EditorAlocationMenuItem {
+    pub fn new() -> Rc<Self> {
+        let eami = Rc::new(Self {
+            menu_item: gtk::MenuItem::new_with_label("Editor Allocation"),
+        });
+
+        let eami_clone = Rc::clone(&eami);
+        eami.menu_item.connect_activate(move |_| {
+            let title = format!("{}: Editor Allocation", config::APP_NAME);
+            let dialog = eami_clone.new_dialog_with_buttons(
+                Some(&title),
+                gtk::DialogFlags::DESTROY_WITH_PARENT,
+                &[("Close", gtk::ResponseType::Close),],
+            );
+            dialog.enable_auto_close();
+            let table = EditorAllocationTableEditor::new();
+            dialog.get_content_area().pack_start(&table.pwo(), true, true, 0);
+            table.load_table();
+            dialog.show();
+        });
+
+        eami
+    }
 }
