@@ -161,7 +161,7 @@ fn activate(app: &gtk::Application) {
     action_hbox.pack_start(&simple_remote_buttons.pwo(), false, false, 0);
     action_hbox.pack_end(&exec.update_button, false, false, 0);
 
-    let label = gtk::Label::new("GUI is under construction");
+    let label = gtk::Label::new("GUI is still under construction");
     vbox.pack_start(&label, false, false, 0);
     let paned_h_1 = gtk::Paned::new(gtk::Orientation::Horizontal);
     let ws_file_tree = ws_file_tree::GitWsFsTree::new(&exec, false);
@@ -191,7 +191,12 @@ fn activate(app: &gtk::Application) {
     vbox.pack_start(&paned_v, true, true, 0);
     paned_h_2.set_position_from_recollections("paned_h_2:position", 200);
     paned_v.set_position_from_recollections("paned_v:position", 200);
-    paned_v.add2(&exec.pwo());
+    let notebook = gtk::Notebook::new();
+    notebook.add(&exec.pwo());
+    notebook.set_tab_label_text(&exec.pwo(), "Transaction Log");
+    notebook.add(&gtk::Label::new("Vte terminal will go here!!"));
+    notebook.set_property_enable_popup(true);
+    paned_v.add2(&notebook);
     window.add(&vbox);
     window.show_all();
 }
