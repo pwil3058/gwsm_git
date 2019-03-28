@@ -190,7 +190,9 @@ impl EditorAllocationTableEditor {
         eate.view.set_reorderable(true);
         eate.view.set_grid_lines(gtk::TreeViewGridLines::Both);
 
-        eate.view.get_selection().set_mode(gtk::SelectionMode::Single);
+        eate.view
+            .get_selection()
+            .set_mode(gtk::SelectionMode::Single);
         eate.view.connect_button_press_event(move |view, event| {
             if event.get_button() == 2 {
                 view.get_selection().unselect_all();
@@ -200,11 +202,14 @@ impl EditorAllocationTableEditor {
         });
 
         let eate_clone = Rc::clone(&eate);
-        eate.list_store.connect_row_changed(move |_,_,_| eate_clone.set_modified(true));
+        eate.list_store
+            .connect_row_changed(move |_, _, _| eate_clone.set_modified(true));
         let eate_clone = Rc::clone(&eate);
-        eate.list_store.connect_row_deleted(move |_,_| eate_clone.set_modified(true));
+        eate.list_store
+            .connect_row_deleted(move |_, _| eate_clone.set_modified(true));
         let eate_clone = Rc::clone(&eate);
-        eate.list_store.connect_row_inserted(move |_,_,_| eate_clone.set_modified(true));
+        eate.list_store
+            .connect_row_inserted(move |_, _, _| eate_clone.set_modified(true));
 
         let col = gtk::TreeViewColumn::new();
         col.set_title("File Pattern(s)");
@@ -218,7 +223,9 @@ impl EditorAllocationTableEditor {
         let eate_clone = Rc::clone(&eate);
         cell.connect_edited(move |_, tree_path, new_text| {
             if let Some(tree_iter) = eate_clone.list_store.get_iter(&tree_path) {
-                eate_clone.list_store.set_value(&tree_iter, 0, &new_text.to_value());
+                eate_clone
+                    .list_store
+                    .set_value(&tree_iter, 0, &new_text.to_value());
                 eate_clone.set_modified(true);
             }
         });
@@ -237,7 +244,9 @@ impl EditorAllocationTableEditor {
         let eate_clone = Rc::clone(&eate);
         cell.connect_edited(move |_, tree_path, new_text| {
             if let Some(tree_iter) = eate_clone.list_store.get_iter(&tree_path) {
-                eate_clone.list_store.set_value(&tree_iter, 1, &new_text.to_value());
+                eate_clone
+                    .list_store
+                    .set_value(&tree_iter, 1, &new_text.to_value());
                 eate_clone.set_modified(true);
             }
         });
@@ -250,7 +259,8 @@ impl EditorAllocationTableEditor {
         eate.add_button.connect_clicked(move |_| {
             eate_clone.list_store.append();
         });
-        eate.add_button.set_tooltip_text("Append a new entry to the table.");
+        eate.add_button
+            .set_tooltip_text("Append a new entry to the table.");
 
         eate.managed_buttons
             .add_widget("insert", &eate.insert_button, SAV_SELN_UNIQUE);
@@ -260,7 +270,8 @@ impl EditorAllocationTableEditor {
                 eate_clone.list_store.insert_before(&iter);
             }
         });
-        eate.insert_button.set_tooltip_text("Insert a new entry to the table before the selected entry.");
+        eate.insert_button
+            .set_tooltip_text("Insert a new entry to the table before the selected entry.");
 
         eate.managed_buttons
             .add_widget("delete", &eate.delete_button, SAV_SELN_MADE);
@@ -270,13 +281,16 @@ impl EditorAllocationTableEditor {
                 eate_clone.list_store.remove(&iter);
             }
         });
-        eate.delete_button.set_tooltip_text("Remove the selected entry from the table.");
+        eate.delete_button
+            .set_tooltip_text("Remove the selected entry from the table.");
 
         eate.managed_buttons
             .add_widget("undo", &eate.undo_button, SAV_MODIFIED);
         let eate_clone = Rc::clone(&eate);
-        eate.undo_button.connect_clicked(move |_| eate_clone.load_table());
-        eate.undo_button.set_tooltip_text("Undo all unapplied changes in the table.");
+        eate.undo_button
+            .connect_clicked(move |_| eate_clone.load_table());
+        eate.undo_button
+            .set_tooltip_text("Undo all unapplied changes in the table.");
 
         eate.managed_buttons
             .add_widget("apply", &eate.apply_button, SAV_MODIFIED);
@@ -285,7 +299,8 @@ impl EditorAllocationTableEditor {
             eate_clone.write_table();
             eate_clone.load_table();
         });
-        eate.apply_button.set_tooltip_text("Apply outstanding changes in the table.");
+        eate.apply_button
+            .set_tooltip_text("Apply outstanding changes in the table.");
 
         let adj: Option<&gtk::Adjustment> = None;
         let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
@@ -326,10 +341,16 @@ impl EditorAllocationTableEditor {
     fn set_modified(&self, val: bool) {
         self.modified.set(val);
         if val {
-            let condns = MaskedCondns{condns: SAV_MODIFIED, mask: SAV_MODIFIED_MASK};
+            let condns = MaskedCondns {
+                condns: SAV_MODIFIED,
+                mask: SAV_MODIFIED_MASK,
+            };
             self.managed_buttons.update_condns(condns);
         } else {
-            let condns = MaskedCondns{condns: SAV_NOT_MODIFIED, mask: SAV_MODIFIED_MASK};
+            let condns = MaskedCondns {
+                condns: SAV_NOT_MODIFIED,
+                mask: SAV_MODIFIED_MASK,
+            };
             self.managed_buttons.update_condns(condns);
         }
     }
@@ -383,11 +404,13 @@ impl EditorAlocationMenuItem {
             let dialog = eami_clone.new_dialog_with_buttons(
                 Some(&title),
                 gtk::DialogFlags::DESTROY_WITH_PARENT,
-                &[("Close", gtk::ResponseType::Close),],
+                &[("Close", gtk::ResponseType::Close)],
             );
             dialog.enable_auto_close();
             let table = EditorAllocationTableEditor::new();
-            dialog.get_content_area().pack_start(&table.pwo(), true, true, 0);
+            dialog
+                .get_content_area()
+                .pack_start(&table.pwo(), true, true, 0);
             table.load_table();
             dialog.show();
         });
