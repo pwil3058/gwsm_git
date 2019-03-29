@@ -39,7 +39,8 @@ use pw_gix::wrapper::*;
 use crate::action_icons;
 use crate::config;
 use crate::events;
-use crate::exec::{self, ExecConsole};
+use crate::exec::ExecConsole;
+use crate::repos;
 
 pub struct StashPushWidget {
     v_box: gtk::Box,
@@ -124,7 +125,7 @@ impl StashPushButton {
         button.set_label("stash");
         exec_console
             .managed_buttons
-            .add_widget("stash push", &button, exec::SAV_IN_REPO);
+            .add_widget("stash push", &button, repos::SAV_IN_REPO);
         let bb = Rc::new(Self {
             button: button,
             exec_console: Rc::clone(&exec_console),
@@ -395,7 +396,7 @@ impl StashesNameTable {
                 "Show",
                 Some(&action_icons::stash_show_image(16)),
                 "Show the diff for the selected/indicated stash",
-                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+                repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
                 if let Some(stash) = table_clone.get_chosen_stash() {
@@ -450,7 +451,7 @@ impl StashesNameTable {
                 "Pop",
                 Some(&action_icons::stash_pop_image(16)),
                 "Pop and apply the selected/indicated stash",
-                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+                repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
                 if let Some(stash) = table_clone.get_chosen_stash() {
@@ -493,7 +494,7 @@ impl StashesNameTable {
                 "Apply",
                 Some(&action_icons::stash_apply_image(16)),
                 "Apply the selected/indicated stash",
-                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+                repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
                 if let Some(stash) = table_clone.get_chosen_stash() {
@@ -536,7 +537,7 @@ impl StashesNameTable {
                 "Branch",
                 Some(&action_icons::stash_branch_image(16)),
                 "Branch the selected/indicated stash",
-                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+                repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
                 if let Some(stash) = table_clone.get_chosen_stash() {
@@ -571,7 +572,7 @@ impl StashesNameTable {
                 "Drop",
                 Some(&action_icons::stash_drop_image(16)),
                 "Drop/delete the selected/indicated stash",
-                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+                repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
                 if let Some(stash) = table_clone.get_chosen_stash() {

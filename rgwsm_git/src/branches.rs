@@ -32,7 +32,8 @@ use pw_gix::wrapper::*;
 
 use crate::action_icons;
 use crate::events;
-use crate::exec::{self, ExecConsole};
+use crate::exec::ExecConsole;
+use crate::repos;
 
 #[derive(Debug, Default)]
 struct BranchesRawData {
@@ -298,7 +299,7 @@ impl BranchesNameTable {
                 "Checkout",
                 None,
                 "Switch to the selected/indicated branch",
-                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+                repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
                 let selection = table_clone.view.get_selection();
@@ -324,7 +325,7 @@ impl BranchesNameTable {
                 "Merge",
                 None,
                 "Merge the selected/indicated branch with the current branch",
-                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+                repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
                 let selection = table_clone.view.get_selection();
@@ -350,7 +351,7 @@ impl BranchesNameTable {
                 "Delete",
                 None,
                 "Delete the selected/indicated branch",
-                exec::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+                repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
                 let selection = table_clone.view.get_selection();
@@ -413,7 +414,7 @@ impl BranchButton {
         button.set_label("branch");
         exec_console
             .managed_buttons
-            .add_widget("branch", &button, exec::SAV_IN_REPO);
+            .add_widget("branch", &button, repos::SAV_IN_REPO);
         let bb = Rc::new(Self {
             button: button,
             exec_console: Rc::clone(&exec_console),

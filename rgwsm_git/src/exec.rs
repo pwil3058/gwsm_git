@@ -22,7 +22,6 @@ use gtk;
 use gtk::prelude::*;
 
 use chrono::prelude::*;
-use git2;
 use shlex;
 
 use pw_gix::recollections;
@@ -34,36 +33,7 @@ use pw_pathux::str_path::*;
 
 use crate::action_icons;
 use crate::events::{self, EventNotifier};
-use crate::submodules;
-
-pub const SAV_NOT_IN_REPO: u64 = SAV_SELN_MASK + 1;
-pub const SAV_IN_REPO: u64 = SAV_NOT_IN_REPO << 1;
-pub const SAV_NOT_IN_SUBMODULE: u64 = SAV_NOT_IN_REPO << 2;
-pub const SAV_IN_SUBMODULE: u64 = SAV_NOT_IN_REPO << 3;
-pub const SAV_NOT_HAS_SUBMODULES: u64 = SAV_NOT_IN_REPO << 4;
-pub const SAV_HAS_SUBMODULES: u64 = SAV_NOT_IN_REPO << 5;
-pub const SAV_REPO_STATE_MASK: u64 = SAV_NOT_IN_REPO
-    | SAV_IN_REPO
-    | SAV_NOT_IN_SUBMODULE
-    | SAV_IN_SUBMODULE
-    | SAV_NOT_HAS_SUBMODULES
-    | SAV_HAS_SUBMODULES;
-
-fn is_repo_workdir(dir_path: &str) -> bool {
-    git2::Repository::open(&dir_path.path_absolute().unwrap()).is_ok()
-}
-
-fn get_repo_workdir_for_path(dir_path: &str) -> Option<String> {
-    if let Ok(repo) = git2::Repository::discover(&dir_path.path_absolute().unwrap()) {
-        if let Some(path) = repo.workdir() {
-            Some(path.to_string_lossy().to_string())
-        } else {
-            None
-        }
-    } else {
-        None
-    }
-}
+use crate::repos;
 
 pub struct ExecConsole {
     scrolled_window: gtk::ScrolledWindow,
@@ -221,30 +191,11 @@ impl ExecConsole {
     }
 
     pub fn in_repo(&self) -> bool {
-        is_repo_workdir(".")
+        repos::is_repo_workdir(".")
     }
 
     pub fn check_repo_states(&self) {
-        let mut condns: u64;
-        if is_repo_workdir(".") {
-            condns = SAV_IN_REPO;
-            if submodules::is_git_submodule(None) {
-                condns |= SAV_IN_SUBMODULE;
-            } else {
-                condns |= SAV_NOT_IN_SUBMODULE;
-            }
-            if submodules::submodule_count() > 0 {
-                condns |= SAV_HAS_SUBMODULES;
-            } else {
-                condns |= SAV_NOT_HAS_SUBMODULES;
-            }
-        } else {
-            condns = SAV_NOT_IN_REPO | SAV_NOT_IN_SUBMODULE | SAV_NOT_HAS_SUBMODULES;
-        }
-        let masked_condns = MaskedCondns {
-            condns: condns,
-            mask: SAV_REPO_STATE_MASK,
-        };
+        let masked_condns = repos::get_repo_condns();
         self.changed_condns_notifier
             .notify_changed_condns(masked_condns);
     }
@@ -255,9 +206,9 @@ impl ExecConsole {
         let mut adj_dir_path: String = new_dir_path.to_string();
         let mut adjusted = false;
         let mut in_repo = false;
-        if is_repo_workdir(new_dir_path) {
+        if repos::is_repo_workdir(new_dir_path) {
             in_repo = true;
-        } else if let Some(path) = get_repo_workdir_for_path(new_dir_path) {
+        } else if let Some(path) = repos::get_repo_workdir_for_path(new_dir_path) {
             adj_dir_path = path;
             adjusted = true;
             in_repo = true;
@@ -294,25 +245,5 @@ impl ExecConsole {
                 self.event_notifier.notify_events(events::EV_CHANGE_DIR);
             }
         }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn is_repo_workdir_works() {
-        println!("{} -> {:?}", "..", "..".path_absolute());
-        assert!(!is_repo_workdir("."));
-        assert!(!is_repo_workdir("../src"));
-        assert!(is_repo_workdir(".."));
-    }
-
-    #[test]
-    fn get_repo_workdir_for_path_works() {
-        assert!(get_repo_workdir_for_path(".").is_some());
-        assert!(get_repo_workdir_for_path("..").is_some());
-        assert!(get_repo_workdir_for_path("../..").is_none());
     }
 }

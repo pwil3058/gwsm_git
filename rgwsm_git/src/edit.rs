@@ -33,7 +33,7 @@ use pw_gix::sav_state::*;
 use pw_gix::wrapper::*;
 
 use crate::config;
-use crate::exec;
+use crate::repos;
 
 #[derive(Debug)]
 pub enum ETError {
@@ -143,7 +143,7 @@ pub fn get_assigned_editor(file_path: &str) -> Result<String, ETError> {
     Ok(default_editor())
 }
 
-const SAV_MODIFIED: u64 = exec::SAV_HAS_SUBMODULES << 1;
+const SAV_MODIFIED: u64 = repos::SAV_HAS_SUBMODULES << 1;
 const SAV_NOT_MODIFIED: u64 = SAV_MODIFIED << 1;
 const SAV_MODIFIED_MASK: u64 = SAV_MODIFIED | SAV_NOT_MODIFIED;
 

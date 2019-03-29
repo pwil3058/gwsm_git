@@ -31,7 +31,8 @@ use pw_gix::wrapper::*;
 use crate::action_icons;
 use crate::config;
 use crate::events;
-use crate::exec::{self, ExecConsole};
+use crate::exec::ExecConsole;
+use crate::repos;
 
 pub struct DiffButton {
     button: gtk::Button,
@@ -53,7 +54,7 @@ impl DiffButton {
         button.set_label("diff");
         exec_console
             .managed_buttons
-            .add_widget("diff", &button, exec::SAV_IN_REPO);
+            .add_widget("diff", &button, repos::SAV_IN_REPO);
 
         let db = Rc::new(Self {
             button: button,

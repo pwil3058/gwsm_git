@@ -28,7 +28,8 @@ use pw_gix::wrapper::*;
 use pw_pathux::str_path::*;
 
 use crate::action_icons;
-use crate::exec::{self, ExecConsole};
+use crate::exec::ExecConsole;
+use crate::repos;
 
 pub fn is_git_submodule(dir_path: Option<&str>) -> bool {
     if let Some(dir_path) = dir_path {
@@ -109,7 +110,7 @@ impl SubmoduleParentButton {
         button.set_label("Super");
         exec_console
             .managed_buttons
-            .add_widget("chdir_parent", &button, exec::SAV_IN_SUBMODULE);
+            .add_widget("chdir_parent", &button, repos::SAV_IN_SUBMODULE);
         let bb = Rc::new(Self {
             button: button,
             exec_console: Rc::clone(&exec_console),

@@ -35,6 +35,7 @@ use crate::edit;
 use crate::events;
 use crate::exec;
 use crate::fs_db::{self, GitFsDb, ScmFsoData};
+use crate::repos;
 use crate::submodules;
 
 pub struct GenWsFsTree<FSDB, FSOI>
@@ -191,7 +192,7 @@ where
                 "Add",
                 None,
                 "Add to the selected/indicated file(s) to the index",
-                exec::SAV_IN_REPO + SAV_SELN_MADE_OR_HOVER_OK,
+                repos::SAV_IN_REPO + SAV_SELN_MADE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
                 if let Some(fso_paths) = owft_clone.get_chosen_file_paths_string() {

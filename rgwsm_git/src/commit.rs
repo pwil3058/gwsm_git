@@ -32,7 +32,8 @@ use pw_gix::wrapper::*;
 use crate::action_icons;
 use crate::config;
 use crate::events;
-use crate::exec::{self, ExecConsole};
+use crate::exec::ExecConsole;
+use crate::repos;
 
 pub struct CommitButton {
     button: gtk::Button,
@@ -52,7 +53,7 @@ impl CommitButton {
         button.set_label("commit");
         exec_console
             .managed_buttons
-            .add_widget("commit", &button, exec::SAV_IN_REPO);
+            .add_widget("commit", &button, repos::SAV_IN_REPO);
 
         let db = Rc::new(Self {
             button: button,
@@ -275,12 +276,12 @@ impl CommitWidget {
         cw.exec_console.managed_buttons.add_widget(
             "exec_commit",
             &cw.exec_button,
-            exec::SAV_IN_REPO,
+            repos::SAV_IN_REPO,
         );
         cw.exec_console.managed_check_buttons.add_widget(
             "amend_option",
             &cw.amend_option_button,
-            exec::SAV_IN_REPO,
+            repos::SAV_IN_REPO,
         );
 
         let cw_clone = Rc::clone(&cw);

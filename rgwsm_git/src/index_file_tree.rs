@@ -28,6 +28,7 @@ use pw_gix::wrapper::*;
 use crate::events;
 use crate::exec;
 use crate::fs_db::{self, GitIndexDb, ScmFsoData};
+use crate::repos;
 
 pub struct GenIndexFsTree<FSDB, FSOI>
 where
@@ -164,7 +165,7 @@ where
                 "Unstage",
                 None,
                 "Unstage the selected/indicated file(s) from the index",
-                exec::SAV_IN_REPO + SAV_SELN_MADE_OR_HOVER_OK,
+                repos::SAV_IN_REPO + SAV_SELN_MADE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
                 if let Some(fso_paths) = ift_clone.get_chosen_file_paths_string() {

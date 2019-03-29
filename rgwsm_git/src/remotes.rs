@@ -31,7 +31,8 @@ use pw_gix::sav_state::*;
 use pw_gix::wrapper::*;
 
 use crate::events;
-use crate::exec::{self, ExecConsole};
+use crate::exec::ExecConsole;
+use crate::repos;
 
 pub struct SimpleRemoteActionButtons {
     h_box: gtk::Box,
@@ -56,7 +57,7 @@ impl SimpleRemoteActionButtons {
         srab.exec_console.managed_buttons.add_widget(
             "simple pull",
             &srab.simple_pull_button,
-            exec::SAV_IN_REPO,
+            repos::SAV_IN_REPO,
         );
         let srab_clone = Rc::clone(&srab);
         srab.simple_pull_button.connect_clicked(move |_| {
@@ -72,7 +73,7 @@ impl SimpleRemoteActionButtons {
         srab.exec_console.managed_buttons.add_widget(
             "simple push",
             &srab.simple_push_button,
-            exec::SAV_IN_REPO,
+            repos::SAV_IN_REPO,
         );
         let srab_clone = Rc::clone(&srab);
         srab.simple_push_button.connect_clicked(move |_| {

@@ -57,6 +57,7 @@ mod fs_db;
 mod icon;
 mod index_file_tree;
 mod remotes;
+mod repos;
 mod stashes;
 mod submodules;
 mod ws_file_tree;
