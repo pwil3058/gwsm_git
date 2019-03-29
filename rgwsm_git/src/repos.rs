@@ -14,6 +14,8 @@
 
 use std::error::Error;
 use std::fmt;
+use std::fs::File;
+use std::io::{self, Read, Write};
 
 use git2;
 
@@ -21,6 +23,7 @@ use pw_gix::sav_state::*;
 
 use pw_pathux::str_path::*;
 
+use crate::config;
 use crate::submodules;
 
 pub const SAV_NOT_IN_REPO: u64 = SAV_SELN_MASK + 1;
@@ -113,6 +116,49 @@ impl From<serde_json::Error> for KRTError {
     fn from(error: serde_json::Error) -> Self {
         KRTError::JsonError(error)
     }
+}
+
+fn known_repos_table_filepath() -> PathBuf {
+    let mut pathbuf = config::get_config_dir_path();
+    pathbuf.push("known_repos_table");
+    pathbuf
+}
+
+fn read_known_repos_table() -> Result<Vec<(String, String)>, KRTError> {
+    let mut file = File::open(known_repos_table_filepath())?;
+    let mut buffer = String::new();
+    file.read_to_string(&mut buffer)?;
+    let v: Vec<(String, String)> = serde_json::from_str(&buffer)?;
+    Ok(v)
+}
+
+fn write_known_repos_table(table: &[(String, String)]) -> Result<usize, KRTError> {
+    let data = serde_json::to_string(table)?;
+    let mut file = File::create(known_repos_table_filepath())?;
+    let nbytes = file.write(data.as_bytes())?;
+    Ok(nbytes)
+}
+
+pub fn init_known_repos_table() {
+    if !known_repos_table_filepath().is_file() {
+        write_known_repos_table(&vec![])
+            .expect("failed to initialize editor assignment table");
+    }
+}
+
+pub fn add_to_known_repos(repo_path: &str) -> Result<(), KRTError> {
+    if is_repo_workdir(repo_path) {
+        if let Some(dir_name) = repo_path.path_file_name(){
+            let new_entry = (dir_name, repo_path.to_string());
+            let mut known_repos = read_known_repos_table()?;
+            let result = known_repos.binary_search(&new_entry);
+            if let Err(insert_index) = result {
+                known_repos.insert(insert_index, new_entry);
+                write_known_repos_table(&known_repos)?;
+            }
+        }
+    }
+    Ok(())
 }
 
 #[cfg(test)]

@@ -237,6 +237,7 @@ impl ExecConsole {
                     }
                     if let Ok(abs_path) = ".".path_absolute() {
                         recollections::remember("last:git:ws:dir", &abs_path);
+                        repos::add_to_known_repos(&abs_path).expect("saving known repos failed");
                     }
                 } else {
                     self.append_bold("% ");
