@@ -128,8 +128,15 @@ fn read_known_repos_table() -> Result<Vec<(String, String)>, KRTError> {
     let mut file = File::open(known_repos_table_filepath())?;
     let mut buffer = String::new();
     file.read_to_string(&mut buffer)?;
-    let v: Vec<(String, String)> = serde_json::from_str(&buffer)?;
-    Ok(v)
+    let mut v: Vec<(String, String)> = serde_json::from_str(&buffer)?;
+    // Prune any repos that no longer exist.
+    let mut pruned = vec![];
+    for item in v.drain(..) {
+        if is_repo_workdir(&item.1) {
+            pruned.push(item);
+        }
+    }
+    Ok(pruned)
 }
 
 fn write_known_repos_table(table: &[(String, String)]) -> Result<usize, KRTError> {
@@ -154,8 +161,8 @@ pub fn add_to_known_repos(repo_path: &str) -> Result<(), KRTError> {
             let result = known_repos.binary_search(&new_entry);
             if let Err(insert_index) = result {
                 known_repos.insert(insert_index, new_entry);
-                write_known_repos_table(&known_repos)?;
             }
+            write_known_repos_table(&known_repos)?;
         }
     }
     Ok(())
