@@ -102,6 +102,7 @@ fn activate(app: &gtk::Application) {
     menu_bar.show();
     hbox.pack_start(&menu_bar, true, true, 0);
     menu_bar.add(&menu_item);
+    menu_bar.add(&repos::create_wokspaces_menu(&exec));
     menu.show_all();
     menu_item.show_all();
 

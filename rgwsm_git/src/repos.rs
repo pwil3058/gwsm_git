@@ -16,14 +16,21 @@ use std::error::Error;
 use std::fmt;
 use std::fs::File;
 use std::io::{self, Read, Write};
+use std::rc::Rc;
+
+use gtk;
+use gtk::prelude::*;
 
 use git2;
+use shlex;
 
 use pw_gix::sav_state::*;
+use pw_gix::wrapper::*;
 
 use pw_pathux::str_path::*;
 
 use crate::config;
+use crate::exec::ExecConsole;
 use crate::submodules;
 
 pub const SAV_NOT_IN_REPO: u64 = SAV_SELN_MASK + 1;
@@ -166,6 +173,56 @@ pub fn add_to_known_repos(repo_path: &str) -> Result<(), KRTError> {
         }
     }
     Ok(())
+}
+
+pub struct OpenKnownRepoMenuItem {
+    menu_item: gtk::MenuItem,
+    exec_console: Rc<ExecConsole>,
+}
+
+impl_widget_wrapper!(menu_item: gtk::MenuItem, OpenKnownRepoMenuItem);
+
+impl OpenKnownRepoMenuItem {
+    pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
+        let ormi = Rc::new(Self {
+            menu_item: gtk::MenuItem::new_with_label("Change Directory To ->"),
+            exec_console: Rc::clone(exec_console),
+        });
+
+        let ormi_clone = Rc::clone(&ormi);
+        ormi.menu_item.connect_enter_notify_event(move |menu_item, _| {
+            let submenu = ormi_clone.build_submenu();
+            menu_item.set_submenu(&submenu);
+            gtk::Inhibit(false)
+        });
+
+        ormi
+    }
+
+    fn build_submenu(&self) -> gtk::Menu {
+        let menu = gtk::Menu::new();
+        let mut table = read_known_repos_table().expect("failed to read known repos table");
+        for item in table.drain(..) {
+            let label = format!("{} :-> {}", shlex::quote(&item.0), shlex::quote(&item.1));
+            let menu_item = gtk::MenuItem::new_with_label(&label);
+            let exec_console = Rc::clone(&self.exec_console);
+            menu_item.connect_activate(move |_| {
+                exec_console.chdir(&item.1)
+            });
+            menu.append(&menu_item);
+        }
+        menu.show_all();
+
+        menu
+    }
+}
+
+pub fn create_wokspaces_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
+    let mi = gtk::MenuItem::new_with_label("Workspaces");
+    let menu = gtk::Menu::new();
+    mi.set_submenu(&menu);
+    menu.append(&OpenKnownRepoMenuItem::new(exec_console).pwo());
+    mi
 }
 
 #[cfg(test)]
