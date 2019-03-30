@@ -173,6 +173,7 @@ impl BranchesNameListStore {
 }
 
 pub struct BranchesNameTable {
+    scrolled_window: gtk::ScrolledWindow,
     view: gtk::TreeView,
     list_store: RefCell<BranchesNameListStore>,
     required_map_action: Cell<RequiredMapAction>,
@@ -181,7 +182,7 @@ pub struct BranchesNameTable {
     hovered_branch: RefCell<Option<String>>,
 }
 
-impl_widget_wrapper!(view: gtk::TreeView, BranchesNameTable);
+impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, BranchesNameTable);
 
 impl MapManagedUpdate<BranchesNameListStore, BranchesRawData, gtk::ListStore>
     for BranchesNameTable
@@ -266,7 +267,12 @@ impl BranchesNameTable {
             &vec![],
         );
 
+        let adj: Option<&gtk::Adjustment> = None;
+        let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
+        scrolled_window.add(&view);
+
         let table = Rc::new(BranchesNameTable {
+            scrolled_window,
             view,
             list_store,
             required_map_action,

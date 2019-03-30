@@ -191,6 +191,7 @@ impl RemotesNameListStore {
 }
 
 pub struct RemotesNameTable {
+    scrolled_window: gtk::ScrolledWindow,
     view: gtk::TreeView,
     list_store: RefCell<RemotesNameListStore>,
     required_map_action: Cell<RequiredMapAction>,
@@ -199,7 +200,7 @@ pub struct RemotesNameTable {
     hovered_remote: RefCell<Option<String>>,
 }
 
-impl_widget_wrapper!(view: gtk::TreeView, RemotesNameTable);
+impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, RemotesNameTable);
 
 impl MapManagedUpdate<RemotesNameListStore, String, gtk::ListStore> for RemotesNameTable {
     fn buffered_update(&self) -> Ref<RemotesNameListStore> {
@@ -277,7 +278,12 @@ impl RemotesNameTable {
             &vec![],
         );
 
+        let adj: Option<&gtk::Adjustment> = None;
+        let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
+        scrolled_window.add(&view);
+
         let table = Rc::new(RemotesNameTable {
+            scrolled_window,
             view,
             list_store,
             required_map_action,

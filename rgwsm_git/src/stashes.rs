@@ -267,6 +267,7 @@ impl StashesNameListStore {
 }
 
 pub struct StashesNameTable {
+    scrolled_window: gtk::ScrolledWindow,
     view: gtk::TreeView,
     list_store: RefCell<StashesNameListStore>,
     required_map_action: Cell<RequiredMapAction>,
@@ -275,7 +276,7 @@ pub struct StashesNameTable {
     hovered_stash: RefCell<Option<String>>,
 }
 
-impl_widget_wrapper!(view: gtk::TreeView, StashesNameTable);
+impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, StashesNameTable);
 
 impl MapManagedUpdate<StashesNameListStore, String, gtk::ListStore> for StashesNameTable {
     fn buffered_update(&self) -> Ref<StashesNameListStore> {
@@ -353,7 +354,12 @@ impl StashesNameTable {
             &vec![],
         );
 
+        let adj: Option<&gtk::Adjustment> = None;
+        let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
+        scrolled_window.add(&view);
+
         let table = Rc::new(StashesNameTable {
+            scrolled_window,
             view,
             list_store,
             required_map_action,
