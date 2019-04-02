@@ -14,7 +14,7 @@
 
 use std::env;
 use std::io;
-use std::process::{Command, Output};
+use std::process::{self, Command, Output};
 use std::rc::Rc;
 use std::time::SystemTime;
 
@@ -39,11 +39,11 @@ pub struct ExecConsole {
     scrolled_window: gtk::ScrolledWindow,
     text_view: gtk::TextView,
     pub update_button: gtk::Button,
-    pub chdir_menu_item: gtk::MenuItem,
     pub event_notifier: Rc<EventNotifier>,
     pub changed_condns_notifier: Rc<ChangedCondnsNotifier>,
     pub managed_buttons: Rc<ConditionalWidgetGroups<gtk::Button>>,
     pub managed_check_buttons: Rc<ConditionalWidgetGroups<gtk::CheckButton>>,
+    pub managed_menu_items: Rc<ConditionalWidgetGroups<gtk::MenuItem>>,
     auto_update: Rc<timeout::ControlledTimeoutCycle>,
 }
 
@@ -62,16 +62,21 @@ impl ExecConsole {
             None,
             Some(&changed_condns_notifier),
         );
+        let managed_menu_items = ConditionalWidgetGroups::<gtk::MenuItem>::new(
+            WidgetStatesControlled::Sensitivity,
+            None,
+            Some(&changed_condns_notifier),
+        );
         let adj: Option<&gtk::Adjustment> = None;
         let ec = Rc::new(Self {
             scrolled_window: gtk::ScrolledWindow::new(adj, adj),
             text_view: gtk::TextView::new(),
             update_button: gtk::Button::new_with_label("Update"),
-            chdir_menu_item: gtk::MenuItem::new_with_label("Open"),
             event_notifier: EventNotifier::new(),
             changed_condns_notifier: changed_condns_notifier,
             managed_buttons: managed_buttons,
             managed_check_buttons: managed_check_buttons,
+            managed_menu_items: managed_menu_items,
             auto_update: timeout::ControlledTimeoutCycle::new("Auto Update", true, 10),
         });
         ec.text_view.set_editable(false);
@@ -86,18 +91,6 @@ impl ExecConsole {
                 .event_notifier
                 .notify_events(events::EV_AUTO_UPDATE);
         }));
-
-        let ec_clone = Rc::clone(&ec);
-        ec.chdir_menu_item.connect_activate(move |_| {
-            if let Some(path) = ec_clone.browse_path(
-                Some("Directory Path"),
-                None,
-                gtk::FileChooserAction::CreateFolder,
-                false,
-            ) {
-                ec_clone.chdir(&path.to_string_lossy().to_string());
-            }
-        });
 
         ec.update_button.set_image(&action_icons::update_image(32));
         ec.update_button.set_image_position(gtk::PositionType::Top);
@@ -247,4 +240,43 @@ impl ExecConsole {
             }
         }
     }
+}
+
+pub fn create_files_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
+    let mi = gtk::MenuItem::new_with_label("Files");
+    let menu = gtk::Menu::new();
+    mi.set_submenu(&menu);
+
+    let chdir_menu_item = gtk::MenuItem::new_with_label("Open");
+    let ec_clone = Rc::clone(&exec_console);
+    chdir_menu_item.connect_activate(move |_| {
+        if let Some(path) = ec_clone.browse_path(
+            Some("Directory Path"),
+            None,
+            gtk::FileChooserAction::CreateFolder,
+            false,
+        ) {
+            ec_clone.chdir(&path.to_string_lossy().to_string());
+        }
+    });
+    menu.append(&chdir_menu_item);
+
+    let init_menu_item = gtk::MenuItem::new_with_label("Init");
+    exec_console.managed_menu_items.add_widget("init", &init_menu_item, repos::SAV_NOT_IN_REPO);
+    let ec_clone = Rc::clone(&exec_console);
+    init_menu_item.connect_activate(move |_| {
+        let cmd = "git init";
+        let result = ec_clone.exec_cmd(&cmd, events::EV_CHANGE_DIR);
+        ec_clone.check_repo_states();
+        ec_clone.report_any_command_problems(&cmd, &result);
+    });
+    menu.append(&init_menu_item);
+
+    let exit_menu_item = gtk::MenuItem::new_with_label("Exit");
+    exit_menu_item.connect_activate(move |_| {
+        process::exit(0);
+    });
+    menu.append(&exit_menu_item);
+
+    mi
 }

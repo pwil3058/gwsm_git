@@ -93,18 +93,11 @@ fn activate(app: &gtk::Application) {
     let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
     vbox.pack_start(&hbox, false, false, 0);
 
-    let menu = gtk::Menu::new();
-    menu.append(&exec.chdir_menu_item);
-    exec.chdir_menu_item.show();
-    let menu_item = gtk::MenuItem::new_with_label("Files");
-    menu_item.set_submenu(&menu);
     let menu_bar = gtk::MenuBar::new();
     menu_bar.show();
     hbox.pack_start(&menu_bar, true, true, 0);
-    menu_bar.add(&menu_item);
-    menu_bar.add(&repos::create_wokspaces_menu(&exec));
-    menu.show_all();
-    menu_item.show_all();
+    menu_bar.add(&exec::create_files_menu(&exec));
+    menu_bar.add(&repos::create_workspaces_menu(&exec));
 
     let config_menu = gtk::Menu::new();
     let editor_assignment_menu_item = edit::EditorAlocationMenuItem::new();

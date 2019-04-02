@@ -217,7 +217,7 @@ impl OpenKnownRepoMenuItem {
     }
 }
 
-pub fn create_wokspaces_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
+pub fn create_workspaces_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     let mi = gtk::MenuItem::new_with_label("Workspaces");
     let menu = gtk::Menu::new();
     mi.set_submenu(&menu);
