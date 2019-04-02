@@ -98,6 +98,7 @@ fn activate(app: &gtk::Application) {
     hbox.pack_start(&menu_bar, true, true, 0);
     menu_bar.add(&exec::create_files_menu(&exec));
     menu_bar.add(&repos::create_workspaces_menu(&exec));
+    menu_bar.add(&exec::create_friends_menu(&exec));
 
     let config_menu = gtk::Menu::new();
     let editor_assignment_menu_item = edit::EditorAlocationMenuItem::new();

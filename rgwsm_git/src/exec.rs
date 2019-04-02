@@ -280,3 +280,23 @@ pub fn create_files_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
 
     mi
 }
+
+pub fn create_friends_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
+    let mi = gtk::MenuItem::new_with_label("Friends");
+    let menu = gtk::Menu::new();
+    mi.set_submenu(&menu);
+
+    for friend in ["gitg", "gitk", "git-dag", "git-cola"].iter() {
+        let menu_item = gtk::MenuItem::new_with_label(&friend.to_string());
+        let ec_clone = Rc::clone(&exec_console);
+        menu_item.connect_activate(move |_| {
+            if let Err(err) = Command::new(&friend).spawn() {
+                let msg = format!("Error running \"{}\"", friend);
+                ec_clone.report_error(&msg, &err);
+            }
+        });
+        menu.append(&menu_item);
+    }
+
+    mi
+}
