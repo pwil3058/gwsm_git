@@ -1034,3 +1034,88 @@ pub fn update_image(size: i32) -> gtk::Image {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }
 }
+
+// XPM
+static TAG_XPM: &[&str] = &[
+    "64 64 4 1",
+    "A	c #000000",
+    "B	c #FFFFFF",
+    "C	c #FFB600",
+    " 	c None",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA ",
+    "                AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA ",
+    "               AACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCAA ",
+    "              AACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCAA ",
+    "             AACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCAA ",
+    "            AACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCAA ",
+    "           AACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCAA ",
+    "          AACCCCCCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCCAA ",
+    "         AACCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "        AACCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "       AACCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "      AACCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "     AACCCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "    AACCCCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "   AACCCCCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "  AACCCCCCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    " AACCCCCCCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    " AACCCCCCCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    " AACCCCCCAACCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    " AACCCCCAAAACCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    " AACCCCAAAAAACCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    " AACCCCAAAAAACCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    " AACCCCAAAAAACCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    " AACCCCCAAAACCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    " AACCCCCCAACCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    " AACCCCCCCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    " AACCCCCCCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    " AAACCCCCCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "   AACCCCCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "    AACCCCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "     AACCCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "      AACCCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "       AACCCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "        AACCCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "         AACCCCCCCABBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBACCCCCAA ",
+    "          AACCCCCCAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACCCCCAA ",
+    "           AACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCAA ",
+    "            AACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCAA ",
+    "             AACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCAA ",
+    "              AACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCAA ",
+    "               AACCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCAA ",
+    "                AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA ",
+    "                 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+    "                                                                ",
+];
+
+pub fn tag_pixbuf() -> gdk_pixbuf::Pixbuf {
+    gdk_pixbuf::Pixbuf::new_from_xpm_data(TAG_XPM)
+}
+
+pub fn tag_image(size: i32) -> gtk::Image {
+    if let Some(pixbuf) = tag_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear) {
+        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+    } else {
+        panic!("File: {:?} Line: {:?}", file!(), line!())
+    }
+}

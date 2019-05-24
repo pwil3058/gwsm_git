@@ -56,10 +56,12 @@ mod exec;
 mod fs_db;
 mod icon;
 mod index_file_tree;
+mod message;
 mod remotes;
 mod repos;
 mod stashes;
 mod submodules;
+mod tags;
 mod ws_file_tree;
 
 fn activate(app: &gtk::Application) {
@@ -139,6 +141,8 @@ fn activate(app: &gtk::Application) {
     );
     let branch_button = branches::BranchButton::new(&exec);
     action_hbox.pack_start(&branch_button.pwo(), false, false, 0);
+    let tag_button = tags::TagButton::new(&exec);
+    action_hbox.pack_start(&tag_button.pwo(), false, false, 0);
     action_hbox.pack_start(
         &gtk::Separator::new(gtk::Orientation::Vertical),
         false,

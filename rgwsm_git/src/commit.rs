@@ -33,6 +33,7 @@ use crate::action_icons;
 use crate::config;
 use crate::events;
 use crate::exec::ExecConsole;
+use crate::message::last_commit_message;
 use crate::repos;
 
 pub struct CommitButton {
@@ -64,7 +65,7 @@ impl CommitButton {
         db.window
             .set_geometry_from_recollections("commit:window", (700, 600));
         db.window.set_destroy_with_parent(true);
-        db.window.set_title(&config::window_title(Some("diff")));
+        db.window.set_title(&config::window_title(Some("commit")));
         db.window.connect_delete_event(move |w, _| {
             w.hide_on_delete();
             gtk::Inhibit(true)
@@ -233,21 +234,6 @@ fn insert_acked_by_at_cursor(buffer: &gtk::TextBuffer) {
 fn insert_signed_off_by_at_cursor(buffer: &gtk::TextBuffer) {
     let text = format!("Signed-off-by: {}", get_name_and_email_string());
     buffer.insert_at_cursor(&text)
-}
-
-fn last_commit_message() -> String {
-    let output = Command::new("git")
-        .arg("log")
-        .arg("-n")
-        .arg("1")
-        .arg("--pretty=format:%s%n%n%b")
-        .output()
-        .expect("getting last commit message text failed");
-    if output.status.success() {
-        String::from_utf8_lossy(&output.stdout).to_string()
-    } else {
-        "".to_string()
-    }
 }
 
 impl CommitWidget {

@@ -262,7 +262,9 @@ pub fn create_files_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     menu.append(&chdir_menu_item);
 
     let init_menu_item = gtk::MenuItem::new_with_label("Init");
-    exec_console.managed_menu_items.add_widget("init", &init_menu_item, repos::SAV_NOT_IN_REPO);
+    exec_console
+        .managed_menu_items
+        .add_widget("init", &init_menu_item, repos::SAV_NOT_IN_REPO);
     let ec_clone = Rc::clone(&exec_console);
     init_menu_item.connect_activate(move |_| {
         let cmd = "git init";

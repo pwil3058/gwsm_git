@@ -155,14 +155,13 @@ fn write_known_repos_table(table: &[(String, String)]) -> Result<usize, KRTError
 
 pub fn init_known_repos_table() {
     if !known_repos_table_filepath().is_file() {
-        write_known_repos_table(&vec![])
-            .expect("failed to initialize editor assignment table");
+        write_known_repos_table(&vec![]).expect("failed to initialize editor assignment table");
     }
 }
 
 pub fn add_to_known_repos(repo_path: &str) -> Result<(), KRTError> {
     if is_repo_workdir(repo_path) {
-        if let Some(dir_name) = repo_path.path_file_name(){
+        if let Some(dir_name) = repo_path.path_file_name() {
             let new_entry = (dir_name, repo_path.to_string());
             let mut known_repos = read_known_repos_table()?;
             let result = known_repos.binary_search(&new_entry);
@@ -190,11 +189,12 @@ impl OpenKnownRepoMenuItem {
         });
 
         let ormi_clone = Rc::clone(&ormi);
-        ormi.menu_item.connect_enter_notify_event(move |menu_item, _| {
-            let submenu = ormi_clone.build_submenu();
-            menu_item.set_submenu(&submenu);
-            gtk::Inhibit(false)
-        });
+        ormi.menu_item
+            .connect_enter_notify_event(move |menu_item, _| {
+                let submenu = ormi_clone.build_submenu();
+                menu_item.set_submenu(&submenu);
+                gtk::Inhibit(false)
+            });
 
         ormi
     }
@@ -206,9 +206,7 @@ impl OpenKnownRepoMenuItem {
             let label = format!("{} :-> {}", shlex::quote(&item.0), shlex::quote(&item.1));
             let menu_item = gtk::MenuItem::new_with_label(&label);
             let exec_console = Rc::clone(&self.exec_console);
-            menu_item.connect_activate(move |_| {
-                exec_console.chdir(&item.1)
-            });
+            menu_item.connect_activate(move |_| exec_console.chdir(&item.1));
             menu.append(&menu_item);
         }
         menu.show_all();

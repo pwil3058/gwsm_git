@@ -28,7 +28,7 @@ use serde_json;
 use gtk;
 use gtk::prelude::*;
 
-use pw_gix::gtkx::dialog::AutoClose;
+use pw_gix::gtkx::dialog::AutoDestroy;
 use pw_gix::sav_state::*;
 use pw_gix::wrapper::*;
 
@@ -406,7 +406,7 @@ impl EditorAlocationMenuItem {
                 gtk::DialogFlags::DESTROY_WITH_PARENT,
                 &[("Close", gtk::ResponseType::Close)],
             );
-            dialog.enable_auto_close();
+            dialog.enable_auto_destroy();
             let table = EditorAllocationTableEditor::new();
             dialog
                 .get_content_area()

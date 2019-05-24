@@ -420,7 +420,7 @@ impl StashesNameTable {
                                     gtk::DialogFlags::DESTROY_WITH_PARENT,
                                     &[("Close", gtk::ResponseType::Close)],
                                 );
-                                dialog.enable_auto_close();
+                                dialog.enable_auto_destroy();
                                 dialog.get_content_area().pack_start(
                                     &diff_notebook.pwo(),
                                     true,
