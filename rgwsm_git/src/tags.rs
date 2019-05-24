@@ -202,7 +202,9 @@ impl NewTagWidget {
                     cmd.push(' ');
                     cmd.push_str(&shlex::quote(target));
                 };
+                let old_cursor = self.show_busy();
                 let result = self.exec_console.exec_cmd(&cmd, events::EV_TAGS_CHANGE);
+                self.unshow_busy(old_cursor);
                 return Ok((cmd, result));
             } else {
                 return Err(TagError::NoTagName);
@@ -401,6 +403,12 @@ pub struct TagsNameTable {
 
 impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, TagsNameTable);
 
+impl CreatTag for TagsNameTable {
+    fn exec_console(&self) -> &Rc<ExecConsole> {
+        &self.exec_console
+    }
+}
+
 impl MapManagedUpdate<TagsNameListStore, String, gtk::ListStore>
     for TagsNameTable
 {
@@ -532,6 +540,28 @@ impl TagsNameTable {
                         .exec_console
                         .exec_cmd(&cmd, events::EV_BRANCHES_CHANGE | events::EV_CHECKOUT);
                     table_clone.report_any_command_problems(&cmd, &result);
+                }
+            });
+
+        let table_clone = Rc::clone(&table);
+        table
+            .popup_menu
+            .append_item(
+                "tag",
+                "Tag",
+                None,
+                "Set a new tag the selected/indicated object",
+                repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
+            )
+            .connect_activate(move |_| {
+                let selection = table_clone.view.get_selection();
+                let tag = if let Some((store, iter)) = selection.get_selected() {
+                    store.get_value(&iter, 0).get::<String>()
+                } else {
+                    table_clone.hovered_tag.borrow().clone()
+                };
+                if let Some(tag) = tag {
+                    table_clone.create_tag_for(Some(&tag))
                 }
             });
 
