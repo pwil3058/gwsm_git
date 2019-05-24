@@ -182,7 +182,10 @@ fn activate(app: &gtk::Application) {
     let remotes_table = remotes::RemotesNameTable::new(&exec);
     notebook.add(&remotes_table.pwo());
     notebook.set_tab_label_text(&remotes_table.pwo(), "Remotes");
-    notebook.add(&gtk::Label::new("Tags will go here!!"));
+    let tags_table = tags::TagsNameTable::new(&exec);
+    notebook.add(&tags_table.pwo());
+    notebook.set_tab_label_text(&tags_table.pwo(), "Tags");
+    notebook.add(&gtk::Label::new("History will go here!!"));
     notebook.set_property_enable_popup(true);
     paned_h_2.add2(&notebook);
     paned_h_2.show_all();
