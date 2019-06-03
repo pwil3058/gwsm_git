@@ -22,6 +22,7 @@ extern crate lazy_static;
 extern crate regex;
 extern crate serde_json;
 extern crate shlex;
+extern crate xml;
 
 extern crate gdk_pixbuf;
 extern crate gio;

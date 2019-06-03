@@ -201,8 +201,6 @@ struct CommitWidget {
 impl_widget_wrapper!(v_box: gtk::Box, CommitWidget);
 
 fn get_name_and_email_string() -> String {
-    use std::process::Command;
-
     let output = Command::new("git")
         .arg("config")
         .arg("user.name")

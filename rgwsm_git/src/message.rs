@@ -22,8 +22,6 @@ use sourceview::{self, ViewExt};
 use pw_gix::wrapper::*;
 
 fn get_name_and_email_string() -> String {
-    use std::process::Command;
-
     let output = Command::new("git")
         .arg("config")
         .arg("user.name")
