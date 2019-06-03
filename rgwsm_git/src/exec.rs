@@ -23,6 +23,7 @@ use gtk::prelude::*;
 
 use chrono::prelude::*;
 use shlex;
+use xml::escape;
 
 use pw_gix::recollections;
 use pw_gix::sav_state::*;
@@ -126,7 +127,7 @@ impl ExecConsole {
     fn append_bold(&self, text: &str) {
         let markup = format!(
             r###"<span foreground="black" weight="bold" font_family="monospace">{}</span>"###,
-            text
+            escape::escape_str_attribute(text)
         );
         self.append_markup(&markup);
     }
@@ -134,7 +135,7 @@ impl ExecConsole {
     fn append_cmd(&self, text: &str) {
         let markup = format!(
             r###"<span foreground="black" font_family="monospace">{}</span>"###,
-            text
+            escape::escape_str_attribute(text)
         );
         self.append_markup(&markup);
         self.append_markup("\n");
@@ -143,7 +144,7 @@ impl ExecConsole {
     fn append_stdout(&self, text: &str) {
         let markup = format!(
             r###"<span foreground="black" font_family="monospace">{}</span>"###,
-            text
+            escape::escape_str_attribute(text)
         );
         self.append_markup(&markup);
     }
@@ -151,7 +152,7 @@ impl ExecConsole {
     fn append_stderr(&self, text: &str) {
         let markup = format!(
             r###"<span foreground="#AA0000" font_family="monospace">{}</span>"###,
-            text
+            escape::escape_str_attribute(text)
         );
         self.append_markup(&markup);
     }
@@ -159,7 +160,7 @@ impl ExecConsole {
     fn _append_stdin(&self, text: &str) {
         let markup = format!(
             r###"<span foreground="00AA00" font_family="monospace">{}</span>"###,
-            text
+            escape::escape_str_attribute(text)
         );
         self.append_markup(&markup);
     }
