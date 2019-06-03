@@ -302,6 +302,7 @@ impl CommitWidget {
                         buffer.set_text("")
                     }
                 }
+                cw_clone.amend_option_button.set_active(false);
                 cw_clone.report_any_command_problems(&cmd, &result);
             } else {
                 cw_clone.warn_user("Commit message is empty!", None);
