@@ -81,16 +81,16 @@ fn activate(app: &gtk::Application) {
         false
     });
     let exec = exec::ExecConsole::new();
-    if !exec.in_repo() {
-        if let Some(last_ws_dir) = recollections::recall("last:git:ws:dir") {
-            exec.chdir(&last_ws_dir);
-        }
-    }
     let w = window.clone();
     exec.event_notifier.add_notification_cb(
         events::EV_CHANGE_DIR,
         Box::new(move |_| w.set_title(&config::window_title(None))),
     );
+    if !exec.in_repo() {
+        if let Some(last_ws_dir) = recollections::recall("last:git:ws:dir") {
+            exec.chdir(&last_ws_dir);
+        }
+    }
     let vbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
 
     let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
