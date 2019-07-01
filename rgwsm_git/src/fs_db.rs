@@ -495,7 +495,7 @@ struct Snapshot {
 }
 
 impl Snapshot {
-    fn iter(&self) -> SnapshotIterator {
+    fn iter(&self) -> SnapshotIterator<'_> {
         SnapshotIterator {
             num_dir_components: self.num_dir_components,
             file_status_data: Rc::clone(&self.file_status_data),

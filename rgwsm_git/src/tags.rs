@@ -51,7 +51,7 @@ pub enum TagError {
 }
 
 impl fmt::Display for TagError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "TagError is here!")
     }
 }
@@ -377,7 +377,7 @@ impl BufferedUpdate<String, gtk::ListStore> for TagsNameListStore {
         self.list_store.clone()
     }
 
-    fn get_row_buffer(&self) -> Rc<RefCell<RowBuffer<String>>> {
+    fn get_row_buffer(&self) -> Rc<RefCell<dyn RowBuffer<String>>> {
         self.tags_row_buffer.clone()
     }
 }
@@ -412,7 +412,7 @@ impl CreatTag for TagsNameTable {
 impl MapManagedUpdate<TagsNameListStore, String, gtk::ListStore>
     for TagsNameTable
 {
-    fn buffered_update(&self) -> Ref<TagsNameListStore> {
+    fn buffered_update(&self) -> Ref<'_, TagsNameListStore> {
         self.list_store.borrow()
     }
 

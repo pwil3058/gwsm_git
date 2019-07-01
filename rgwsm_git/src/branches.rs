@@ -134,14 +134,16 @@ impl RowBuffer<BranchesRawData> for BranchesRowBuffer {
     }
 
     fn finalise(&self) {
-        let core = self.row_buffer_core.borrow();
-        let mut merged_set: HashSet<&str> = HashSet::new();
-        for line in core.raw_data.merged_branches_text.lines() {
-            merged_set.insert(line[2..].trim_end());
-        }
         let mut rows: Vec<Row> = Vec::new();
-        for line in core.raw_data.all_branches_text.lines() {
-            rows.push(extract_branch_row(&line, &merged_set))
+        {
+            let core = self.row_buffer_core.borrow();
+            let mut merged_set: HashSet<&str> = HashSet::new();
+            for line in core.raw_data.merged_branches_text.lines() {
+                merged_set.insert(line[2..].trim_end());
+            }
+            for line in core.raw_data.all_branches_text.lines() {
+                rows.push(extract_branch_row(&line, &merged_set))
+            }
         }
         let mut core = self.row_buffer_core.borrow_mut();
         core.rows = Rc::new(rows);
@@ -159,7 +161,7 @@ impl BufferedUpdate<BranchesRawData, gtk::ListStore> for BranchesNameListStore {
         self.list_store.clone()
     }
 
-    fn get_row_buffer(&self) -> Rc<RefCell<RowBuffer<BranchesRawData>>> {
+    fn get_row_buffer(&self) -> Rc<RefCell<dyn RowBuffer<BranchesRawData>>> {
         self.branches_row_buffer.clone()
     }
 }
@@ -188,7 +190,7 @@ impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, BranchesNameTable);
 impl MapManagedUpdate<BranchesNameListStore, BranchesRawData, gtk::ListStore>
     for BranchesNameTable
 {
-    fn buffered_update(&self) -> Ref<BranchesNameListStore> {
+    fn buffered_update(&self) -> Ref<'_, BranchesNameListStore> {
         self.list_store.borrow()
     }
 

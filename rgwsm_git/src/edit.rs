@@ -43,7 +43,7 @@ pub enum ETError {
 }
 
 impl fmt::Display for ETError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "ETError is here!")
     }
 }

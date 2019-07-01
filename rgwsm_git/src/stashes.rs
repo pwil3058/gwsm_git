@@ -252,7 +252,7 @@ impl BufferedUpdate<String, gtk::ListStore> for StashesNameListStore {
         self.list_store.clone()
     }
 
-    fn get_row_buffer(&self) -> Rc<RefCell<RowBuffer<String>>> {
+    fn get_row_buffer(&self) -> Rc<RefCell<dyn RowBuffer<String>>> {
         self.stashes_row_buffer.clone()
     }
 }
@@ -279,7 +279,7 @@ pub struct StashesNameTable {
 impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, StashesNameTable);
 
 impl MapManagedUpdate<StashesNameListStore, String, gtk::ListStore> for StashesNameTable {
-    fn buffered_update(&self) -> Ref<StashesNameListStore> {
+    fn buffered_update(&self) -> Ref<'_, StashesNameListStore> {
         self.list_store.borrow()
     }
 

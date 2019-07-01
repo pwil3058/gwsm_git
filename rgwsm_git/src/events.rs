@@ -28,7 +28,7 @@ pub const EV_STASHES_CHANGE: u64 = 1 << 9;
 pub const EV_TAGS_CHANGE: u64 = 1 << 10;
 
 pub struct EventNotifier {
-    callbacks: RefCell<Vec<(u64, u64, Box<Fn(u64)>)>>,
+    callbacks: RefCell<Vec<(u64, u64, Box<dyn Fn(u64)>)>>,
     next_token: Cell<u64>,
 }
 
@@ -39,7 +39,7 @@ impl EventNotifier {
             next_token: Cell::new(0),
         })
     }
-    pub fn add_notification_cb(&self, events: u64, callback: Box<Fn(u64)>) -> u64 {
+    pub fn add_notification_cb(&self, events: u64, callback: Box<dyn Fn(u64)>) -> u64 {
         let token = self.next_token.get();
         self.next_token.set(token + 1);
 

@@ -142,23 +142,25 @@ impl RowBuffer<String> for RemotesRowBuffer {
     }
 
     fn finalise(&self) {
-        let core = self.row_buffer_core.borrow();
         let mut rows: Vec<Row> = Vec::new();
-        let mut name: &str = "";
-        let mut inbound_url: &str = "";
-        for (i, line) in core.raw_data.lines().enumerate() {
-            let captures = VREMOTE_RE.captures(&line).unwrap();
-            if i % 2 == 0 {
-                name = captures.get(1).unwrap().as_str();
-                inbound_url = captures.get(2).unwrap().as_str();
-            } else {
-                let outbound_url = captures.get(2).unwrap().as_str();
-                let row = vec![
-                    name.to_value(),
-                    inbound_url.to_value(),
-                    outbound_url.to_value(),
-                ];
-                rows.push(row);
+        {
+            let core = self.row_buffer_core.borrow();
+            let mut name: &str = "";
+            let mut inbound_url: &str = "";
+            for (i, line) in core.raw_data.lines().enumerate() {
+                let captures = VREMOTE_RE.captures(&line).unwrap();
+                if i % 2 == 0 {
+                    name = captures.get(1).unwrap().as_str();
+                    inbound_url = captures.get(2).unwrap().as_str();
+                } else {
+                    let outbound_url = captures.get(2).unwrap().as_str();
+                    let row = vec![
+                        name.to_value(),
+                        inbound_url.to_value(),
+                        outbound_url.to_value(),
+                    ];
+                    rows.push(row);
+                }
             }
         }
         let mut core = self.row_buffer_core.borrow_mut();
@@ -177,7 +179,7 @@ impl BufferedUpdate<String, gtk::ListStore> for RemotesNameListStore {
         self.list_store.clone()
     }
 
-    fn get_row_buffer(&self) -> Rc<RefCell<RowBuffer<String>>> {
+    fn get_row_buffer(&self) -> Rc<RefCell<dyn RowBuffer<String>>> {
         self.remotes_row_buffer.clone()
     }
 }
@@ -204,7 +206,7 @@ pub struct RemotesNameTable {
 impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, RemotesNameTable);
 
 impl MapManagedUpdate<RemotesNameListStore, String, gtk::ListStore> for RemotesNameTable {
-    fn buffered_update(&self) -> Ref<RemotesNameListStore> {
+    fn buffered_update(&self) -> Ref<'_, RemotesNameListStore> {
         self.list_store.borrow()
     }
 

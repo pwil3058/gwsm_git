@@ -12,29 +12,29 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-extern crate chrono;
-extern crate crypto_hash;
-extern crate git2;
-extern crate glob;
-extern crate ignore;
+
+
+
+
+
 #[macro_use]
 extern crate lazy_static;
-extern crate regex;
-extern crate serde_json;
-extern crate shlex;
-extern crate xml;
 
-extern crate gdk_pixbuf;
-extern crate gio;
-extern crate gtk;
-extern crate pango_sys;
-extern crate sourceview;
 
-extern crate cub_diff_gui_lib;
-extern crate cub_diff_lib;
+
+
+
+
+use gio;
+use gtk;
+
+
+
+
+
 #[macro_use]
 extern crate pw_gix;
-extern crate pw_pathux;
+
 
 use gio::ApplicationExt;
 use gio::ApplicationExtManual;
