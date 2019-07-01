@@ -651,15 +651,19 @@ fn extract_snapshot_from_text(text: &str) -> Snapshot {
     //    fsd[related_file_path] = (status, fsdb.RFD(path=file_path, relation="<-"))
     let file_status_data = Rc::new(file_status_data);
     let relevant_keys: Vec<String> = file_status_data.keys().map(|s| s.to_string()).collect();
-    let status_set: HashSet<&str> = file_status_data.values().map(|(a, _)| a.as_str()).collect();
-    let status = first_status_in_set(&ORDERED_DIR_STATUS_LIST, &status_set, None);
-    let clean_status = first_status_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &status_set, None);
+    let status: String;
+    let clean_status: String;
+    {
+        let status_set: HashSet<&str> = file_status_data.values().map(|(a, _)| a.as_str()).collect();
+        status = first_status_in_set(&ORDERED_DIR_STATUS_LIST, &status_set, None).to_string();
+        clean_status = first_status_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &status_set, None).to_string();
+    }
     Snapshot {
         num_dir_components: 1,
         file_status_data: file_status_data,
         relevant_keys: relevant_keys,
-        status: status.to_string(),
-        clean_status: clean_status.to_string(),
+        status: status,
+        clean_status: clean_status,
     }
 }
 
@@ -754,7 +758,10 @@ where
                     let snapshot = self.snapshot.narrowed_for_dir_path(&path);
                     let status = snapshot.status.clone();
                     let clean_status = snapshot.clean_status.clone();
-                    if let Some(dir_dat) = dirs_map.get_mut(&name) {
+                    let is_known = dirs_map.contains_key(&name);
+                    // TODO: redo this code using insert()'s return value
+                    if is_known {
+                        let dir_dat = dirs_map.get_mut(&name).expect("stupid rules");
                         dir_dat.set_status(&status);
                         dir_dat.set_clean_status(&clean_status);
                     } else {
@@ -857,7 +864,6 @@ where
     snapshot_digest: RefCell<Vec<u8>>,
 }
 
-// TODO: put in mechanisms to only recalculate snapshot when there are changes
 impl<FSOI> FsDbIfce<FSOI> for GitFsDb<FSOI>
 where
     FSOI: FsObjectIfce + ScmFsoDataIfce + Clone,

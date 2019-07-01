@@ -18,7 +18,7 @@ use std::rc::Rc;
 
 use crypto_hash::{Algorithm, Hasher};
 use git2;
-use lazy_static;
+
 use regex::Regex;
 
 use gtk::prelude::*;

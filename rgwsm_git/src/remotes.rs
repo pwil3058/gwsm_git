@@ -142,7 +142,7 @@ impl RowBuffer<String> for RemotesRowBuffer {
     }
 
     fn finalise(&self) {
-        let mut core = self.row_buffer_core.borrow_mut();
+        let core = self.row_buffer_core.borrow();
         let mut rows: Vec<Row> = Vec::new();
         let mut name: &str = "";
         let mut inbound_url: &str = "";
@@ -161,6 +161,7 @@ impl RowBuffer<String> for RemotesRowBuffer {
                 rows.push(row);
             }
         }
+        let mut core = self.row_buffer_core.borrow_mut();
         core.rows = Rc::new(rows);
         core.set_is_finalised_true();
     }

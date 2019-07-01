@@ -172,11 +172,13 @@ impl ExecConsole {
         yield_to_pending_events!();
         let cmd_line = shlex::split(cmd).unwrap();
         let output = Command::new(&cmd_line[0]).args(&cmd_line[1..]).output()?;
-        let stdout = String::from_utf8_lossy(&output.stdout);
-        self.append_stdout(&stdout);
-        let stderr = String::from_utf8_lossy(&output.stderr);
-        self.append_stderr(&stderr);
-        self.append_bold("% ");
+        {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            self.append_stdout(&stdout);
+            let stderr = String::from_utf8_lossy(&output.stderr);
+            self.append_stderr(&stderr);
+            self.append_bold("% ");
+        }
         yield_to_pending_events!();
         if output.status.success() && events != 0 {
             self.event_notifier.notify_events(events)

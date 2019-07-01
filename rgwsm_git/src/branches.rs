@@ -134,7 +134,7 @@ impl RowBuffer<BranchesRawData> for BranchesRowBuffer {
     }
 
     fn finalise(&self) {
-        let mut core = self.row_buffer_core.borrow_mut();
+        let core = self.row_buffer_core.borrow();
         let mut merged_set: HashSet<&str> = HashSet::new();
         for line in core.raw_data.merged_branches_text.lines() {
             merged_set.insert(line[2..].trim_end());
@@ -143,6 +143,7 @@ impl RowBuffer<BranchesRawData> for BranchesRowBuffer {
         for line in core.raw_data.all_branches_text.lines() {
             rows.push(extract_branch_row(&line, &merged_set))
         }
+        let mut core = self.row_buffer_core.borrow_mut();
         core.rows = Rc::new(rows);
         core.set_is_finalised_true();
     }
