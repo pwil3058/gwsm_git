@@ -12,29 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-
-
-
-
-
 #[macro_use]
 extern crate lazy_static;
-
-
-
-
-
 
 use gio;
 use gtk;
 
-
-
-
-
 #[macro_use]
 extern crate pw_gix;
-
 
 use gio::ApplicationExt;
 use gio::ApplicationExtManual;

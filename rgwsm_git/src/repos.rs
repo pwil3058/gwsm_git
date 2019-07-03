@@ -215,10 +215,207 @@ impl OpenKnownRepoMenuItem {
     }
 }
 
+pub struct CloneRepoWidget {
+    grid: gtk::Grid,
+    src_entry: gtk::Entry,
+    browse_src_btn: gtk::Button,
+    as_entry: gtk::Entry,
+    as_default_btn: gtk::Button,
+    in_entry: gtk::Entry,
+    browse_in_btn: gtk::Button,
+}
+
+impl_widget_wrapper!(grid: gtk::Grid, CloneRepoWidget);
+
+impl CloneRepoWidget {
+    fn new() -> Rc<Self> {
+        let crw = Rc::new(Self {
+            grid: gtk::Grid::new(),
+            src_entry: gtk::Entry::new(),
+            browse_src_btn: gtk::Button::new_with_label("Browse"),
+            as_entry: gtk::Entry::new(),
+            as_default_btn: gtk::Button::new_with_label("Default"),
+            in_entry: gtk::Entry::new(),
+            browse_in_btn: gtk::Button::new_with_label("Browse"),
+        });
+
+        crw.browse_src_btn
+            .set_tooltip_text("Browse local file system for repo to be cloned.");
+        crw.browse_in_btn.set_tooltip_text(
+            "Browse local file system for parent directory in which to place cloned repository.",
+        );
+
+        let src_label = gtk::Label::new("Repo to clone:");
+        crw.grid.attach(&src_label, 0, 0, 1, 1);
+        let as_label = gtk::Label::new("As:");
+        crw.grid
+            .attach_next_to(&as_label, &src_label, gtk::PositionType::Bottom, 1, 1);
+        let in_label = gtk::Label::new("In directory:");
+        crw.grid
+            .attach_next_to(&in_label, &as_label, gtk::PositionType::Bottom, 1, 1);
+
+        crw.src_entry.set_width_chars(64);
+        crw.grid
+            .attach_next_to(&crw.src_entry, &src_label, gtk::PositionType::Right, 4, 1);
+        crw.grid.attach_next_to(
+            &crw.browse_src_btn,
+            &crw.src_entry,
+            gtk::PositionType::Right,
+            1,
+            1,
+        );
+
+        crw.grid
+            .attach_next_to(&crw.as_entry, &as_label, gtk::PositionType::Right, 4, 1);
+        crw.grid.attach_next_to(
+            &crw.as_default_btn,
+            &crw.as_entry,
+            gtk::PositionType::Right,
+            1,
+            1,
+        );
+
+        crw.grid
+            .attach_next_to(&crw.in_entry, &in_label, gtk::PositionType::Right, 4, 1);
+        crw.grid.attach_next_to(
+            &crw.browse_in_btn,
+            &crw.in_entry,
+            gtk::PositionType::Right,
+            1,
+            1,
+        );
+
+        crw.grid.show_all();
+
+        let crw_clone = Rc::clone(&crw);
+        crw.browse_src_btn.connect_clicked(move |_| {
+            if let Some(src_dir) = crw_clone.select_dir(None, None, true, true) {
+                crw_clone.src_entry.set_text(&src_dir.to_string_lossy())
+            }
+        });
+
+        let crw_clone = Rc::clone(&crw);
+        crw.browse_in_btn.connect_clicked(move |_| {
+            if let Some(src_dir) = crw_clone.select_dir(None, None, true, true) {
+                crw_clone.in_entry.set_text(&src_dir.to_string_lossy())
+            }
+        });
+
+        let crw_clone = Rc::clone(&crw);
+        crw.as_default_btn.connect_clicked(move |_| {
+            if let Some(text) = crw_clone.source_url() {
+                if let Some(default) = text.path_file_name() {
+                    crw_clone.as_entry.set_text(&default)
+                } else {
+                    crw_clone.inform_user("Unable to determine default.", None)
+                }
+            } else {
+                crw_clone.inform_user("Source URL is empty.", None)
+            }
+        });
+
+        crw
+    }
+
+    fn source_url(&self) -> Option<String> {
+        if let Some(text) = self.src_entry.get_text() {
+            if text.len() > 0 {
+                return Some(text.into());
+            }
+        }
+        None
+    }
+
+    fn as_name(&self) -> Option<String> {
+        if let Some(text) = self.as_entry.get_text() {
+            if text.len() > 0 {
+                return Some(text.into());
+            }
+        }
+        None
+    }
+
+    fn in_dir(&self) -> Option<String> {
+        if let Some(text) = self.in_entry.get_text() {
+            if text.len() > 0 {
+                return Some(text.into());
+            }
+        }
+        None
+    }
+}
+
+pub struct CloneRepoMenuItem {
+    menu_item: gtk::MenuItem,
+    exec_console: Rc<ExecConsole>,
+}
+
+impl_widget_wrapper!(menu_item: gtk::MenuItem, CloneRepoMenuItem);
+
+impl CloneRepoMenuItem {
+    fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
+        let crmi = Rc::new(Self {
+            menu_item: gtk::MenuItem::new_with_label("Clone"),
+            exec_console: Rc::clone(exec_console),
+        });
+        let crmi_clone = Rc::clone(&crmi);
+        crmi.menu_item
+            .connect_activate(move |_| crmi_clone.clone_a_repo());
+
+        crmi
+    }
+
+    fn clone_a_repo(&self) {
+        let dialog = self.exec_console.new_dialog_with_buttons(
+            Some("Clone Repository"),
+            gtk::DialogFlags::DESTROY_WITH_PARENT | gtk::DialogFlags::MODAL,
+            CANCEL_OK_BUTTONS,
+        );
+        dialog.set_default_response(gtk::ResponseType::Ok);
+        let crw = CloneRepoWidget::new();
+        dialog
+            .get_content_area()
+            .pack_start(&crw.pwo(), true, true, 0);
+        while gtk::ResponseType::from(dialog.run()) == gtk::ResponseType::Ok {
+            if let Some(src_url) = crw.source_url() {
+                if let Some(as_name) = crw.as_name() {
+                    let in_dir = if let Some(in_dir) = crw.in_dir() {
+                        in_dir
+                    } else {
+                        str_path_current_dir_or_panic()
+                    };
+                    let tgt_dir = in_dir.path_join(&as_name);
+                    let cmd = format!(
+                        "git clone {} {}",
+                        shlex::quote(&src_url),
+                        shlex::quote(&tgt_dir)
+                    );
+                    let result = self.exec_console.exec_cmd(&cmd, 0);
+                    self.exec_console.report_any_command_problems(&cmd, &result);
+                    if let Ok(ref output) = result {
+                        if output.status.success() {
+                            self.exec_console.chdir(&tgt_dir);
+                            break;
+                        }
+                    }
+                } else {
+                    self.exec_console
+                        .inform_user("A target directory name is required.", None);
+                }
+            } else {
+                self.exec_console
+                    .inform_user("A source URL is required.", None);
+            }
+        }
+        dialog.destroy();
+    }
+}
+
 pub fn create_workspaces_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     let mi = gtk::MenuItem::new_with_label("Workspaces");
     let menu = gtk::Menu::new();
     mi.set_submenu(&menu);
+    menu.append(&CloneRepoMenuItem::new(exec_console).pwo());
     menu.append(&OpenKnownRepoMenuItem::new(exec_console).pwo());
     mi
 }

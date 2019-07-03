@@ -27,7 +27,6 @@ use gtk::prelude::*;
 
 use shlex;
 
-
 use pw_gix::gtkx::dialog::RememberDialogSize;
 use pw_gix::gtkx::entry::LabelledTextEntry;
 use pw_gix::gtkx::list_store::{
@@ -302,9 +301,7 @@ fn get_raw_data() -> (String, Vec<u8>) {
         .output()
         .expect("getting tags text failed");
     if output.status.success() {
-        hasher
-            .write_all(&output.stdout)
-            .expect("hasher blew up!!!");
+        hasher.write_all(&output.stdout).expect("hasher blew up!!!");
         text = String::from_utf8_lossy(&output.stdout).to_string();
     } else {
         text = "".to_string();
@@ -409,9 +406,7 @@ impl CreatTag for TagsNameTable {
     }
 }
 
-impl MapManagedUpdate<TagsNameListStore, String, gtk::ListStore>
-    for TagsNameTable
-{
+impl MapManagedUpdate<TagsNameListStore, String, gtk::ListStore> for TagsNameTable {
     fn buffered_update(&self) -> Ref<'_, TagsNameListStore> {
         self.list_store.borrow()
     }

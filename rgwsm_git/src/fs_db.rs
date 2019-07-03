@@ -654,9 +654,11 @@ fn extract_snapshot_from_text(text: &str) -> Snapshot {
     let status: String;
     let clean_status: String;
     {
-        let status_set: HashSet<&str> = file_status_data.values().map(|(a, _)| a.as_str()).collect();
+        let status_set: HashSet<&str> =
+            file_status_data.values().map(|(a, _)| a.as_str()).collect();
         status = first_status_in_set(&ORDERED_DIR_STATUS_LIST, &status_set, None).to_string();
-        clean_status = first_status_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &status_set, None).to_string();
+        clean_status =
+            first_status_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &status_set, None).to_string();
     }
     Snapshot {
         num_dir_components: 1,
