@@ -271,7 +271,7 @@ impl TagButton {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let button = gtk::Button::new();
         button.set_tooltip_text(Some("Tag the current HEAD revision"));
-        button.set_image(&action_icons::tag_image(32));
+        button.set_image(Some(&action_icons::tag_image(32)));
         button.set_image_position(gtk::PositionType::Top);
         button.set_label("tag");
         exec_console

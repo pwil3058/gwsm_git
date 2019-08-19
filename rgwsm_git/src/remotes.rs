@@ -53,7 +53,7 @@ impl SimpleRemoteActionButtons {
         });
 
         srab.simple_pull_button
-            .set_tooltip_text("Initiate a simple default \"git pull\" operation");
+            .set_tooltip_text(Some("Initiate a simple default \"git pull\" operation"));
         srab.exec_console.managed_buttons.add_widget(
             "simple pull",
             &srab.simple_pull_button,
@@ -69,7 +69,7 @@ impl SimpleRemoteActionButtons {
         });
 
         srab.simple_push_button
-            .set_tooltip_text("Initiate a simple default \"git push\" operation");
+            .set_tooltip_text(Some("Initiate a simple default \"git push\" operation"));
         srab.exec_console.managed_buttons.add_widget(
             "simple push",
             &srab.simple_push_button,

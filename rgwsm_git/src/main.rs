@@ -96,7 +96,7 @@ fn activate(app: &gtk::Application) {
     auto_update_check_item.show_all();
     config_menu.append(&auto_update_check_item);
     let config_menu_item = gtk::MenuItem::new_with_label("Configuration");
-    config_menu_item.set_submenu(&config_menu);
+    config_menu_item.set_submenu(Some(&config_menu));
     let r_menu_bar = gtk::MenuBar::new();
     hbox.pack_end(&r_menu_bar, false, false, 0);
     r_menu_bar.add(&config_menu_item);
@@ -147,7 +147,7 @@ fn activate(app: &gtk::Application) {
     action_hbox.pack_start(&simple_remote_buttons.pwo(), false, false, 0);
     action_hbox.pack_end(&exec.update_button, false, false, 0);
 
-    let label = gtk::Label::new("GUI is still under construction");
+    let label = gtk::Label::new(Some("GUI is still under construction"));
     vbox.pack_start(&label, false, false, 0);
     let paned_h_1 = gtk::Paned::new(gtk::Orientation::Horizontal);
     let ws_file_tree = ws_file_tree::GitWsFsTree::new(&exec, false);
@@ -171,7 +171,7 @@ fn activate(app: &gtk::Application) {
     let tags_table = tags::TagsNameTable::new(&exec);
     notebook.add(&tags_table.pwo());
     notebook.set_tab_label_text(&tags_table.pwo(), "Tags");
-    notebook.add(&gtk::Label::new("History will go here!!"));
+    notebook.add(&gtk::Label::new(Some("History will go here!!")));
     notebook.set_property_enable_popup(true);
     paned_h_2.add2(&notebook);
     paned_h_2.show_all();
@@ -183,7 +183,7 @@ fn activate(app: &gtk::Application) {
     let notebook = gtk::Notebook::new();
     notebook.add(&exec.pwo());
     notebook.set_tab_label_text(&exec.pwo(), "Transaction Log");
-    notebook.add(&gtk::Label::new("Vte terminal will go here!!"));
+    notebook.add(&gtk::Label::new(Some("Vte terminal will go here!!")));
     notebook.set_property_enable_popup(true);
     paned_v.add2(&notebook);
     window.add(&vbox);
@@ -195,7 +195,7 @@ fn main() {
     edit::init_editor_assignment_table();
     repos::init_known_repos_table();
     let flags = gio::ApplicationFlags::empty();
-    let app = gtk::Application::new("gergibus.pw.nest", flags)
+    let app = gtk::Application::new(None, flags)
         .unwrap_or_else(|err| panic!("{:?}: line {:?}: {:?}", file!(), line!(), err));
     app.connect_activate(activate);
     app.run(&[]);

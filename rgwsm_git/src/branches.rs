@@ -418,7 +418,7 @@ impl BranchButton {
         button.set_tooltip_text(Some(
             "Create a branch based on the current HEAD and (optionally) check it out",
         ));
-        button.set_image(&action_icons::branch_image(32));
+        button.set_image(Some(&action_icons::branch_image(32)));
         button.set_image_position(gtk::PositionType::Top);
         button.set_label("branch");
         exec_console

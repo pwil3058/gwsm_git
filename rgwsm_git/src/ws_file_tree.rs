@@ -101,10 +101,10 @@ where
 {
     pub fn new(exec_console: &Rc<exec::ExecConsole>, auto_expand: bool) -> Rc<Self> {
         let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        v_box.pack_start(&gtk::Label::new("Working Directory"), false, false, 0);
+        v_box.pack_start(&gtk::Label::new(Some("Working Directory")), false, false, 0);
         let view = gtk::TreeView::new();
         let store = gtk::TreeStore::new(&FSOI::tree_store_spec());
-        view.set_model(&store);
+        view.set_model(Some(&store));
         let adj: Option<&gtk::Adjustment> = None;
         let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
         scrolled_window.add(&view);

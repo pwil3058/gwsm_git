@@ -85,7 +85,7 @@ impl MessageWidget {
         });
 
         let h_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        h_box.pack_start(&gtk::Label::new(title), false, false, 0);
+        h_box.pack_start(&gtk::Label::new(Some(title)), false, false, 0);
         h_box.pack_start(
             &gtk::Box::new(gtk::Orientation::Horizontal, 0),
             true,

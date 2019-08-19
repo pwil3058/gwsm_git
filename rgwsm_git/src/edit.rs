@@ -260,18 +260,19 @@ impl EditorAllocationTableEditor {
             eate_clone.list_store.append();
         });
         eate.add_button
-            .set_tooltip_text("Append a new entry to the table.");
+            .set_tooltip_text(Some("Append a new entry to the table."));
 
         eate.managed_buttons
             .add_widget("insert", &eate.insert_button, SAV_SELN_UNIQUE);
         let eate_clone = Rc::clone(&eate);
         eate.insert_button.connect_clicked(move |_| {
             if let Some((_, iter)) = eate_clone.view.get_selection().get_selected() {
-                eate_clone.list_store.insert_before(&iter);
+                eate_clone.list_store.insert_before(Some(&iter));
             }
         });
-        eate.insert_button
-            .set_tooltip_text("Insert a new entry to the table before the selected entry.");
+        eate.insert_button.set_tooltip_text(Some(
+            "Insert a new entry to the table before the selected entry.",
+        ));
 
         eate.managed_buttons
             .add_widget("delete", &eate.delete_button, SAV_SELN_MADE);
@@ -282,7 +283,7 @@ impl EditorAllocationTableEditor {
             }
         });
         eate.delete_button
-            .set_tooltip_text("Remove the selected entry from the table.");
+            .set_tooltip_text(Some("Remove the selected entry from the table."));
 
         eate.managed_buttons
             .add_widget("undo", &eate.undo_button, SAV_MODIFIED);
@@ -290,7 +291,7 @@ impl EditorAllocationTableEditor {
         eate.undo_button
             .connect_clicked(move |_| eate_clone.load_table());
         eate.undo_button
-            .set_tooltip_text("Undo all unapplied changes in the table.");
+            .set_tooltip_text(Some("Undo all unapplied changes in the table."));
 
         eate.managed_buttons
             .add_widget("apply", &eate.apply_button, SAV_MODIFIED);
@@ -300,7 +301,7 @@ impl EditorAllocationTableEditor {
             eate_clone.load_table();
         });
         eate.apply_button
-            .set_tooltip_text("Apply outstanding changes in the table.");
+            .set_tooltip_text(Some("Apply outstanding changes in the table."));
 
         let adj: Option<&gtk::Adjustment> = None;
         let scrolled_window = gtk::ScrolledWindow::new(adj, adj);

@@ -192,7 +192,7 @@ impl OpenKnownRepoMenuItem {
         ormi.menu_item
             .connect_enter_notify_event(move |menu_item, _| {
                 let submenu = ormi_clone.build_submenu();
-                menu_item.set_submenu(&submenu);
+                menu_item.set_submenu(Some(&submenu));
                 gtk::Inhibit(false)
             });
 
@@ -240,46 +240,61 @@ impl CloneRepoWidget {
         });
 
         crw.browse_src_btn
-            .set_tooltip_text("Browse local file system for repo to be cloned.");
-        crw.browse_in_btn.set_tooltip_text(
+            .set_tooltip_text(Some("Browse local file system for repo to be cloned."));
+        crw.browse_in_btn.set_tooltip_text(Some(
             "Browse local file system for parent directory in which to place cloned repository.",
-        );
+        ));
 
-        let src_label = gtk::Label::new("Repo to clone:");
+        let src_label = gtk::Label::new(Some("Repo to clone:"));
         crw.grid.attach(&src_label, 0, 0, 1, 1);
-        let as_label = gtk::Label::new("As:");
+        let as_label = gtk::Label::new(Some("As:"));
         crw.grid
-            .attach_next_to(&as_label, &src_label, gtk::PositionType::Bottom, 1, 1);
-        let in_label = gtk::Label::new("In directory:");
+            .attach_next_to(&as_label, Some(&src_label), gtk::PositionType::Bottom, 1, 1);
+        let in_label = gtk::Label::new(Some("In directory:"));
         crw.grid
-            .attach_next_to(&in_label, &as_label, gtk::PositionType::Bottom, 1, 1);
+            .attach_next_to(&in_label, Some(&as_label), gtk::PositionType::Bottom, 1, 1);
 
         crw.src_entry.set_width_chars(64);
-        crw.grid
-            .attach_next_to(&crw.src_entry, &src_label, gtk::PositionType::Right, 4, 1);
+        crw.grid.attach_next_to(
+            &crw.src_entry,
+            Some(&src_label),
+            gtk::PositionType::Right,
+            4,
+            1,
+        );
         crw.grid.attach_next_to(
             &crw.browse_src_btn,
-            &crw.src_entry,
+            Some(&crw.src_entry),
             gtk::PositionType::Right,
             1,
             1,
         );
 
-        crw.grid
-            .attach_next_to(&crw.as_entry, &as_label, gtk::PositionType::Right, 4, 1);
+        crw.grid.attach_next_to(
+            &crw.as_entry,
+            Some(&as_label),
+            gtk::PositionType::Right,
+            4,
+            1,
+        );
         crw.grid.attach_next_to(
             &crw.as_default_btn,
-            &crw.as_entry,
+            Some(&crw.as_entry),
             gtk::PositionType::Right,
             1,
             1,
         );
 
-        crw.grid
-            .attach_next_to(&crw.in_entry, &in_label, gtk::PositionType::Right, 4, 1);
+        crw.grid.attach_next_to(
+            &crw.in_entry,
+            Some(&in_label),
+            gtk::PositionType::Right,
+            4,
+            1,
+        );
         crw.grid.attach_next_to(
             &crw.browse_in_btn,
-            &crw.in_entry,
+            Some(&crw.in_entry),
             gtk::PositionType::Right,
             1,
             1,
@@ -414,7 +429,7 @@ impl CloneRepoMenuItem {
 pub fn create_workspaces_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     let mi = gtk::MenuItem::new_with_label("Workspaces");
     let menu = gtk::Menu::new();
-    mi.set_submenu(&menu);
+    mi.set_submenu(Some(&menu));
     menu.append(&CloneRepoMenuItem::new(exec_console).pwo());
     menu.append(&OpenKnownRepoMenuItem::new(exec_console).pwo());
     mi

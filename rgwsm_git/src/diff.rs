@@ -49,7 +49,7 @@ impl DiffButton {
         button.set_tooltip_text(Some(
             "View diffs for the working directory or staged files.",
         ));
-        button.set_image(&action_icons::diff_image(32));
+        button.set_image(Some(&action_icons::diff_image(32)));
         button.set_image_position(gtk::PositionType::Top);
         button.set_label("diff");
         exec_console

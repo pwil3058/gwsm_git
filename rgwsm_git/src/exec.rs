@@ -93,7 +93,8 @@ impl ExecConsole {
                 .notify_events(events::EV_AUTO_UPDATE);
         }));
 
-        ec.update_button.set_image(&action_icons::update_image(32));
+        ec.update_button
+            .set_image(Some(&action_icons::update_image(32)));
         ec.update_button.set_image_position(gtk::PositionType::Top);
         let ec_clone = Rc::clone(&ec);
         ec.update_button.connect_clicked(move |_| {
@@ -118,7 +119,7 @@ impl ExecConsole {
             .expect("failed to find text buffer");
         let mut model_iter = bfr.get_end_iter();
         bfr.insert_markup(&mut model_iter, markup);
-        if let Some(eobuf) = bfr.create_mark("eobuf", &bfr.get_end_iter(), false) {
+        if let Some(eobuf) = bfr.create_mark(Some("eobuf"), &bfr.get_end_iter(), false) {
             self.text_view
                 .scroll_to_mark(&eobuf, 0.001, false, 0.0, 0.0);
         };
@@ -248,7 +249,7 @@ impl ExecConsole {
 pub fn create_files_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     let mi = gtk::MenuItem::new_with_label("Files");
     let menu = gtk::Menu::new();
-    mi.set_submenu(&menu);
+    mi.set_submenu(Some(&menu));
 
     let chdir_menu_item = gtk::MenuItem::new_with_label("Open");
     let ec_clone = Rc::clone(&exec_console);
@@ -289,7 +290,7 @@ pub fn create_files_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
 pub fn create_friends_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     let mi = gtk::MenuItem::new_with_label("Friends");
     let menu = gtk::Menu::new();
-    mi.set_submenu(&menu);
+    mi.set_submenu(Some(&menu));
 
     for friend in ["gitg", "gitk", "git-dag", "git-cola", "meld", "regexxer"].iter() {
         let menu_item = gtk::MenuItem::new_with_label(&friend.to_string());

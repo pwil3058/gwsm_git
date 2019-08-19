@@ -105,7 +105,7 @@ impl SubmoduleParentButton {
         button.set_tooltip_text(Some(
             "Return to the working directory of this submodule's superproject.",
         ));
-        button.set_image(&action_icons::superproject_image(32));
+        button.set_image(Some(&action_icons::superproject_image(32)));
         button.set_image_position(gtk::PositionType::Top);
         button.set_label("Super");
         exec_console

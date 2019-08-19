@@ -68,7 +68,7 @@ impl StashPushWidget {
             .pack_start(&ctw.include_untracked_ch_btn, false, false, 0);
         ctw.v_box.pack_start(&ctw.all_ch_btn, false, false, 0);
         let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        h_box.pack_start(&gtk::Label::new("Message"), false, false, 0);
+        h_box.pack_start(&gtk::Label::new(Some("Message")), false, false, 0);
         ctw.v_box.pack_start(&h_box, false, false, 0);
         let adj: Option<&gtk::Adjustment> = None;
         let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
@@ -120,7 +120,7 @@ impl StashPushButton {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let button = gtk::Button::new();
         button.set_tooltip_text(Some("Push the current state on to the stash stack"));
-        button.set_image(&action_icons::stash_push_image(32));
+        button.set_image(Some(&action_icons::stash_push_image(32)));
         button.set_image_position(gtk::PositionType::Top);
         button.set_label("stash");
         exec_console
