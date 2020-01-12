@@ -164,7 +164,7 @@ impl IndexDiffWidget {
         *self.current_digest.borrow_mut() = new_digest;
         let lines = Lines::from_string(&text);
         match self.diff_plus_parser.parse_lines(&lines) {
-            Ok(ref diff_pluses) => self.diff_notebook.repopulate(&diff_pluses),
+            Ok(ref diff_pluses) => self.diff_notebook.repopulate(diff_pluses),
             Err(err) => {
                 self.diff_notebook.repopulate(&vec![]);
                 self.report_error("Malformed diff text", &err);
@@ -305,7 +305,7 @@ impl CommitWidget {
                     } else {
                         format!("git commit --signoff -m {}", shlex::quote(&text))
                     }
-               } else {
+                } else {
                     if cw_clone.amend_option_button.get_active() {
                         format!("git commit --amend -m {}", shlex::quote(&text))
                     } else {

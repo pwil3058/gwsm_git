@@ -51,7 +51,7 @@ impl EventNotifier {
     pub fn _del_notification_cb(&self, token: u64) {
         let position = self.callbacks.borrow().iter().position(|x| x.0 == token);
         if let Some(position) = position {
-            self.callbacks.borrow_mut().remove(position);
+            let _cb = self.callbacks.borrow_mut().remove(position);
         }
     }
 
