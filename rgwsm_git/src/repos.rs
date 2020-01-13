@@ -33,7 +33,7 @@ use crate::config;
 use crate::exec::ExecConsole;
 use crate::submodules;
 
-pub const SAV_NOT_IN_REPO: u64 = SAV_SELN_MASK + 1;
+pub const SAV_NOT_IN_REPO: u64 = SAV_NEXT_CONDN;
 pub const SAV_IN_REPO: u64 = SAV_NOT_IN_REPO << 1;
 pub const SAV_NOT_IN_SUBMODULE: u64 = SAV_NOT_IN_REPO << 2;
 pub const SAV_IN_SUBMODULE: u64 = SAV_NOT_IN_REPO << 3;
