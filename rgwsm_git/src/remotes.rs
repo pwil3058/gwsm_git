@@ -187,7 +187,7 @@ impl BufferedUpdate<String, gtk::ListStore> for RemotesNameListStore {
 impl RemotesNameListStore {
     pub fn new() -> RemotesNameListStore {
         Self {
-            list_store: gtk::ListStore::new(&[gtk::Type::String; 3]),
+            list_store: gtk::ListStore::new(&[glib::Type::String; 3]),
             remotes_row_buffer: Rc::new(RefCell::new(RemotesRowBuffer::new())),
         }
     }

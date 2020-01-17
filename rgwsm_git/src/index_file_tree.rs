@@ -222,7 +222,9 @@ where
             let mut fso_paths = String::new();
             for tree_path in tree_paths.iter() {
                 if let Some(iter) = store.get_iter(&tree_path) {
-                    if let Some(fso_path) = store.get_value(&iter, fs_db::PATH).get::<String>() {
+                    if let Some(fso_path) =
+                        store.get_value(&iter, fs_db::PATH).get::<String>().unwrap()
+                    {
                         if count > 0 {
                             fso_paths.push_str(" ");
                         }

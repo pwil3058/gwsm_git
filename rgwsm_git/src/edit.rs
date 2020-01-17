@@ -164,7 +164,7 @@ impl_widget_wrapper!(v_box: gtk::Box, EditorAllocationTableEditor);
 
 impl EditorAllocationTableEditor {
     pub fn new() -> Rc<Self> {
-        let list_store = gtk::ListStore::new(&[gtk::Type::String; 2]);
+        let list_store = gtk::ListStore::new(&[glib::Type::String; 2]);
         let view = gtk::TreeView::new_with_model(&list_store);
         let managed_buttons = ConditionalWidgetGroups::<gtk::Button>::new(
             WidgetStatesControlled::Sensitivity,
@@ -364,9 +364,11 @@ impl EditorAllocationTableEditor {
                 let editor_v = self.list_store.get_value(&t_iter, 1);
                 let globs = globs_v
                     .get::<String>()
+                    .unwrap()
                     .expect("error extracting globs from list store");
                 let editor = editor_v
                     .get::<String>()
+                    .unwrap()
                     .expect("error extracting editor from list store");
                 let globs = globs.trim().to_string();
                 let editor = editor.trim().to_string();

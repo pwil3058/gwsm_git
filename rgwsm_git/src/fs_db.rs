@@ -23,8 +23,9 @@ use std::process::Command;
 use std::rc::Rc;
 use std::slice::Iter;
 
+use glib::{StaticType, ToValue};
 use gtk::prelude::*;
-use gtk::{StaticType, ToValue, TreeIter};
+use gtk::TreeIter;
 use pango_sys::{PANGO_STYLE_ITALIC, PANGO_STYLE_NORMAL, PANGO_STYLE_OBLIQUE};
 
 use crypto_hash::{Algorithm, Hasher};
@@ -64,16 +65,16 @@ const NOT_TRACKED: &str = "??";
 const IGNORED: &str = "!!";
 
 lazy_static! {
-    static ref SCM_FS_DB_ROW_SPEC: [gtk::Type; 9] =
+    static ref SCM_FS_DB_ROW_SPEC: [glib::Type; 9] =
         [
-            gtk::Type::String,          // 0 Name
-            gtk::Type::String,          // 1 Path
-            gtk::Type::String,          // 2 Status
-            gtk::Type::String,          // 3 AssociatedFile
-            gtk::Type::String,          // 4 Relation
-            gtk::Type::String,          // 5 Icon
-            gtk::Type::String,          // 6 Foreground
-            gtk::Type::I32,             // 7 Style
+            glib::Type::String,          // 0 Name
+            glib::Type::String,          // 1 Path
+            glib::Type::String,          // 2 Status
+            glib::Type::String,          // 3 AssociatedFile
+            glib::Type::String,          // 4 Relation
+            glib::Type::String,          // 5 Icon
+            glib::Type::String,          // 6 Foreground
+            glib::Type::I32,             // 7 Style
             bool::static_type(),        // 8 is a directory?
         ];
 
@@ -219,11 +220,19 @@ impl ScmFsoData {
     }
 
     fn get_rfd_from_row<S: TreeRowOps>(store: &S, iter: &TreeIter) -> Option<RelatedFileData> {
-        let relation = store.get_value(iter, RELATION).get::<String>().unwrap();
+        let relation = store
+            .get_value(iter, RELATION)
+            .get::<String>()
+            .unwrap()
+            .unwrap();
         if relation.len() == 0 {
             None
         } else {
-            let file_path = store.get_value(iter, RELATED_FILE).get::<String>().unwrap();
+            let file_path = store
+                .get_value(iter, RELATED_FILE)
+                .get::<String>()
+                .unwrap()
+                .unwrap();
             Some(RelatedFileData {
                 file_path,
                 relation,
@@ -273,7 +282,7 @@ impl FsObjectIfce for ScmFsoData {
         }
     }
 
-    fn tree_store_spec() -> Vec<gtk::Type> {
+    fn tree_store_spec() -> Vec<glib::Type> {
         SCM_FS_DB_ROW_SPEC.to_vec()
     }
 
@@ -316,7 +325,11 @@ impl FsObjectIfce for ScmFsoData {
     }
 
     fn row_is_a_dir<S: TreeRowOps>(store: &S, iter: &TreeIter) -> bool {
-        store.get_value(iter, IS_DIR).get::<bool>().unwrap()
+        store
+            .get_value(iter, IS_DIR)
+            .get::<bool>()
+            .unwrap()
+            .unwrap()
     }
 
     fn row_is_place_holder<S: TreeRowOps>(store: &S, iter: &TreeIter) -> bool {
@@ -324,29 +337,54 @@ impl FsObjectIfce for ScmFsoData {
             .get_value(iter, NAME)
             .get::<String>()
             .unwrap()
+            .unwrap()
             .as_str()
             == "(empty)"
     }
 
     fn get_name_from_row<S: TreeRowOps>(store: &S, iter: &TreeIter) -> String {
-        store.get_value(iter, NAME).get::<String>().unwrap()
+        store
+            .get_value(iter, NAME)
+            .get::<String>()
+            .unwrap()
+            .unwrap()
     }
 
     fn get_path_from_row<S: TreeRowOps>(store: &S, iter: &TreeIter) -> String {
-        store.get_value(iter, PATH).get::<String>().unwrap()
+        store
+            .get_value(iter, PATH)
+            .get::<String>()
+            .unwrap()
+            .unwrap()
     }
 
     fn update_row_if_required<S: TreeRowOps>(&self, store: &S, iter: &TreeIter) -> bool {
         assert_eq!(
             self.name,
-            store.get_value(iter, NAME).get::<String>().unwrap()
+            store
+                .get_value(iter, NAME)
+                .get::<String>()
+                .unwrap()
+                .unwrap()
         );
         let mut changed = false;
-        if self.path != store.get_value(iter, PATH).get::<String>().unwrap() {
+        if self.path
+            != store
+                .get_value(iter, PATH)
+                .get::<String>()
+                .unwrap()
+                .unwrap()
+        {
             store.set_value(iter, PATH as u32, &self.path.to_value());
             changed = true;
         }
-        if self.status != store.get_value(iter, STATUS).get::<String>().unwrap() {
+        if self.status
+            != store
+                .get_value(iter, STATUS)
+                .get::<String>()
+                .unwrap()
+                .unwrap()
+        {
             store.set_value(iter, STATUS as u32, &self.status.to_value());
             let (style, foreground) = get_deco(&self.status.as_str());
             store.set_value(iter, STYLE as u32, &style.to_value());
@@ -357,7 +395,13 @@ impl FsObjectIfce for ScmFsoData {
             self.set_rfd_in_row(store, iter);
             changed = true;
         }
-        if self.is_dir != store.get_value(iter, IS_DIR).get::<bool>().unwrap() {
+        if self.is_dir
+            != store
+                .get_value(iter, IS_DIR)
+                .get::<bool>()
+                .unwrap()
+                .unwrap()
+        {
             store.set_value(iter, IS_DIR as u32, &self.is_dir.to_value());
             self.set_icon_in_row(store, iter);
             changed = true;

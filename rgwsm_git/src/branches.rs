@@ -169,7 +169,7 @@ impl BufferedUpdate<BranchesRawData, gtk::ListStore> for BranchesNameListStore {
 impl BranchesNameListStore {
     pub fn new() -> BranchesNameListStore {
         Self {
-            list_store: gtk::ListStore::new(&[gtk::Type::String; 5]),
+            list_store: gtk::ListStore::new(&[glib::Type::String; 5]),
             branches_row_buffer: Rc::new(RefCell::new(BranchesRowBuffer::new())),
         }
     }
@@ -313,7 +313,7 @@ impl BranchesNameTable {
             .connect_activate(move |_| {
                 let selection = table_clone.view.get_selection();
                 let branch = if let Some((store, iter)) = selection.get_selected() {
-                    store.get_value(&iter, 0).get::<String>()
+                    store.get_value(&iter, 0).get::<String>().unwrap()
                 } else {
                     table_clone.hovered_branch.borrow().clone()
                 };
@@ -339,7 +339,7 @@ impl BranchesNameTable {
             .connect_activate(move |_| {
                 let selection = table_clone.view.get_selection();
                 let branch = if let Some((store, iter)) = selection.get_selected() {
-                    store.get_value(&iter, 0).get::<String>()
+                    store.get_value(&iter, 0).get::<String>().unwrap()
                 } else {
                     table_clone.hovered_branch.borrow().clone()
                 };
@@ -365,7 +365,7 @@ impl BranchesNameTable {
             .connect_activate(move |_| {
                 let selection = table_clone.view.get_selection();
                 let branch = if let Some((store, iter)) = selection.get_selected() {
-                    store.get_value(&iter, 0).get::<String>()
+                    store.get_value(&iter, 0).get::<String>().unwrap()
                 } else {
                     table_clone.hovered_branch.borrow().clone()
                 };

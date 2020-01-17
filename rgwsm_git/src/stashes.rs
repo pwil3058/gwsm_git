@@ -260,7 +260,7 @@ impl BufferedUpdate<String, gtk::ListStore> for StashesNameListStore {
 impl StashesNameListStore {
     pub fn new() -> StashesNameListStore {
         Self {
-            list_store: gtk::ListStore::new(&[gtk::Type::String; 3]),
+            list_store: gtk::ListStore::new(&[glib::Type::String; 3]),
             stashes_row_buffer: Rc::new(RefCell::new(StashesRowBuffer::new())),
         }
     }
@@ -610,7 +610,7 @@ impl StashesNameTable {
     fn get_chosen_stash(&self) -> Option<String> {
         let selection = self.view.get_selection();
         if let Some((store, iter)) = selection.get_selected() {
-            store.get_value(&iter, 0).get::<String>()
+            store.get_value(&iter, 0).get::<String>().unwrap()
         } else {
             self.hovered_stash.borrow().clone()
         }

@@ -382,7 +382,7 @@ impl BufferedUpdate<String, gtk::ListStore> for TagsNameListStore {
 impl TagsNameListStore {
     pub fn new() -> TagsNameListStore {
         Self {
-            list_store: gtk::ListStore::new(&[gtk::Type::String; 4]),
+            list_store: gtk::ListStore::new(&[glib::Type::String; 4]),
             tags_row_buffer: Rc::new(RefCell::new(TagsRowBuffer::new())),
         }
     }
@@ -525,7 +525,7 @@ impl TagsNameTable {
             .connect_activate(move |_| {
                 let selection = table_clone.view.get_selection();
                 let tag = if let Some((store, iter)) = selection.get_selected() {
-                    store.get_value(&iter, 0).get::<String>()
+                    store.get_value(&iter, 0).get::<String>().unwrap()
                 } else {
                     table_clone.hovered_tag.borrow().clone()
                 };
@@ -551,7 +551,7 @@ impl TagsNameTable {
             .connect_activate(move |_| {
                 let selection = table_clone.view.get_selection();
                 let tag = if let Some((store, iter)) = selection.get_selected() {
-                    store.get_value(&iter, 0).get::<String>()
+                    store.get_value(&iter, 0).get::<String>().unwrap()
                 } else {
                     table_clone.hovered_tag.borrow().clone()
                 };
@@ -573,7 +573,7 @@ impl TagsNameTable {
             .connect_activate(move |_| {
                 let selection = table_clone.view.get_selection();
                 let tag = if let Some((store, iter)) = selection.get_selected() {
-                    store.get_value(&iter, 0).get::<String>()
+                    store.get_value(&iter, 0).get::<String>().unwrap()
                 } else {
                     table_clone.hovered_tag.borrow().clone()
                 };
