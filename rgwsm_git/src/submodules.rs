@@ -92,12 +92,11 @@ lazy_static! {
         Regex::new(r"\s*([a-fA-F0-9]+)\s+([^(]+)(\s+\S*)?").unwrap();
 }
 
+#[derive(PWO)]
 pub struct SubmoduleParentButton {
     button: gtk::Button,
     exec_console: Rc<ExecConsole>,
 }
-
-impl_widget_wrapper!(button: gtk::Button, SubmoduleParentButton);
 
 impl SubmoduleParentButton {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {

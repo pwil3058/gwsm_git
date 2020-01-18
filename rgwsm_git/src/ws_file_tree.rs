@@ -38,6 +38,7 @@ use crate::fs_db::{self, GitFsDb, ScmFsoData};
 use crate::repos;
 use crate::submodules;
 
+#[derive(PWO, Wrapper)]
 pub struct GenWsFsTree<FSDB, FSOI>
 where
     FSDB: FsDbIfce<FSOI> + 'static,
@@ -57,12 +58,6 @@ where
 }
 
 pub type GitWsFsTree = GenWsFsTree<GitFsDb<ScmFsoData>, ScmFsoData>;
-
-impl_widget_wrapper!(v_box: gtk::Box, GenWsFsTree<FSDB, FSOI>
-    where
-        FSDB: FsDbIfce<FSOI> + 'static,
-        FSOI: FsObjectIfce + 'static,
-);
 
 impl<FSDB, FSOI> FileTreeIfce<FSDB, FSOI> for GenWsFsTree<FSDB, FSOI>
 where

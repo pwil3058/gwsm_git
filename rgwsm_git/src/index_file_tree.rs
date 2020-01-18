@@ -30,6 +30,7 @@ use crate::exec;
 use crate::fs_db::{self, GitIndexDb, ScmFsoData};
 use crate::repos;
 
+#[derive(PWO, Wrapper)]
 pub struct GenIndexFsTree<FSDB, FSOI>
 where
     FSDB: FsDbIfce<FSOI> + 'static,
@@ -47,12 +48,6 @@ where
 }
 
 pub type GitIndexFsTree = GenIndexFsTree<GitIndexDb<ScmFsoData>, ScmFsoData>;
-
-impl_widget_wrapper!(v_box: gtk::Box, GenIndexFsTree<FSDB, FSOI>
-    where
-        FSDB: FsDbIfce<FSOI> + 'static,
-        FSOI: FsObjectIfce + 'static,
-);
 
 impl<FSDB, FSOI> FileTreeIfce<FSDB, FSOI> for GenIndexFsTree<FSDB, FSOI>
 where

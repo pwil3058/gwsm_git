@@ -70,12 +70,11 @@ pub fn last_commit_message() -> String {
     }
 }
 
+#[derive(PWO)]
 pub struct MessageWidget {
     v_box: gtk::Box,
     text_view: sourceview::View,
 }
-
-impl_widget_wrapper!(v_box: gtk::Box, MessageWidget);
 
 impl MessageWidget {
     pub fn new(title: &str) -> Rc<Self> {

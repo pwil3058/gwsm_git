@@ -175,6 +175,7 @@ impl BranchesNameListStore {
     }
 }
 
+#[derive(PWO, Wrapper)]
 pub struct BranchesNameTable {
     scrolled_window: gtk::ScrolledWindow,
     view: gtk::TreeView,
@@ -184,8 +185,6 @@ pub struct BranchesNameTable {
     popup_menu: ManagedMenu,
     hovered_branch: RefCell<Option<String>>,
 }
-
-impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, BranchesNameTable);
 
 impl MapManagedUpdate<BranchesNameListStore, BranchesRawData, gtk::ListStore>
     for BranchesNameTable
@@ -405,12 +404,11 @@ impl BranchesNameTable {
     }
 }
 
+#[derive(PWO, Wrapper)]
 pub struct BranchButton {
     button: gtk::Button,
     exec_console: Rc<ExecConsole>,
 }
-
-impl_widget_wrapper!(button: gtk::Button, BranchButton);
 
 impl BranchButton {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {

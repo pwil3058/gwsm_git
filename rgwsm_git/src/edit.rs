@@ -147,6 +147,7 @@ const SAV_MODIFIED: u64 = repos::SAV_HAS_SUBMODULES << 1;
 const SAV_NOT_MODIFIED: u64 = SAV_MODIFIED << 1;
 const SAV_MODIFIED_MASK: u64 = SAV_MODIFIED | SAV_NOT_MODIFIED;
 
+#[derive(PWO, Wrapper)]
 pub struct EditorAllocationTableEditor {
     v_box: gtk::Box,
     view: gtk::TreeView,
@@ -159,8 +160,6 @@ pub struct EditorAllocationTableEditor {
     managed_buttons: Rc<ConditionalWidgetGroups<gtk::Button>>,
     modified: Cell<bool>,
 }
-
-impl_widget_wrapper!(v_box: gtk::Box, EditorAllocationTableEditor);
 
 impl EditorAllocationTableEditor {
     pub fn new() -> Rc<Self> {
@@ -389,11 +388,10 @@ impl EditorAllocationTableEditor {
     }
 }
 
+#[derive(PWO, Wrapper)]
 pub struct EditorAlocationMenuItem {
     menu_item: gtk::MenuItem,
 }
-
-impl_widget_wrapper!(menu_item: gtk::MenuItem, EditorAlocationMenuItem);
 
 impl EditorAlocationMenuItem {
     pub fn new() -> Rc<Self> {

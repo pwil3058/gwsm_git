@@ -36,14 +36,13 @@ use crate::exec::ExecConsole;
 use crate::message::last_commit_message;
 use crate::repos;
 
+#[derive(PWO)]
 pub struct CommitButton {
     button: gtk::Button,
     window: gtk::Window,
     commit_widget: Rc<CommitWidget>,
     _exec_console: Rc<ExecConsole>,
 }
-
-impl_widget_wrapper!(button: gtk::Button, CommitButton);
 
 impl CommitButton {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
@@ -92,6 +91,7 @@ impl CommitButton {
     }
 }
 
+#[derive(PWO, Wrapper)]
 struct IndexDiffWidget {
     v_box: gtk::Box,
     diff_notebook: Rc<DiffPlusNotebook>,
@@ -99,8 +99,6 @@ struct IndexDiffWidget {
     exec_console: Rc<ExecConsole>,
     diff_plus_parser: DiffPlusParser,
 }
-
-impl_widget_wrapper!(v_box: gtk::Box, IndexDiffWidget);
 
 impl IndexDiffWidget {
     fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
@@ -189,6 +187,7 @@ impl IndexDiffWidget {
     }
 }
 
+#[derive(PWO, Wrapper)]
 struct CommitWidget {
     v_box: gtk::Box,
     text_view: sourceview::View,
@@ -198,8 +197,6 @@ struct CommitWidget {
     amend_option_button: gtk::CheckButton,
     signoff_option_button: gtk::CheckButton,
 }
-
-impl_widget_wrapper!(v_box: gtk::Box, CommitWidget);
 
 fn get_name_and_email_string() -> String {
     let output = Command::new("git")

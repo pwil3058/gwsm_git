@@ -34,14 +34,13 @@ use crate::events;
 use crate::exec::ExecConsole;
 use crate::repos;
 
+#[derive(PWO)]
 pub struct DiffButton {
     button: gtk::Button,
     window: gtk::Window,
     wdtw: Rc<WdDiffTextWidget>,
     _exec_console: Rc<ExecConsole>,
 }
-
-impl_widget_wrapper!(button: gtk::Button, DiffButton);
 
 impl DiffButton {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
@@ -93,6 +92,7 @@ impl DiffButton {
     }
 }
 
+#[derive(PWO, Wrapper)]
 struct WdDiffTextWidget {
     v_box: gtk::Box,
     diff_rb: gtk::RadioButton,
@@ -103,8 +103,6 @@ struct WdDiffTextWidget {
     exec_console: Rc<ExecConsole>,
     diff_plus_parser: DiffPlusParser,
 }
-
-impl_widget_wrapper!(v_box: gtk::Box, WdDiffTextWidget);
 
 impl WdDiffTextWidget {
     fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {

@@ -174,12 +174,11 @@ pub fn add_to_known_repos(repo_path: &str) -> Result<(), KRTError> {
     Ok(())
 }
 
+#[derive(PWO, Wrapper)]
 pub struct OpenKnownRepoMenuItem {
     menu_item: gtk::MenuItem,
     exec_console: Rc<ExecConsole>,
 }
-
-impl_widget_wrapper!(menu_item: gtk::MenuItem, OpenKnownRepoMenuItem);
 
 impl OpenKnownRepoMenuItem {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
@@ -215,6 +214,7 @@ impl OpenKnownRepoMenuItem {
     }
 }
 
+#[derive(PWO, Wrapper)]
 pub struct CloneRepoWidget {
     grid: gtk::Grid,
     src_entry: gtk::Entry,
@@ -224,8 +224,6 @@ pub struct CloneRepoWidget {
     in_entry: gtk::Entry,
     browse_in_btn: gtk::Button,
 }
-
-impl_widget_wrapper!(grid: gtk::Grid, CloneRepoWidget);
 
 impl CloneRepoWidget {
     fn new() -> Rc<Self> {
@@ -360,12 +358,11 @@ impl CloneRepoWidget {
     }
 }
 
+#[derive(PWO)]
 pub struct CloneRepoMenuItem {
     menu_item: gtk::MenuItem,
     exec_console: Rc<ExecConsole>,
 }
-
-impl_widget_wrapper!(menu_item: gtk::MenuItem, CloneRepoMenuItem);
 
 impl CloneRepoMenuItem {
     fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {

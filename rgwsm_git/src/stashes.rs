@@ -42,6 +42,7 @@ use crate::events;
 use crate::exec::ExecConsole;
 use crate::repos;
 
+#[derive(PWO)]
 pub struct StashPushWidget {
     v_box: gtk::Box,
     keep_index_ch_btn: gtk::CheckButton,
@@ -49,8 +50,6 @@ pub struct StashPushWidget {
     all_ch_btn: gtk::CheckButton,
     text_view: gtk::TextView,
 }
-
-impl_widget_wrapper!(v_box: gtk::Box, StashPushWidget);
 
 impl StashPushWidget {
     pub fn new() -> Rc<Self> {
@@ -109,12 +108,11 @@ impl StashPushWidget {
     }
 }
 
+#[derive(PWO, Wrapper)]
 pub struct StashPushButton {
     button: gtk::Button,
     exec_console: Rc<ExecConsole>,
 }
-
-impl_widget_wrapper!(button: gtk::Button, StashPushButton);
 
 impl StashPushButton {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
@@ -266,6 +264,7 @@ impl StashesNameListStore {
     }
 }
 
+#[derive(PWO, Wrapper)]
 pub struct StashesNameTable {
     scrolled_window: gtk::ScrolledWindow,
     view: gtk::TreeView,
@@ -275,8 +274,6 @@ pub struct StashesNameTable {
     popup_menu: ManagedMenu,
     hovered_stash: RefCell<Option<String>>,
 }
-
-impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, StashesNameTable);
 
 impl MapManagedUpdate<StashesNameListStore, String, gtk::ListStore> for StashesNameTable {
     fn buffered_update(&self) -> Ref<'_, StashesNameListStore> {

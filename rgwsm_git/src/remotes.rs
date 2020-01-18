@@ -34,14 +34,13 @@ use crate::events;
 use crate::exec::ExecConsole;
 use crate::repos;
 
+#[derive(PWO, Wrapper)]
 pub struct SimpleRemoteActionButtons {
     h_box: gtk::Box,
     simple_pull_button: gtk::Button,
     simple_push_button: gtk::Button,
     exec_console: Rc<ExecConsole>,
 }
-
-impl_widget_wrapper!(h_box: gtk::Box, SimpleRemoteActionButtons);
 
 impl SimpleRemoteActionButtons {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
@@ -193,6 +192,7 @@ impl RemotesNameListStore {
     }
 }
 
+#[derive(PWO)]
 pub struct RemotesNameTable {
     scrolled_window: gtk::ScrolledWindow,
     view: gtk::TreeView,
@@ -202,8 +202,6 @@ pub struct RemotesNameTable {
     popup_menu: ManagedMenu,
     hovered_remote: RefCell<Option<String>>,
 }
-
-impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, RemotesNameTable);
 
 impl MapManagedUpdate<RemotesNameListStore, String, gtk::ListStore> for RemotesNameTable {
     fn buffered_update(&self) -> Ref<'_, RemotesNameListStore> {

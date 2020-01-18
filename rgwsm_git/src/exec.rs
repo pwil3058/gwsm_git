@@ -36,6 +36,7 @@ use crate::action_icons;
 use crate::events::{self, EventNotifier};
 use crate::repos;
 
+#[derive(PWO, Wrapper)]
 pub struct ExecConsole {
     scrolled_window: gtk::ScrolledWindow,
     text_view: gtk::TextView,
@@ -47,8 +48,6 @@ pub struct ExecConsole {
     pub managed_menu_items: Rc<ConditionalWidgetGroups<gtk::MenuItem>>,
     auto_update: Rc<timeout::ControlledTimeoutCycle>,
 }
-
-impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, ExecConsole);
 
 impl ExecConsole {
     pub fn new() -> Rc<Self> {

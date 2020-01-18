@@ -69,6 +69,7 @@ impl Error for TagError {
     }
 }
 
+#[derive(PWO, Wrapper)]
 pub struct NewTagWidget {
     v_box: gtk::Box,
     tag_name_entry: Rc<LabelledTextEntry>,
@@ -80,8 +81,6 @@ pub struct NewTagWidget {
     message: Rc<message::MessageWidget>,
     exec_console: Rc<ExecConsole>,
 }
-
-impl_widget_wrapper!(v_box: gtk::Box, NewTagWidget);
 
 impl NewTagWidget {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<NewTagWidget> {
@@ -254,12 +253,11 @@ pub trait CreatTag: WidgetWrapper {
     }
 }
 
+#[derive(PWO, Wrapper)]
 pub struct TagButton {
     button: gtk::Button,
     exec_console: Rc<ExecConsole>,
 }
-
-impl_widget_wrapper!(button: gtk::Button, TagButton);
 
 impl CreatTag for TagButton {
     fn exec_console(&self) -> &Rc<ExecConsole> {
@@ -388,6 +386,7 @@ impl TagsNameListStore {
     }
 }
 
+#[derive(PWO, Wrapper)]
 pub struct TagsNameTable {
     scrolled_window: gtk::ScrolledWindow,
     view: gtk::TreeView,
@@ -397,8 +396,6 @@ pub struct TagsNameTable {
     popup_menu: ManagedMenu,
     hovered_tag: RefCell<Option<String>>,
 }
-
-impl_widget_wrapper!(scrolled_window: gtk::ScrolledWindow, TagsNameTable);
 
 impl CreatTag for TagsNameTable {
     fn exec_console(&self) -> &Rc<ExecConsole> {
