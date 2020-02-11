@@ -28,6 +28,7 @@ use cub_diff_gui_lib::diff::DiffPlusNotebook;
 use cub_diff_lib::diff::DiffPlusParser;
 use cub_diff_lib::lines::*;
 
+use pw_gix::glibx::*;
 use pw_gix::gtkx::dialog::*;
 use pw_gix::gtkx::list_store::{
     BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,

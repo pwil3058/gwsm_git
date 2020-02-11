@@ -27,6 +27,7 @@ use gtk::prelude::*;
 
 use shlex;
 
+use pw_gix::glibx::*;
 use pw_gix::gtkx::dialog::RememberDialogSize;
 use pw_gix::gtkx::entry::LabelledTextEntry;
 use pw_gix::gtkx::list_store::{

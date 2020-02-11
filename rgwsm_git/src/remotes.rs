@@ -23,6 +23,7 @@ use gtk::prelude::*;
 use crypto_hash::{Algorithm, Hasher};
 use regex::Regex;
 
+use pw_gix::glibx::*;
 use pw_gix::gtkx::list_store::{
     BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
 };

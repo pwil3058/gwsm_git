@@ -21,6 +21,7 @@ use gtk::prelude::*;
 
 use pw_gix::file_tree::FileTreeIfce;
 use pw_gix::fs_db::{FsDbIfce, FsObjectIfce};
+use pw_gix::glibx::*;
 use pw_gix::gtkx::menu::ManagedMenu;
 use pw_gix::sav_state::*;
 use pw_gix::wrapper::*;
