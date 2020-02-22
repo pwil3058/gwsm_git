@@ -22,9 +22,9 @@ use gtk::prelude::*;
 
 use crypto_hash::{Algorithm, Hasher};
 
-use cub_diff_gui_lib::diff::DiffPlusNotebook;
 use cub_diff_lib::diff::DiffPlusParser;
 use cub_diff_lib::lines::*;
+use cub_diff_lib_gtk::diff::DiffPlusNotebook;
 use pw_gix::gtkx::window::RememberGeometry;
 use pw_gix::wrapper::*;
 

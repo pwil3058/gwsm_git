@@ -24,9 +24,9 @@ use crypto_hash::{Algorithm, Hasher};
 use regex::Regex;
 use shlex;
 
-use cub_diff_gui_lib::diff::DiffPlusNotebook;
 use cub_diff_lib::diff::DiffPlusParser;
 use cub_diff_lib::lines::*;
+use cub_diff_lib_gtk::diff::DiffPlusNotebook;
 
 use pw_gix::glibx::*;
 use pw_gix::gtkx::dialog::*;
