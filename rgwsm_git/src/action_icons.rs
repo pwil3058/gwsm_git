@@ -1020,6 +1020,7 @@ static UPDATE_XPM: &[&str] = &[
     "                                                                ",
     "                                                                ",
     "                                                                ",
+    "                                                                ",
 ];
 
 pub fn update_pixbuf() -> gdk_pixbuf::Pixbuf {
