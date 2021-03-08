@@ -34,7 +34,7 @@ use pw_gix::{
         list_store::{
             BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
         },
-        menu::ManagedMenu,
+        menu_ng::{ManagedMenu, ManagedMenuBuilder},
     },
     sav_state::*,
     wrapper::*,
@@ -471,12 +471,11 @@ impl TagsNameTable {
 
         let required_map_action = Cell::new(RequiredMapAction::Nothing);
 
-        let popup_menu = ManagedMenu::new(
-            WidgetStatesControlled::Sensitivity,
-            Some(&view.get_selection()),
-            Some(&exec_console.changed_condns_notifier),
-            &vec![],
-        );
+        let popup_menu = ManagedMenuBuilder::new()
+            .widget_states_controlled(WidgetStatesControlled::Sensitivity)
+            .selection(&view.get_selection())
+            .change_notifier(&exec_console.changed_condns_notifier)
+            .build();
 
         let adj: Option<&gtk::Adjustment> = None;
         let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
@@ -513,9 +512,12 @@ impl TagsNameTable {
             .popup_menu
             .append_item(
                 "checkout",
-                "Checkout",
-                None,
-                "Switch to the selected/indicated tag",
+                &(
+                    "Checkout",
+                    None,
+                    Some("Switch to the selected/indicated tag"),
+                )
+                    .into(),
                 repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
@@ -539,9 +541,12 @@ impl TagsNameTable {
             .popup_menu
             .append_item(
                 "tag",
-                "Tag",
-                None,
-                "Set a new tag the selected/indicated object",
+                &(
+                    "Tag",
+                    None,
+                    Some("Set a new tag the selected/indicated object"),
+                )
+                    .into(),
                 repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
@@ -561,9 +566,7 @@ impl TagsNameTable {
             .popup_menu
             .append_item(
                 "delete",
-                "Delete",
-                None,
-                "Delete the selected/indicated tag",
+                &("Delete", None, Some("Delete the selected/indicated tag")).into(),
                 repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {

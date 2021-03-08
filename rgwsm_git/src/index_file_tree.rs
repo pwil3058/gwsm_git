@@ -21,7 +21,7 @@ use pw_gix::{
     fs_db::{FsDbIfce, FsObjectIfce},
     glibx::*,
     gtk::{self, prelude::*},
-    gtkx::menu::ManagedMenu,
+    gtkx::menu_ng::{ManagedMenu, ManagedMenuBuilder},
     sav_state::*,
     wrapper::*,
 };
@@ -109,12 +109,11 @@ where
             view.append_column(&col);
         }
 
-        let popup_menu = ManagedMenu::new(
-            WidgetStatesControlled::Sensitivity,
-            Some(&view.get_selection()),
-            Some(&exec_console.changed_condns_notifier),
-            &vec![],
-        );
+        let popup_menu = ManagedMenuBuilder::new()
+            .widget_states_controlled(WidgetStatesControlled::Sensitivity)
+            .selection(&view.get_selection())
+            .change_notifier(&exec_console.changed_condns_notifier)
+            .build();
 
         let ift = Rc::new(Self {
             v_box: v_box,
@@ -158,9 +157,12 @@ where
         ift.popup_menu
             .append_item(
                 "unstage",
-                "Unstage",
-                None,
-                "Unstage the selected/indicated file(s) from the index",
+                &(
+                    "Unstage",
+                    None,
+                    Some("Unstage the selected/indicated file(s) from the index"),
+                )
+                    .into(),
                 repos::SAV_IN_REPO + SAV_SELN_MADE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {

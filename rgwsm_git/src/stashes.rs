@@ -34,7 +34,7 @@ use pw_gix::{
         list_store::{
             BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
         },
-        menu::ManagedMenu,
+        menu_ng::{ManagedMenu, ManagedMenuBuilder},
     },
     sav_state::*,
     wrapper::*,
@@ -348,12 +348,11 @@ impl StashesNameTable {
 
         let required_map_action = Cell::new(RequiredMapAction::Nothing);
 
-        let popup_menu = ManagedMenu::new(
-            WidgetStatesControlled::Sensitivity,
-            Some(&view.get_selection()),
-            Some(&exec_console.changed_condns_notifier),
-            &vec![],
-        );
+        let popup_menu = ManagedMenuBuilder::new()
+            .widget_states_controlled(WidgetStatesControlled::Sensitivity)
+            .selection(&view.get_selection())
+            .change_notifier(&exec_console.changed_condns_notifier)
+            .build();
 
         let adj: Option<&gtk::Adjustment> = None;
         let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
@@ -400,9 +399,12 @@ impl StashesNameTable {
             .popup_menu
             .append_item(
                 "show",
-                "Show",
-                Some(&action_icons::stash_show_image(16)),
-                "Show the diff for the selected/indicated stash",
+                &(
+                    "Show",
+                    Some(action_icons::stash_show_image(16)),
+                    Some("Show the diff for the selected/indicated stash"),
+                )
+                    .into(),
                 repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
@@ -455,9 +457,12 @@ impl StashesNameTable {
             .popup_menu
             .append_item(
                 "pop",
-                "Pop",
-                Some(&action_icons::stash_pop_image(16)),
-                "Pop and apply the selected/indicated stash",
+                &(
+                    "Pop",
+                    Some(action_icons::stash_pop_image(16)),
+                    Some("Pop and apply the selected/indicated stash"),
+                )
+                    .into(),
                 repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
@@ -498,9 +503,12 @@ impl StashesNameTable {
             .popup_menu
             .append_item(
                 "apply",
-                "Apply",
-                Some(&action_icons::stash_apply_image(16)),
-                "Apply the selected/indicated stash",
+                &(
+                    "Apply",
+                    Some(action_icons::stash_apply_image(16)),
+                    Some("Apply the selected/indicated stash"),
+                )
+                    .into(),
                 repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
@@ -541,9 +549,12 @@ impl StashesNameTable {
             .popup_menu
             .append_item(
                 "branch",
-                "Branch",
-                Some(&action_icons::stash_branch_image(16)),
-                "Branch the selected/indicated stash",
+                &(
+                    "Branch",
+                    Some(action_icons::stash_branch_image(16)),
+                    Some("Branch the selected/indicated stash"),
+                )
+                    .into(),
                 repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {
@@ -576,9 +587,12 @@ impl StashesNameTable {
             .popup_menu
             .append_item(
                 "drop",
-                "Drop",
-                Some(&action_icons::stash_drop_image(16)),
-                "Drop/delete the selected/indicated stash",
+                &(
+                    "Drop",
+                    Some(action_icons::stash_drop_image(16)),
+                    Some("Drop/delete the selected/indicated stash"),
+                )
+                    .into(),
                 repos::SAV_IN_REPO + SAV_SELN_UNIQUE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {

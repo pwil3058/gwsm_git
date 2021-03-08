@@ -23,7 +23,7 @@ use pw_gix::{
     file_tree::*,
     fs_db::*,
     gtk::{self, prelude::*},
-    gtkx::menu::ManagedMenu,
+    gtkx::menu_ng::{ManagedMenu, ManagedMenuBuilder},
     sav_state::*,
     wrapper::*,
 };
@@ -122,12 +122,11 @@ where
             view.append_column(&col);
         }
 
-        let popup_menu = ManagedMenu::new(
-            WidgetStatesControlled::Sensitivity,
-            Some(&view.get_selection()),
-            Some(&exec_console.changed_condns_notifier),
-            &vec![],
-        );
+        let popup_menu = ManagedMenuBuilder::new()
+            .widget_states_controlled(WidgetStatesControlled::Sensitivity)
+            .selection(&view.get_selection())
+            .change_notifier(&exec_console.changed_condns_notifier)
+            .build();
 
         let owft = Rc::new(Self {
             v_box: v_box,
@@ -184,9 +183,12 @@ where
         owft.popup_menu
             .append_item(
                 "add",
-                "Add",
-                None,
-                "Add to the selected/indicated file(s) to the index",
+                &(
+                    "Add",
+                    None,
+                    Some("Add to the selected/indicated file(s) to the index"),
+                )
+                    .into(),
                 repos::SAV_IN_REPO + SAV_SELN_MADE_OR_HOVER_OK,
             )
             .connect_activate(move |_| {

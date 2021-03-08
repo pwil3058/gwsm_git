@@ -28,7 +28,7 @@ use pw_gix::{
         list_store::{
             BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
         },
-        menu::ManagedMenu,
+        menu_ng::{ManagedMenu, ManagedMenuBuilder},
     },
     sav_state::*,
     wrapper::*,
@@ -276,12 +276,11 @@ impl RemotesNameTable {
 
         let required_map_action = Cell::new(RequiredMapAction::Nothing);
 
-        let popup_menu = ManagedMenu::new(
-            WidgetStatesControlled::Sensitivity,
-            Some(&view.get_selection()),
-            Some(&exec_console.changed_condns_notifier),
-            &vec![],
-        );
+        let popup_menu = ManagedMenuBuilder::new()
+            .widget_states_controlled(WidgetStatesControlled::Sensitivity)
+            .selection(&view.get_selection())
+            .change_notifier(&exec_console.changed_condns_notifier)
+            .build();
 
         let adj: Option<&gtk::Adjustment> = None;
         let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
