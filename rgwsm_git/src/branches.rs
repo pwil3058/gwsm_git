@@ -18,18 +18,22 @@ use std::io::Write;
 use std::process::Command;
 use std::rc::Rc;
 
-use gtk::prelude::*;
-
 use crypto_hash::{Algorithm, Hasher};
 use regex::Regex;
 
-use pw_gix::glibx::*;
-use pw_gix::gtkx::list_store::{
-    BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
+use pw_gix::{
+    glib,
+    glibx::*,
+    gtk::{self, prelude::*},
+    gtkx::{
+        list_store::{
+            BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
+        },
+        menu::ManagedMenu,
+    },
+    sav_state::*,
+    wrapper::*,
 };
-use pw_gix::gtkx::menu::ManagedMenu;
-use pw_gix::sav_state::*;
-use pw_gix::wrapper::*;
 
 use crate::action_icons;
 use crate::events;
@@ -211,7 +215,7 @@ impl BranchesNameTable {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<BranchesNameTable> {
         let list_store = RefCell::new(BranchesNameListStore::new());
 
-        let view = gtk::TreeView::new_with_model(&list_store.borrow().get_list_store());
+        let view = gtk::TreeView::with_model(&list_store.borrow().get_list_store());
         view.set_headers_visible(true);
 
         view.get_selection().set_mode(gtk::SelectionMode::Single);
@@ -444,7 +448,7 @@ impl BranchButton {
         dialog.set_default_response(gtk::ResponseType::Ok);
         let branch_name = gtk::Entry::new();
         branch_name.set_activates_default(true);
-        let checkout_new_branch = gtk::CheckButton::new_with_label("Checkout?");
+        let checkout_new_branch = gtk::CheckButton::with_label("Checkout?");
         let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 2);
         hbox.pack_start(&gtk::Label::new(Some("Name:")), false, false, 0);
         hbox.pack_start(&branch_name, true, true, 0);
@@ -454,20 +458,19 @@ impl BranchButton {
         let result = dialog.run();
         dialog.hide();
         if gtk::ResponseType::from(result) == gtk::ResponseType::Ok {
-            if let Some(branch_name) = branch_name.get_text() {
-                if checkout_new_branch.get_active() {
-                    let cmd = format!("git checkout -b {}", branch_name);
-                    let result = self
-                        .exec_console
-                        .exec_cmd(&cmd, events::EV_BRANCHES_CHANGE | events::EV_CHECKOUT);
-                    self.report_any_command_problems(&cmd, &result);
-                } else {
-                    let cmd = format!("git branch {}", branch_name);
-                    let result = self.exec_console.exec_cmd(&cmd, events::EV_BRANCHES_CHANGE);
-                    self.report_any_command_problems(&cmd, &result);
-                }
+            let branch_name = branch_name.get_text();
+            if checkout_new_branch.get_active() {
+                let cmd = format!("git checkout -b {}", branch_name);
+                let result = self
+                    .exec_console
+                    .exec_cmd(&cmd, events::EV_BRANCHES_CHANGE | events::EV_CHECKOUT);
+                self.report_any_command_problems(&cmd, &result);
+            } else {
+                let cmd = format!("git branch {}", branch_name);
+                let result = self.exec_console.exec_cmd(&cmd, events::EV_BRANCHES_CHANGE);
+                self.report_any_command_problems(&cmd, &result);
             }
         }
-        dialog.destroy();
+        unsafe { dialog.destroy() };
     }
 }

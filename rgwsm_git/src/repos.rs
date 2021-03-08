@@ -18,14 +18,14 @@ use std::fs::File;
 use std::io::{self, Read, Write};
 use std::rc::Rc;
 
-use gtk;
-use gtk::prelude::*;
-
 use git2;
 use shlex;
 
-use pw_gix::sav_state::*;
-use pw_gix::wrapper::*;
+use pw_gix::{
+    gtk::{self, prelude::*},
+    sav_state::*,
+    wrapper::*,
+};
 
 use pw_pathux::str_path::*;
 
@@ -183,7 +183,7 @@ pub struct OpenKnownRepoMenuItem {
 impl OpenKnownRepoMenuItem {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let ormi = Rc::new(Self {
-            menu_item: gtk::MenuItem::new_with_label("Change Directory To ->"),
+            menu_item: gtk::MenuItem::with_label("Change Directory To ->"),
             exec_console: Rc::clone(exec_console),
         });
 
@@ -203,7 +203,7 @@ impl OpenKnownRepoMenuItem {
         let mut table = read_known_repos_table().expect("failed to read known repos table");
         for item in table.drain(..) {
             let label = format!("{} :-> {}", shlex::quote(&item.0), shlex::quote(&item.1));
-            let menu_item = gtk::MenuItem::new_with_label(&label);
+            let menu_item = gtk::MenuItem::with_label(&label);
             let exec_console = Rc::clone(&self.exec_console);
             menu_item.connect_activate(move |_| exec_console.chdir(&item.1));
             menu.append(&menu_item);
@@ -230,11 +230,11 @@ impl CloneRepoWidget {
         let crw = Rc::new(Self {
             grid: gtk::Grid::new(),
             src_entry: gtk::Entry::new(),
-            browse_src_btn: gtk::Button::new_with_label("Browse"),
+            browse_src_btn: gtk::Button::with_label("Browse"),
             as_entry: gtk::Entry::new(),
-            as_default_btn: gtk::Button::new_with_label("Default"),
+            as_default_btn: gtk::Button::with_label("Default"),
             in_entry: gtk::Entry::new(),
-            browse_in_btn: gtk::Button::new_with_label("Browse"),
+            browse_in_btn: gtk::Button::with_label("Browse"),
         });
 
         crw.browse_src_btn
@@ -331,30 +331,30 @@ impl CloneRepoWidget {
     }
 
     fn source_url(&self) -> Option<String> {
-        if let Some(text) = self.src_entry.get_text() {
-            if text.len() > 0 {
-                return Some(text.into());
-            }
+        let text = self.src_entry.get_text();
+        if text.len() > 0 {
+            Some(text.into())
+        } else {
+            None
         }
-        None
     }
 
     fn as_name(&self) -> Option<String> {
-        if let Some(text) = self.as_entry.get_text() {
-            if text.len() > 0 {
-                return Some(text.into());
-            }
+        let text = self.as_entry.get_text();
+        if text.len() > 0 {
+            Some(text.into())
+        } else {
+            None
         }
-        None
     }
 
     fn in_dir(&self) -> Option<String> {
-        if let Some(text) = self.in_entry.get_text() {
-            if text.len() > 0 {
-                return Some(text.into());
-            }
+        let text = self.in_entry.get_text();
+        if text.len() > 0 {
+            Some(text.into())
+        } else {
+            None
         }
-        None
     }
 }
 
@@ -367,7 +367,7 @@ pub struct CloneRepoMenuItem {
 impl CloneRepoMenuItem {
     fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let crmi = Rc::new(Self {
-            menu_item: gtk::MenuItem::new_with_label("Clone"),
+            menu_item: gtk::MenuItem::with_label("Clone"),
             exec_console: Rc::clone(exec_console),
         });
         let crmi_clone = Rc::clone(&crmi);
@@ -419,12 +419,12 @@ impl CloneRepoMenuItem {
                     .inform_user("A source URL is required.", None);
             }
         }
-        dialog.destroy();
+        unsafe { dialog.destroy() };
     }
 }
 
 pub fn create_workspaces_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
-    let mi = gtk::MenuItem::new_with_label("Workspaces");
+    let mi = gtk::MenuItem::with_label("Workspaces");
     let menu = gtk::Menu::new();
     mi.set_submenu(Some(&menu));
     menu.append(&CloneRepoMenuItem::new(exec_console).pwo());

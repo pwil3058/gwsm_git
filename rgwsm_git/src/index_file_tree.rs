@@ -16,15 +16,15 @@ use std::cell::RefCell;
 use std::marker::PhantomData;
 use std::rc::Rc;
 
-use gtk;
-use gtk::prelude::*;
-
-use pw_gix::file_tree::FileTreeIfce;
-use pw_gix::fs_db::{FsDbIfce, FsObjectIfce};
-use pw_gix::glibx::*;
-use pw_gix::gtkx::menu::ManagedMenu;
-use pw_gix::sav_state::*;
-use pw_gix::wrapper::*;
+use pw_gix::{
+    file_tree::FileTreeIfce,
+    fs_db::{FsDbIfce, FsObjectIfce},
+    glibx::*,
+    gtk::{self, prelude::*},
+    gtkx::menu::ManagedMenu,
+    sav_state::*,
+    wrapper::*,
+};
 
 use crate::events;
 use crate::exec;
@@ -95,7 +95,7 @@ where
         let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
         scrolled_window.add(&view);
         v_box.pack_start(&scrolled_window, true, true, 0);
-        let hide_clean = gtk::CheckButton::new_with_label("Hide Clean");
+        let hide_clean = gtk::CheckButton::with_label("Hide Clean");
         if FSDB::honours_hide_clean() {
             let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
             if FSDB::honours_hide_clean() {

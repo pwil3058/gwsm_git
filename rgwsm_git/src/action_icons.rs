@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-use gdk_pixbuf;
-use gtk;
+use pw_gix::gdk_pixbuf;
+use pw_gix::gtk;
 
 // XPM
 static BRANCH_XPM: &[&str] = &[
@@ -88,13 +88,13 @@ static BRANCH_XPM: &[&str] = &[
 ];
 
 pub fn branch_pixbuf() -> gdk_pixbuf::Pixbuf {
-    gdk_pixbuf::Pixbuf::new_from_xpm_data(BRANCH_XPM)
+    gdk_pixbuf::Pixbuf::from_xpm_data(BRANCH_XPM)
 }
 
 pub fn branch_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) = branch_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
-        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+        gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }
@@ -174,12 +174,12 @@ static DIFF_XPM: &[&str] = &[
 ];
 
 pub fn diff_pixbuf() -> gdk_pixbuf::Pixbuf {
-    gdk_pixbuf::Pixbuf::new_from_xpm_data(DIFF_XPM)
+    gdk_pixbuf::Pixbuf::from_xpm_data(DIFF_XPM)
 }
 
 pub fn diff_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) = diff_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear) {
-        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+        gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }
@@ -270,14 +270,14 @@ static SUPERPROJECT_XPM: &[&str] = &[
 ];
 
 pub fn superproject_pixbuf() -> gdk_pixbuf::Pixbuf {
-    gdk_pixbuf::Pixbuf::new_from_xpm_data(SUPERPROJECT_XPM)
+    gdk_pixbuf::Pixbuf::from_xpm_data(SUPERPROJECT_XPM)
 }
 
 pub fn superproject_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) =
         superproject_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
-        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+        gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }
@@ -369,13 +369,13 @@ static COMMIT_XPM: &[&str] = &[
 ];
 
 pub fn commit_pixbuf() -> gdk_pixbuf::Pixbuf {
-    gdk_pixbuf::Pixbuf::new_from_xpm_data(COMMIT_XPM)
+    gdk_pixbuf::Pixbuf::from_xpm_data(COMMIT_XPM)
 }
 
 pub fn commit_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) = commit_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
-        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+        gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }
@@ -455,14 +455,14 @@ static STASH_PUSH_XPM: &[&str] = &[
 ];
 
 pub fn stash_push_pixbuf() -> gdk_pixbuf::Pixbuf {
-    gdk_pixbuf::Pixbuf::new_from_xpm_data(STASH_PUSH_XPM)
+    gdk_pixbuf::Pixbuf::from_xpm_data(STASH_PUSH_XPM)
 }
 
 pub fn stash_push_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) =
         stash_push_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
-        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+        gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }
@@ -554,14 +554,14 @@ static STASH_SHOW_XPM: &[&str] = &[
 ];
 
 pub fn stash_show_pixbuf() -> gdk_pixbuf::Pixbuf {
-    gdk_pixbuf::Pixbuf::new_from_xpm_data(STASH_SHOW_XPM)
+    gdk_pixbuf::Pixbuf::from_xpm_data(STASH_SHOW_XPM)
 }
 
 pub fn stash_show_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) =
         stash_show_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
-        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+        gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }
@@ -640,14 +640,14 @@ static STASH_POP_XPM: &[&str] = &[
 ];
 
 pub fn stash_pop_pixbuf() -> gdk_pixbuf::Pixbuf {
-    gdk_pixbuf::Pixbuf::new_from_xpm_data(STASH_POP_XPM)
+    gdk_pixbuf::Pixbuf::from_xpm_data(STASH_POP_XPM)
 }
 
 pub fn stash_pop_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) =
         stash_pop_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
-        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+        gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }
@@ -739,14 +739,14 @@ static STASH_APPLY_XPM: &[&str] = &[
 ];
 
 pub fn stash_apply_pixbuf() -> gdk_pixbuf::Pixbuf {
-    gdk_pixbuf::Pixbuf::new_from_xpm_data(STASH_APPLY_XPM)
+    gdk_pixbuf::Pixbuf::from_xpm_data(STASH_APPLY_XPM)
 }
 
 pub fn stash_apply_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) =
         stash_apply_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
-        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+        gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }
@@ -826,14 +826,14 @@ static STASH_BRANCH_XPM: &[&str] = &[
 ];
 
 pub fn stash_branch_pixbuf() -> gdk_pixbuf::Pixbuf {
-    gdk_pixbuf::Pixbuf::new_from_xpm_data(STASH_BRANCH_XPM)
+    gdk_pixbuf::Pixbuf::from_xpm_data(STASH_BRANCH_XPM)
 }
 
 pub fn stash_branch_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) =
         stash_branch_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
-        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+        gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }
@@ -925,14 +925,14 @@ static STASH_DROP_XPM: &[&str] = &[
 ];
 
 pub fn stash_drop_pixbuf() -> gdk_pixbuf::Pixbuf {
-    gdk_pixbuf::Pixbuf::new_from_xpm_data(STASH_DROP_XPM)
+    gdk_pixbuf::Pixbuf::from_xpm_data(STASH_DROP_XPM)
 }
 
 pub fn stash_drop_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) =
         stash_drop_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
-        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+        gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }
@@ -1024,13 +1024,13 @@ static UPDATE_XPM: &[&str] = &[
 ];
 
 pub fn update_pixbuf() -> gdk_pixbuf::Pixbuf {
-    gdk_pixbuf::Pixbuf::new_from_xpm_data(UPDATE_XPM)
+    gdk_pixbuf::Pixbuf::from_xpm_data(UPDATE_XPM)
 }
 
 pub fn update_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) = update_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear)
     {
-        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+        gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }
@@ -1110,12 +1110,12 @@ static TAG_XPM: &[&str] = &[
 ];
 
 pub fn tag_pixbuf() -> gdk_pixbuf::Pixbuf {
-    gdk_pixbuf::Pixbuf::new_from_xpm_data(TAG_XPM)
+    gdk_pixbuf::Pixbuf::from_xpm_data(TAG_XPM)
 }
 
 pub fn tag_image(size: i32) -> gtk::Image {
     if let Some(pixbuf) = tag_pixbuf().scale_simple(size, size, gdk_pixbuf::InterpType::Bilinear) {
-        gtk::Image::new_from_pixbuf(Some(&pixbuf))
+        gtk::Image::from_pixbuf(Some(&pixbuf))
     } else {
         panic!("File: {:?} Line: {:?}", file!(), line!())
     }

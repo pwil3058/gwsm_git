@@ -25,12 +25,13 @@ use std::rc::Rc;
 use glob::{Pattern, PatternError};
 use serde_json;
 
-use gtk;
-use gtk::prelude::*;
-
-use pw_gix::gtkx::dialog::AutoDestroy;
-use pw_gix::sav_state::*;
-use pw_gix::wrapper::*;
+use pw_gix::{
+    glib,
+    gtk::{self, prelude::*},
+    gtkx::dialog::AutoDestroy,
+    sav_state::*,
+    wrapper::*,
+};
 
 use crate::config;
 use crate::repos;
@@ -164,7 +165,7 @@ pub struct EditorAllocationTableEditor {
 impl EditorAllocationTableEditor {
     pub fn new() -> Rc<Self> {
         let list_store = gtk::ListStore::new(&[glib::Type::String; 2]);
-        let view = gtk::TreeView::new_with_model(&list_store);
+        let view = gtk::TreeView::with_model(&list_store);
         let managed_buttons = ConditionalWidgetGroups::<gtk::Button>::new(
             WidgetStatesControlled::Sensitivity,
             Some(&view.get_selection()),
@@ -175,11 +176,11 @@ impl EditorAllocationTableEditor {
             v_box: gtk::Box::new(gtk::Orientation::Vertical, 0),
             view: view,
             list_store: list_store,
-            add_button: gtk::Button::new_with_label("Add"),
-            insert_button: gtk::Button::new_with_label("Insert"),
-            delete_button: gtk::Button::new_with_label("Delete"),
-            undo_button: gtk::Button::new_with_label("Undo"),
-            apply_button: gtk::Button::new_with_label("Apply"),
+            add_button: gtk::Button::with_label("Add"),
+            insert_button: gtk::Button::with_label("Insert"),
+            delete_button: gtk::Button::with_label("Delete"),
+            undo_button: gtk::Button::with_label("Undo"),
+            apply_button: gtk::Button::with_label("Apply"),
             managed_buttons: managed_buttons,
             modified: Cell::new(false),
         });
@@ -396,7 +397,7 @@ pub struct EditorAlocationMenuItem {
 impl EditorAlocationMenuItem {
     pub fn new() -> Rc<Self> {
         let eami = Rc::new(Self {
-            menu_item: gtk::MenuItem::new_with_label("Editor Allocation"),
+            menu_item: gtk::MenuItem::with_label("Editor Allocation"),
         });
 
         let eami_clone = Rc::clone(&eami);

@@ -17,19 +17,22 @@ use std::io::Write;
 use std::process::Command;
 use std::rc::Rc;
 
-use gtk;
-use gtk::prelude::*;
-
 use crypto_hash::{Algorithm, Hasher};
 use regex::Regex;
 
-use pw_gix::glibx::*;
-use pw_gix::gtkx::list_store::{
-    BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
+use pw_gix::{
+    glib,
+    glibx::*,
+    gtk::{self, prelude::*},
+    gtkx::{
+        list_store::{
+            BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
+        },
+        menu::ManagedMenu,
+    },
+    sav_state::*,
+    wrapper::*,
 };
-use pw_gix::gtkx::menu::ManagedMenu;
-use pw_gix::sav_state::*;
-use pw_gix::wrapper::*;
 
 use crate::events;
 use crate::exec::ExecConsole;
@@ -47,8 +50,8 @@ impl SimpleRemoteActionButtons {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let srab = Rc::new(Self {
             h_box: gtk::Box::new(gtk::Orientation::Horizontal, 2),
-            simple_pull_button: gtk::Button::new_with_label("Pull"),
-            simple_push_button: gtk::Button::new_with_label("Push"),
+            simple_pull_button: gtk::Button::with_label("Pull"),
+            simple_push_button: gtk::Button::with_label("Push"),
             exec_console: Rc::clone(&exec_console),
         });
 
@@ -226,7 +229,7 @@ impl RemotesNameTable {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<RemotesNameTable> {
         let list_store = RefCell::new(RemotesNameListStore::new());
 
-        let view = gtk::TreeView::new_with_model(&list_store.borrow().get_list_store());
+        let view = gtk::TreeView::with_model(&list_store.borrow().get_list_store());
         view.set_headers_visible(true);
 
         view.get_selection().set_mode(gtk::SelectionMode::Single);

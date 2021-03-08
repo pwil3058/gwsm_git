@@ -17,9 +17,6 @@ use std::io::Write;
 use std::process::Command;
 use std::rc::Rc;
 
-use gtk;
-use gtk::prelude::*;
-
 use crypto_hash::{Algorithm, Hasher};
 use regex::Regex;
 use shlex;
@@ -28,14 +25,20 @@ use cub_diff_lib::diff::DiffPlusParser;
 use cub_diff_lib::lines::*;
 use cub_diff_lib_gtk::diff::DiffPlusNotebook;
 
-use pw_gix::glibx::*;
-use pw_gix::gtkx::dialog::*;
-use pw_gix::gtkx::list_store::{
-    BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
+use pw_gix::{
+    glib,
+    glibx::*,
+    gtk::{self, prelude::*},
+    gtkx::{
+        dialog::*,
+        list_store::{
+            BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
+        },
+        menu::ManagedMenu,
+    },
+    sav_state::*,
+    wrapper::*,
 };
-use pw_gix::gtkx::menu::ManagedMenu;
-use pw_gix::sav_state::*;
-use pw_gix::wrapper::*;
 
 use crate::action_icons;
 use crate::config;
@@ -56,9 +59,9 @@ impl StashPushWidget {
     pub fn new() -> Rc<Self> {
         let ctw = Rc::new(Self {
             v_box: gtk::Box::new(gtk::Orientation::Vertical, 0),
-            keep_index_ch_btn: gtk::CheckButton::new_with_label("--keep-index"),
-            include_untracked_ch_btn: gtk::CheckButton::new_with_label("--include-untracked"),
-            all_ch_btn: gtk::CheckButton::new_with_label("--all"),
+            keep_index_ch_btn: gtk::CheckButton::with_label("--keep-index"),
+            include_untracked_ch_btn: gtk::CheckButton::with_label("--include-untracked"),
+            all_ch_btn: gtk::CheckButton::with_label("--all"),
             text_view: gtk::TextView::new(),
         });
 
@@ -172,7 +175,7 @@ impl StashPushButton {
             self.unshow_busy(cursor);
             self.report_any_command_problems(&cmd, &result);
         }
-        dialog.destroy();
+        unsafe { dialog.destroy() };
     }
 }
 
@@ -298,7 +301,7 @@ impl StashesNameTable {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<StashesNameTable> {
         let list_store = RefCell::new(StashesNameListStore::new());
 
-        let view = gtk::TreeView::new_with_model(&list_store.borrow().get_list_store());
+        let view = gtk::TreeView::with_model(&list_store.borrow().get_list_store());
         view.set_headers_visible(true);
 
         view.get_selection().set_mode(gtk::SelectionMode::Single);
@@ -466,7 +469,7 @@ impl StashesNameTable {
                         gtk::DialogFlags::DESTROY_WITH_PARENT,
                         CANCEL_OK_BUTTONS,
                     );
-                    let index_ch_btn = gtk::CheckButton::new_with_label("--index");
+                    let index_ch_btn = gtk::CheckButton::with_label("--index");
                     let ca = dialog.get_content_area();
                     ca.pack_start(&index_ch_btn, false, false, 0);
                     ca.show_all();
@@ -486,7 +489,7 @@ impl StashesNameTable {
                         table_clone.unshow_busy(cursor);
                         table_clone.report_any_command_problems(&cmd, &result);
                     }
-                    dialog.destroy();
+                    unsafe { dialog.destroy() };
                 }
             });
 
@@ -509,7 +512,7 @@ impl StashesNameTable {
                         gtk::DialogFlags::DESTROY_WITH_PARENT,
                         CANCEL_OK_BUTTONS,
                     );
-                    let index_ch_btn = gtk::CheckButton::new_with_label("--index");
+                    let index_ch_btn = gtk::CheckButton::with_label("--index");
                     let ca = dialog.get_content_area();
                     ca.pack_start(&index_ch_btn, false, false, 0);
                     ca.show_all();
@@ -529,7 +532,7 @@ impl StashesNameTable {
                         table_clone.unshow_busy(cursor);
                         table_clone.report_any_command_problems(&cmd, &result);
                     }
-                    dialog.destroy();
+                    unsafe { dialog.destroy() };
                 }
             });
 

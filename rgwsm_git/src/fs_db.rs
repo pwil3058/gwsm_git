@@ -23,15 +23,15 @@ use std::process::Command;
 use std::rc::Rc;
 use std::slice::Iter;
 
-use glib::{StaticType, ToValue};
-use gtk::prelude::*;
-use gtk::TreeIter;
-use pango_sys::{PANGO_STYLE_ITALIC, PANGO_STYLE_NORMAL, PANGO_STYLE_OBLIQUE};
-
 use crypto_hash::{Algorithm, Hasher};
 use regex::Regex;
 
-use pw_gix::fs_db::{FsDbIfce, FsObjectIfce, TreeRowOps};
+use pw_gix::{
+    fs_db::{FsDbIfce, FsObjectIfce, TreeRowOps},
+    glib::{self, StaticType, ToValue},
+    gtk::{self, prelude::*, TreeIter},
+    pango_sys::{PANGO_STYLE_ITALIC, PANGO_STYLE_NORMAL, PANGO_STYLE_OBLIQUE},
+};
 
 use pw_pathux::str_path::*;
 use pw_pathux::UsableDirEntry;

@@ -21,9 +21,10 @@ use git2;
 
 use regex::Regex;
 
-use gtk::prelude::*;
-
-use pw_gix::wrapper::*;
+use pw_gix::{
+    gtk::{self, prelude::*},
+    wrapper::*,
+};
 
 use pw_pathux::str_path::*;
 

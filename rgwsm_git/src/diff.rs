@@ -17,16 +17,17 @@ use std::io::Write;
 use std::process::Command;
 use std::rc::Rc;
 
-use gtk;
-use gtk::prelude::*;
-
 use crypto_hash::{Algorithm, Hasher};
 
 use cub_diff_lib::diff::DiffPlusParser;
 use cub_diff_lib::lines::*;
 use cub_diff_lib_gtk::diff::DiffPlusNotebook;
-use pw_gix::gtkx::window::RememberGeometry;
-use pw_gix::wrapper::*;
+
+use pw_gix::{
+    gtk::{self, prelude::*},
+    gtkx::window::RememberGeometry,
+    wrapper::*,
+};
 
 use crate::action_icons;
 use crate::config;
@@ -107,10 +108,10 @@ struct WdDiffTextWidget {
 impl WdDiffTextWidget {
     fn new(exec_console: &Rc<ExecConsole>) -> Rc<Self> {
         let v_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
-        let diff_rb = gtk::RadioButton::new_with_label("git diff");
+        let diff_rb = gtk::RadioButton::with_label("git diff");
         let diff_staged_rb =
-            gtk::RadioButton::new_with_label_from_widget(&diff_rb, "git diff --staged");
-        let diff_head_rb = gtk::RadioButton::new_with_label_from_widget(&diff_rb, "git diff HEAD");
+            gtk::RadioButton::with_label_from_widget(&diff_rb, "git diff --staged");
+        let diff_head_rb = gtk::RadioButton::with_label_from_widget(&diff_rb, "git diff HEAD");
         let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         h_box.pack_start(&diff_rb, false, false, 0);
         h_box.pack_start(&diff_staged_rb, false, false, 0);

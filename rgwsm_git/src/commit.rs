@@ -17,17 +17,18 @@ use std::io::Write;
 use std::process::Command;
 use std::rc::Rc;
 
-use gtk;
-use gtk::prelude::*;
-use sourceview::{self, ViewExt};
-
 use crypto_hash::{Algorithm, Hasher};
 
 use cub_diff_lib::diff::DiffPlusParser;
 use cub_diff_lib::lines::*;
 use cub_diff_lib_gtk::diff::DiffPlusNotebook;
-use pw_gix::gtkx::window::RememberGeometry;
-use pw_gix::wrapper::*;
+
+use pw_gix::{
+    gtk::{self, prelude::*},
+    gtkx::window::RememberGeometry,
+    sourceview::{self, ViewExt},
+    wrapper::*,
+};
 
 use crate::action_icons;
 use crate::config;
@@ -240,8 +241,8 @@ impl CommitWidget {
             index_diff_widget: IndexDiffWidget::new(exec_console),
             exec_console: Rc::clone(&exec_console),
             exec_button: gtk::Button::new(),
-            amend_option_button: gtk::CheckButton::new_with_label("--amend"),
-            signoff_option_button: gtk::CheckButton::new_with_label("--signoff"),
+            amend_option_button: gtk::CheckButton::with_label("--amend"),
+            signoff_option_button: gtk::CheckButton::with_label("--signoff"),
         });
 
         let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
@@ -327,11 +328,11 @@ impl CommitWidget {
         cw.text_view.set_right_margin_position(71);
         cw.text_view.connect_populate_popup(|view, widget| {
             if let Ok(ref menu) = widget.clone().downcast::<gtk::Menu>() {
-                let mi = gtk::MenuItem::new_with_label("Insert Acked-by");
+                let mi = gtk::MenuItem::with_label("Insert Acked-by");
                 let buffer = view.get_buffer().unwrap();
                 mi.connect_activate(move |_| insert_acked_by_at_cursor(&buffer));
                 menu.append(&mi);
-                let mi = gtk::MenuItem::new_with_label("Insert Signed-off-by");
+                let mi = gtk::MenuItem::with_label("Insert Signed-off-by");
                 let buffer = view.get_buffer().unwrap();
                 mi.connect_activate(move |_| insert_signed_off_by_at_cursor(&buffer));
                 menu.append(&mi);

@@ -22,20 +22,23 @@ use std::rc::Rc;
 use crypto_hash::{Algorithm, Hasher};
 use regex::Regex;
 
-use gtk;
-use gtk::prelude::*;
-
 use shlex;
 
-use pw_gix::glibx::*;
-use pw_gix::gtkx::dialog::RememberDialogSize;
-use pw_gix::gtkx::entry::LabelledTextEntry;
-use pw_gix::gtkx::list_store::{
-    BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
+use pw_gix::{
+    glib,
+    glibx::*,
+    gtk::{self, prelude::*},
+    gtkx::{
+        dialog::RememberDialogSize,
+        entry::LabelledTextEntry,
+        list_store::{
+            BufferedUpdate, MapManagedUpdate, RequiredMapAction, Row, RowBuffer, RowBufferCore,
+        },
+        menu::ManagedMenu,
+    },
+    sav_state::*,
+    wrapper::*,
 };
-use pw_gix::gtkx::menu::ManagedMenu;
-use pw_gix::sav_state::*;
-use pw_gix::wrapper::*;
 
 use crate::action_icons;
 use crate::events;
@@ -88,10 +91,10 @@ impl NewTagWidget {
         let ntw = Rc::new(NewTagWidget {
             v_box: gtk::Box::new(gtk::Orientation::Vertical, 0),
             tag_name_entry: LabelledTextEntry::new("Tag: "),
-            force_cbth: gtk::CheckButton::new_with_label("--force"),
-            annotate_cbtn: gtk::CheckButton::new_with_label("--annotate"),
-            sign_cbtn: gtk::CheckButton::new_with_label("--sign"),
-            key_cbtn: gtk::CheckButton::new_with_label("--local-user"),
+            force_cbth: gtk::CheckButton::with_label("--force"),
+            annotate_cbtn: gtk::CheckButton::with_label("--annotate"),
+            sign_cbtn: gtk::CheckButton::with_label("--sign"),
+            key_cbtn: gtk::CheckButton::with_label("--local-user"),
             key_id_entry: LabelledTextEntry::new("Key Id: "),
             message: message::MessageWidget::new("Message"),
             exec_console: Rc::clone(exec_console),
@@ -160,54 +163,48 @@ impl NewTagWidget {
         &self,
         target: Option<&str>,
     ) -> Result<(String, io::Result<process::Output>), TagError> {
-        if let Some(tag_name) = self.tag_name_entry.entry().get_text() {
-            if tag_name.len() > 0 {
-                let mut cmd = "git tag ".to_string();
-                if self.force_cbth.get_active() {
-                    cmd.push_str("--force ")
-                }
-                let mut annotate = false;
-                if self.annotate_cbtn.get_active() {
-                    annotate = true;
-                    cmd.push_str("--annotate ");
-                } else if self.sign_cbtn.get_active() {
-                    annotate = true;
-                    cmd.push_str("--sign ");
-                } else if self.key_cbtn.get_active() {
-                    annotate = true;
-                    if let Some(key_id) = self.key_id_entry.entry().get_text() {
-                        if key_id.len() > 0 {
-                            cmd.push_str("--local-user ");
-                            cmd.push_str(&shlex::quote(&key_id));
-                            cmd.push(' ');
-                        } else {
-                            return Err(TagError::NoKeyId);
-                        }
-                    } else {
-                        return Err(TagError::NoKeyId);
-                    }
-                }
-                if annotate {
-                    if let Some(msg) = self.message.get_message() {
-                        cmd.push_str("-m ");
-                        cmd.push_str(&shlex::quote(&msg));
-                        cmd.push(' ');
-                    } else {
-                        return Err(TagError::NoAnnotationMessage);
-                    }
-                }
-                cmd.push_str(&shlex::quote(&tag_name));
-                if let Some(target) = target {
-                    cmd.push(' ');
-                    cmd.push_str(&shlex::quote(target));
-                };
-                let old_cursor = self.show_busy();
-                let result = self.exec_console.exec_cmd(&cmd, events::EV_TAGS_CHANGE);
-                self.unshow_busy(old_cursor);
-                return Ok((cmd, result));
-            } else {
-                return Err(TagError::NoTagName);
+        let tag_name = self.tag_name_entry.entry().get_text();
+        if tag_name.len() > 0 {
+            let mut cmd = "git tag ".to_string();
+            if self.force_cbth.get_active() {
+                cmd.push_str("--force ")
             }
+            let mut annotate = false;
+            if self.annotate_cbtn.get_active() {
+                annotate = true;
+                cmd.push_str("--annotate ");
+            } else if self.sign_cbtn.get_active() {
+                annotate = true;
+                cmd.push_str("--sign ");
+            } else if self.key_cbtn.get_active() {
+                annotate = true;
+                let key_id = self.key_id_entry.entry().get_text();
+                if key_id.len() > 0 {
+                    cmd.push_str("--local-user ");
+                    cmd.push_str(&shlex::quote(&key_id));
+                    cmd.push(' ');
+                } else {
+                    return Err(TagError::NoKeyId);
+                }
+            }
+            if annotate {
+                if let Some(msg) = self.message.get_message() {
+                    cmd.push_str("-m ");
+                    cmd.push_str(&shlex::quote(&msg));
+                    cmd.push(' ');
+                } else {
+                    return Err(TagError::NoAnnotationMessage);
+                }
+            }
+            cmd.push_str(&shlex::quote(&tag_name));
+            if let Some(target) = target {
+                cmd.push(' ');
+                cmd.push_str(&shlex::quote(target));
+            };
+            let old_cursor = self.show_busy();
+            let result = self.exec_console.exec_cmd(&cmd, events::EV_TAGS_CHANGE);
+            self.unshow_busy(old_cursor);
+            return Ok((cmd, result));
         } else {
             return Err(TagError::NoTagName);
         }
@@ -250,7 +247,8 @@ pub trait CreatTag: WidgetWrapper {
                 break;
             }
         }
-        dialog.destroy();
+        // TODO: remove unsafe code everywhere
+        unsafe { dialog.destroy() };
     }
 }
 
@@ -426,7 +424,7 @@ impl TagsNameTable {
     pub fn new(exec_console: &Rc<ExecConsole>) -> Rc<TagsNameTable> {
         let list_store = RefCell::new(TagsNameListStore::new());
 
-        let view = gtk::TreeView::new_with_model(&list_store.borrow().get_list_store());
+        let view = gtk::TreeView::with_model(&list_store.borrow().get_list_store());
         view.set_headers_visible(true);
 
         view.get_selection().set_mode(gtk::SelectionMode::Single);

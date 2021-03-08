@@ -15,21 +15,17 @@
 #[macro_use]
 extern crate lazy_static;
 
-use gio;
-use gtk;
-
 #[macro_use]
 extern crate pw_gix;
 
-use gio::prelude::ApplicationExtManual;
-use gio::ApplicationExt;
-use gtk::prelude::MenuShellExt;
-use gtk::prelude::*;
-
-use pw_gix::gdkx::format_geometry;
-use pw_gix::gtkx::paned::RememberPosition;
-use pw_gix::recollections;
-use pw_gix::wrapper::*;
+use pw_gix::{
+    gdkx::format_geometry,
+    gio::{self, prelude::ApplicationExtManual, ApplicationExt},
+    gtk::{self, prelude::MenuShellExt, prelude::*},
+    gtkx::paned::RememberPosition,
+    recollections,
+    wrapper::*,
+};
 
 mod action_icons;
 mod branches;
@@ -95,7 +91,7 @@ fn activate(app: &gtk::Application) {
     let auto_update_check_item = exec.auto_update_check_item();
     auto_update_check_item.show_all();
     config_menu.append(&auto_update_check_item);
-    let config_menu_item = gtk::MenuItem::new_with_label("Configuration");
+    let config_menu_item = gtk::MenuItem::with_label("Configuration");
     config_menu_item.set_submenu(Some(&config_menu));
     let r_menu_bar = gtk::MenuBar::new();
     hbox.pack_end(&r_menu_bar, false, false, 0);

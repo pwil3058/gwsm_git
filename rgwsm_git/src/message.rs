@@ -15,11 +15,11 @@
 use std::process::Command;
 use std::rc::Rc;
 
-use gtk;
-use gtk::prelude::*;
-use sourceview::{self, ViewExt};
-
-use pw_gix::wrapper::*;
+use pw_gix::{
+    gtk::{self, prelude::*},
+    sourceview::{self, ViewExt},
+    wrapper::*,
+};
 
 fn get_name_and_email_string() -> String {
     let output = Command::new("git")
@@ -98,11 +98,11 @@ impl MessageWidget {
         mw.text_view.set_right_margin_position(71);
         mw.text_view.connect_populate_popup(|view, widget| {
             if let Ok(ref menu) = widget.clone().downcast::<gtk::Menu>() {
-                let mi = gtk::MenuItem::new_with_label("Insert Acked-by");
+                let mi = gtk::MenuItem::with_label("Insert Acked-by");
                 let buffer = view.get_buffer().unwrap();
                 mi.connect_activate(move |_| insert_acked_by_at_cursor(&buffer));
                 menu.append(&mi);
-                let mi = gtk::MenuItem::new_with_label("Insert Signed-off-by");
+                let mi = gtk::MenuItem::with_label("Insert Signed-off-by");
                 let buffer = view.get_buffer().unwrap();
                 mi.connect_activate(move |_| insert_signed_off_by_at_cursor(&buffer));
                 menu.append(&mi);

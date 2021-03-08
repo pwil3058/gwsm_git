@@ -18,17 +18,17 @@ use std::process::{self, Command, Output};
 use std::rc::Rc;
 use std::time::SystemTime;
 
-use gtk;
-use gtk::prelude::*;
-
 use chrono::prelude::*;
 use shlex;
 use xml::escape;
 
-use pw_gix::recollections;
-use pw_gix::sav_state::*;
-use pw_gix::timeout;
-use pw_gix::wrapper::*;
+use pw_gix::{
+    gtk::{self, prelude::*},
+    recollections,
+    sav_state::*,
+    timeout,
+    wrapper::*,
+};
 
 use pw_pathux::str_path::*;
 
@@ -71,7 +71,7 @@ impl ExecConsole {
         let ec = Rc::new(Self {
             scrolled_window: gtk::ScrolledWindow::new(adj, adj),
             text_view: gtk::TextView::new(),
-            update_button: gtk::Button::new_with_label("Update"),
+            update_button: gtk::Button::with_label("Update"),
             event_notifier: EventNotifier::new(),
             changed_condns_notifier: changed_condns_notifier,
             managed_buttons: managed_buttons,
@@ -246,11 +246,11 @@ impl ExecConsole {
 }
 
 pub fn create_files_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
-    let mi = gtk::MenuItem::new_with_label("Files");
+    let mi = gtk::MenuItem::with_label("Files");
     let menu = gtk::Menu::new();
     mi.set_submenu(Some(&menu));
 
-    let chdir_menu_item = gtk::MenuItem::new_with_label("Open");
+    let chdir_menu_item = gtk::MenuItem::with_label("Open");
     let ec_clone = Rc::clone(&exec_console);
     chdir_menu_item.connect_activate(move |_| {
         if let Some(path) = ec_clone.browse_path(
@@ -264,7 +264,7 @@ pub fn create_files_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     });
     menu.append(&chdir_menu_item);
 
-    let init_menu_item = gtk::MenuItem::new_with_label("Init");
+    let init_menu_item = gtk::MenuItem::with_label("Init");
     exec_console
         .managed_menu_items
         .add_widget("init", &init_menu_item, repos::SAV_NOT_IN_REPO);
@@ -277,7 +277,7 @@ pub fn create_files_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     });
     menu.append(&init_menu_item);
 
-    let exit_menu_item = gtk::MenuItem::new_with_label("Exit");
+    let exit_menu_item = gtk::MenuItem::with_label("Exit");
     exit_menu_item.connect_activate(move |_| {
         process::exit(0);
     });
@@ -287,7 +287,7 @@ pub fn create_files_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
 }
 
 pub fn create_friends_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
-    let mi = gtk::MenuItem::new_with_label("Friends");
+    let mi = gtk::MenuItem::with_label("Friends");
     let menu = gtk::Menu::new();
     mi.set_submenu(Some(&menu));
 
@@ -296,7 +296,7 @@ pub fn create_friends_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     ]
     .iter()
     {
-        let menu_item = gtk::MenuItem::new_with_label(&friend.to_string());
+        let menu_item = gtk::MenuItem::with_label(&friend.to_string());
         let ec_clone = Rc::clone(&exec_console);
         menu_item.connect_activate(move |_| {
             if let Err(err) = Command::new(&friend).arg(".").spawn() {

@@ -17,16 +17,16 @@ use std::marker::PhantomData;
 use std::process::Command;
 use std::rc::Rc;
 
-use gtk;
-use gtk::prelude::*;
-
 use shlex;
 
-use pw_gix::file_tree::*;
-use pw_gix::fs_db::*;
-use pw_gix::gtkx::menu::ManagedMenu;
-use pw_gix::sav_state::*;
-use pw_gix::wrapper::*;
+use pw_gix::{
+    file_tree::*,
+    fs_db::*,
+    gtk::{self, prelude::*},
+    gtkx::menu::ManagedMenu,
+    sav_state::*,
+    wrapper::*,
+};
 
 use pw_pathux::str_path::*;
 
@@ -104,8 +104,8 @@ where
         let scrolled_window = gtk::ScrolledWindow::new(adj, adj);
         scrolled_window.add(&view);
         v_box.pack_start(&scrolled_window, true, true, 0);
-        let show_hidden = gtk::CheckButton::new_with_label("Show Hidden");
-        let hide_clean = gtk::CheckButton::new_with_label("Hide Clean");
+        let show_hidden = gtk::CheckButton::with_label("Show Hidden");
+        let hide_clean = gtk::CheckButton::with_label("Hide Clean");
         if FSDB::honours_show_hidden() || FSDB::honours_hide_clean() {
             let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
             if FSDB::honours_show_hidden() {
