@@ -292,7 +292,7 @@ pub fn create_friends_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     mi.set_submenu(Some(&menu));
 
     for friend in [
-        "gitg", "gitk", "git-dag", "git-cola", "idea", "meld", "regexxer",
+        "gitg", "gitk", "git-dag", "git-cola", "idea", "clion", "meld", "regexxer",
     ]
     .iter()
     {
