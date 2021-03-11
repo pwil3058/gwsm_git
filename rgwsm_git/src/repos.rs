@@ -358,7 +358,7 @@ impl CloneRepoWidget {
     }
 }
 
-#[derive(PWO)]
+#[derive(PWO, Wrapper)]
 pub struct CloneRepoMenuItem {
     menu_item: gtk::MenuItem,
     exec_console: Rc<ExecConsole>,
@@ -378,11 +378,15 @@ impl CloneRepoMenuItem {
     }
 
     fn clone_a_repo(&self) {
-        let dialog = self.exec_console.new_dialog_with_buttons(
-            Some("Clone Repository"),
-            gtk::DialogFlags::DESTROY_WITH_PARENT | gtk::DialogFlags::MODAL,
-            CANCEL_OK_BUTTONS,
-        );
+        let dialog = self
+            .new_dialog_builder()
+            .title("Clone Repository")
+            .destroy_with_parent(true)
+            .modal(true)
+            .build();
+        for button in Self::CANCEL_OK_BUTTONS.iter() {
+            dialog.add_button(button.0, button.1);
+        }
         dialog.set_default_response(gtk::ResponseType::Ok);
         let crw = CloneRepoWidget::new();
         dialog

@@ -403,11 +403,14 @@ impl EditorAlocationMenuItem {
         let eami_clone = Rc::clone(&eami);
         eami.menu_item.connect_activate(move |_| {
             let title = format!("{}: Editor Allocation", config::APP_NAME);
-            let dialog = eami_clone.new_dialog_with_buttons(
-                Some(&title),
-                gtk::DialogFlags::DESTROY_WITH_PARENT,
-                &[("Close", gtk::ResponseType::Close)],
-            );
+            let dialog = eami_clone
+                .new_dialog_builder()
+                .title(&title)
+                .destroy_with_parent(true)
+                .build();
+            for button in Self::CLOSE_BUTTONS.iter() {
+                dialog.add_button(button.0, button.1);
+            }
             dialog.enable_auto_destroy();
             let table = EditorAllocationTableEditor::new();
             dialog

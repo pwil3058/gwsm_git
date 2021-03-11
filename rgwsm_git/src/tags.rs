@@ -215,11 +215,15 @@ pub trait CreatTag: WidgetWrapper {
     fn exec_console(&self) -> &Rc<ExecConsole>;
 
     fn create_tag_for(&self, target: Option<&str>) {
-        let dialog = self.new_dialog_with_buttons(
-            Some("New Tag"),
-            gtk::DialogFlags::DESTROY_WITH_PARENT | gtk::DialogFlags::MODAL,
-            CANCEL_OK_BUTTONS,
-        );
+        let dialog = self
+            .new_dialog_builder()
+            .title("New Tag")
+            .destroy_with_parent(true)
+            .modal(true)
+            .build();
+        for button in Self::CANCEL_OK_BUTTONS.iter() {
+            dialog.add_button(button.0, button.1);
+        }
         dialog.set_default_response(gtk::ResponseType::Ok);
         let ntw = NewTagWidget::new(self.exec_console());
         dialog

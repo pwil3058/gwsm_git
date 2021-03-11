@@ -140,11 +140,15 @@ impl StashPushButton {
     }
 
     fn stash_push_cb(&self) {
-        let dialog = self.new_dialog_with_buttons(
-            Some("Stash Current State"),
-            gtk::DialogFlags::DESTROY_WITH_PARENT | gtk::DialogFlags::MODAL,
-            CANCEL_OK_BUTTONS,
-        );
+        let dialog = self
+            .new_dialog_builder()
+            .title("Stash Current State")
+            .destroy_with_parent(true)
+            .modal(true)
+            .build();
+        for button in Self::CANCEL_OK_BUTTONS.iter() {
+            dialog.add_button(button.0, button.1);
+        }
         dialog.set_default_response(gtk::ResponseType::Ok);
         dialog.set_size_from_recollections("create:stash:dialog", (600, 330));
         let stash_push_widget = StashPushWidget::new();
@@ -418,11 +422,12 @@ impl StashesNameTable {
                                 diff_notebook.repopulate(&diff_pluses);
                                 let subtitle = format!("diff: {}", stash);
                                 let title = config::window_title(Some(&subtitle));
-                                let dialog = table_clone.new_dialog_with_buttons(
-                                    Some(&title),
-                                    gtk::DialogFlags::DESTROY_WITH_PARENT,
-                                    &[("Close", gtk::ResponseType::Close)],
-                                );
+                                let dialog = table_clone
+                                    .new_dialog_builder()
+                                    .title(&title)
+                                    .destroy_with_parent(true)
+                                    .build();
+                                dialog.add_button("Close", gtk::ResponseType::Close);
                                 dialog.enable_auto_destroy();
                                 dialog.get_content_area().pack_start(
                                     &diff_notebook.pwo(),
@@ -469,11 +474,14 @@ impl StashesNameTable {
                 if let Some(stash) = table_clone.get_chosen_stash() {
                     let subtitle = format!("Pop Stash: {}", stash);
                     let title = config::window_title(Some(&subtitle));
-                    let dialog = table_clone.new_dialog_with_buttons(
-                        Some(&title),
-                        gtk::DialogFlags::DESTROY_WITH_PARENT,
-                        CANCEL_OK_BUTTONS,
-                    );
+                    let dialog = table_clone
+                        .new_dialog_builder()
+                        .title(&title)
+                        .destroy_with_parent(true)
+                        .build();
+                    for button in &Self::CANCEL_OK_BUTTONS {
+                        dialog.add_button(button.0, button.1);
+                    }
                     let index_ch_btn = gtk::CheckButton::with_label("--index");
                     let ca = dialog.get_content_area();
                     ca.pack_start(&index_ch_btn, false, false, 0);
@@ -515,11 +523,14 @@ impl StashesNameTable {
                 if let Some(stash) = table_clone.get_chosen_stash() {
                     let subtitle = format!("Apply Stash: {}", stash);
                     let title = config::window_title(Some(&subtitle));
-                    let dialog = table_clone.new_dialog_with_buttons(
-                        Some(&title),
-                        gtk::DialogFlags::DESTROY_WITH_PARENT,
-                        CANCEL_OK_BUTTONS,
-                    );
+                    let dialog = table_clone
+                        .new_dialog_builder()
+                        .title(&title)
+                        .destroy_with_parent(true)
+                        .build();
+                    for button in &Self::CANCEL_OK_BUTTONS {
+                        dialog.add_button(button.0, button.1);
+                    }
                     let index_ch_btn = gtk::CheckButton::with_label("--index");
                     let ca = dialog.get_content_area();
                     ca.pack_start(&index_ch_btn, false, false, 0);

@@ -19,4 +19,5 @@ xml-rs = "0.8.0"
 cub_diff_lib = { git = "https://github.com/pwil3058/rs_cub_diff_lib.git"}
 cub_diff_lib_gtk = { git = "https://github.com/pwil3058/rs_cub_diff_lib.git"}
 pw_gix = { git = "https://github.com/pwil3058/rs_pw_gix.git" }
+#pw_gix = { path = "/home/peter/SRC/GITHUB/RUST/CRATES/rs_pw_gix.git/pw_gix"}
 pw_pathux = { git = "https://github.com/pwil3058/rs_pw_pathux.git" }
