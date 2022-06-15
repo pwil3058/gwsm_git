@@ -10,10 +10,14 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="4fab9dbc-1183-40da-8b7d-1a41117d0c1d" name="Default Changelist" comment="Stop tracking jetbrains files">
-      <change beforePath="$PROJECT_DIR$/.idea/.gitignore" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/gwsm_git.iml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rgwsm_git/src/commit.rs" beforeDir="false" afterPath="$PROJECT_DIR$/rgwsm_git/src/commit.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rgwsm_git/src/diff.rs" beforeDir="false" afterPath="$PROJECT_DIR$/rgwsm_git/src/diff.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rgwsm_git/src/edit.rs" beforeDir="false" afterPath="$PROJECT_DIR$/rgwsm_git/src/edit.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rgwsm_git/src/main.rs" beforeDir="false" afterPath="$PROJECT_DIR$/rgwsm_git/src/main.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rgwsm_git/src/repos.rs" beforeDir="false" afterPath="$PROJECT_DIR$/rgwsm_git/src/repos.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rgwsm_git/src/stashes.rs" beforeDir="false" afterPath="$PROJECT_DIR$/rgwsm_git/src/stashes.rs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rgwsm_git/src/tags.rs" beforeDir="false" afterPath="$PROJECT_DIR$/rgwsm_git/src/tags.rs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -120,9 +124,9 @@
     <recent_temporary>
       <list>
         <item itemvalue="Cargo.build" />
-        <item itemvalue="Cargo.update" />
         <item itemvalue="Cargo.build" />
-        <item itemvalue="Cargo.update" />
+        <item itemvalue="Cargo.build" />
+        <item itemvalue="Cargo.build" />
         <item itemvalue="Cargo.build" />
       </list>
     </recent_temporary>

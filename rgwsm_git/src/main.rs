@@ -87,7 +87,7 @@ fn activate(app: &gtk::Application) {
     let config_menu = gtk::Menu::new();
     let editor_assignment_menu_item = edit::EditorAlocationMenuItem::new();
     editor_assignment_menu_item.pwo().show_all();
-    config_menu.append(&editor_assignment_menu_item.pwo());
+    config_menu.append(editor_assignment_menu_item.pwo());
     let auto_update_check_item = exec.auto_update_check_item();
     auto_update_check_item.show_all();
     config_menu.append(&auto_update_check_item);
@@ -104,7 +104,7 @@ fn activate(app: &gtk::Application) {
     let action_hbox = gtk::Box::new(gtk::Orientation::Horizontal, 2);
     vbox.pack_start(&action_hbox, false, false, 0);
     let submodule_parent_button = submodules::SubmoduleParentButton::new(&exec);
-    action_hbox.pack_start(&submodule_parent_button.pwo(), false, false, 0);
+    action_hbox.pack_start(submodule_parent_button.pwo(), false, false, 0);
     action_hbox.pack_start(
         &gtk::Separator::new(gtk::Orientation::Vertical),
         false,
@@ -112,9 +112,9 @@ fn activate(app: &gtk::Application) {
         1,
     );
     let diff_button = diff::DiffButton::new(&exec);
-    action_hbox.pack_start(&diff_button.pwo(), false, false, 0);
+    action_hbox.pack_start(diff_button.pwo(), false, false, 0);
     let commit_button = commit::CommitButton::new(&exec);
-    action_hbox.pack_start(&commit_button.pwo(), false, false, 0);
+    action_hbox.pack_start(commit_button.pwo(), false, false, 0);
     action_hbox.pack_start(
         &gtk::Separator::new(gtk::Orientation::Vertical),
         false,
@@ -122,9 +122,9 @@ fn activate(app: &gtk::Application) {
         1,
     );
     let branch_button = branches::BranchButton::new(&exec);
-    action_hbox.pack_start(&branch_button.pwo(), false, false, 0);
+    action_hbox.pack_start(branch_button.pwo(), false, false, 0);
     let tag_button = tags::TagButton::new(&exec);
-    action_hbox.pack_start(&tag_button.pwo(), false, false, 0);
+    action_hbox.pack_start(tag_button.pwo(), false, false, 0);
     action_hbox.pack_start(
         &gtk::Separator::new(gtk::Orientation::Vertical),
         false,
@@ -132,7 +132,7 @@ fn activate(app: &gtk::Application) {
         1,
     );
     let stash_push_button = stashes::StashPushButton::new(&exec);
-    action_hbox.pack_start(&stash_push_button.pwo(), false, false, 0);
+    action_hbox.pack_start(stash_push_button.pwo(), false, false, 0);
     action_hbox.pack_start(
         &gtk::Separator::new(gtk::Orientation::Vertical),
         false,
@@ -140,7 +140,7 @@ fn activate(app: &gtk::Application) {
         1,
     );
     let simple_remote_buttons = remotes::SimpleRemoteActionButtons::new(&exec);
-    action_hbox.pack_start(&simple_remote_buttons.pwo(), false, false, 0);
+    action_hbox.pack_start(simple_remote_buttons.pwo(), false, false, 0);
     action_hbox.pack_end(&exec.update_button, false, false, 0);
 
     let label = gtk::Label::new(Some("GUI is still under construction"));
@@ -148,25 +148,25 @@ fn activate(app: &gtk::Application) {
     let paned_h_1 = gtk::Paned::new(gtk::Orientation::Horizontal);
     let ws_file_tree = ws_file_tree::GitWsFsTree::new(&exec, false);
     let index_file_tree = index_file_tree::GitIndexFsTree::new(&exec);
-    paned_h_1.add1(&ws_file_tree.pwo());
-    paned_h_1.add2(&index_file_tree.pwo());
+    paned_h_1.add1(ws_file_tree.pwo());
+    paned_h_1.add2(index_file_tree.pwo());
     paned_h_1.show_all();
     paned_h_1.set_position_from_recollections("paned_h_1:position", 200);
     let paned_h_2 = gtk::Paned::new(gtk::Orientation::Horizontal);
     paned_h_2.add1(&paned_h_1);
     let notebook = gtk::Notebook::new();
     let branches_table = branches::BranchesNameTable::new(&exec);
-    notebook.add(&branches_table.pwo());
-    notebook.set_tab_label_text(&branches_table.pwo(), "Branches");
+    notebook.add(branches_table.pwo());
+    notebook.set_tab_label_text(branches_table.pwo(), "Branches");
     let stashes_table = stashes::StashesNameTable::new(&exec);
-    notebook.add(&stashes_table.pwo());
-    notebook.set_tab_label_text(&stashes_table.pwo(), "Stashes");
+    notebook.add(stashes_table.pwo());
+    notebook.set_tab_label_text(stashes_table.pwo(), "Stashes");
     let remotes_table = remotes::RemotesNameTable::new(&exec);
-    notebook.add(&remotes_table.pwo());
-    notebook.set_tab_label_text(&remotes_table.pwo(), "Remotes");
+    notebook.add(remotes_table.pwo());
+    notebook.set_tab_label_text(remotes_table.pwo(), "Remotes");
     let tags_table = tags::TagsNameTable::new(&exec);
-    notebook.add(&tags_table.pwo());
-    notebook.set_tab_label_text(&tags_table.pwo(), "Tags");
+    notebook.add(tags_table.pwo());
+    notebook.set_tab_label_text(tags_table.pwo(), "Tags");
     notebook.add(&gtk::Label::new(Some("History will go here!!")));
     notebook.set_property_enable_popup(true);
     paned_h_2.add2(&notebook);
@@ -177,8 +177,8 @@ fn activate(app: &gtk::Application) {
     paned_h_2.set_position_from_recollections("paned_h_2:position", 200);
     paned_v.set_position_from_recollections("paned_v:position", 200);
     let notebook = gtk::Notebook::new();
-    notebook.add(&exec.pwo());
-    notebook.set_tab_label_text(&exec.pwo(), "Transaction Log");
+    notebook.add(exec.pwo());
+    notebook.set_tab_label_text(exec.pwo(), "Transaction Log");
     notebook.add(&gtk::Label::new(Some("Vte terminal will go here!!")));
     notebook.set_property_enable_popup(true);
     paned_v.add2(&notebook);

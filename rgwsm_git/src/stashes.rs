@@ -154,7 +154,7 @@ impl StashPushButton {
         let stash_push_widget = StashPushWidget::new();
         dialog
             .get_content_area()
-            .pack_start(&stash_push_widget.pwo(), true, true, 0);
+            .pack_start(stash_push_widget.pwo(), true, true, 0);
         dialog.get_content_area().show_all();
         let result = dialog.run();
         dialog.hide();
@@ -428,15 +428,15 @@ impl StashesNameTable {
                                     .destroy_with_parent(true)
                                     .build();
                                 dialog.add_button("Close", gtk::ResponseType::Close);
-                                dialog.enable_auto_destroy();
+                                // TODO: dialog.enable_auto_destroy();
                                 dialog.get_content_area().pack_start(
-                                    &diff_notebook.pwo(),
+                                    diff_notebook.pwo(),
                                     true,
                                     true,
                                     0,
                                 );
                                 dialog.get_content_area().pack_start(
-                                    &diff_notebook.tws_count_display().pwo(),
+                                    diff_notebook.tws_count_display().pwo(),
                                     false,
                                     false,
                                     0,

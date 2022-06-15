@@ -28,7 +28,7 @@ use serde_json;
 use pw_gix::{
     glib,
     gtk::{self, prelude::*},
-    gtkx::dialog::AutoDestroy,
+    //gtkx::dialog::AutoDestroy,
     sav_state::*,
     wrapper::*,
 };
@@ -411,11 +411,11 @@ impl EditorAlocationMenuItem {
             for button in Self::CLOSE_BUTTONS.iter() {
                 dialog.add_button(button.0, button.1);
             }
-            dialog.enable_auto_destroy();
+            // TODO: dialog.enable_auto_destroy();
             let table = EditorAllocationTableEditor::new();
             dialog
                 .get_content_area()
-                .pack_start(&table.pwo(), true, true, 0);
+                .pack_start(table.pwo(), true, true, 0);
             table.load_table();
             dialog.show();
         });

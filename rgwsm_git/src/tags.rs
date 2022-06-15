@@ -103,7 +103,7 @@ impl NewTagWidget {
         ntw.message.pwo().set_sensitive(false);
 
         let h_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        h_box.pack_start(&ntw.tag_name_entry.pwo(), true, true, 0);
+        h_box.pack_start(ntw.tag_name_entry.pwo(), true, true, 0);
         h_box.pack_start(&ntw.force_cbth, false, false, 0);
         ntw.v_box.pack_start(&h_box, false, false, 0);
         ntw.tag_name_entry.entry().set_activates_default(true);
@@ -112,10 +112,10 @@ impl NewTagWidget {
         h_box.pack_start(&ntw.annotate_cbtn, false, false, 0);
         h_box.pack_start(&ntw.sign_cbtn, false, false, 0);
         h_box.pack_start(&ntw.key_cbtn, false, false, 0);
-        h_box.pack_start(&ntw.key_id_entry.pwo(), true, true, 0);
+        h_box.pack_start(ntw.key_id_entry.pwo(), true, true, 0);
         ntw.v_box.pack_start(&h_box, false, false, 0);
 
-        ntw.v_box.pack_start(&ntw.message.pwo(), true, true, 0);
+        ntw.v_box.pack_start(ntw.message.pwo(), true, true, 0);
 
         let ntw_clone = Rc::clone(&ntw);
         ntw.annotate_cbtn.connect_property_active_notify(move |cb| {
@@ -228,7 +228,7 @@ pub trait CreatTag: WidgetWrapper {
         let ntw = NewTagWidget::new(self.exec_console());
         dialog
             .get_content_area()
-            .pack_start(&ntw.pwo(), true, true, 0);
+            .pack_start(ntw.pwo(), true, true, 0);
         dialog.get_content_area().show_all();
         dialog.set_size_from_recollections("tag:dialog", (640, 320));
         loop {

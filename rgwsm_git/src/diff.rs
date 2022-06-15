@@ -71,7 +71,7 @@ impl DiffButton {
             w.hide_on_delete();
             gtk::Inhibit(true)
         });
-        db.window.add(&db.wdtw.pwo());
+        db.window.add(db.wdtw.pwo());
         db.window.show_all();
         db.window.hide();
 
@@ -118,8 +118,8 @@ impl WdDiffTextWidget {
         h_box.pack_start(&diff_head_rb, false, false, 0);
         v_box.pack_start(&h_box, false, false, 0);
         let diff_notebook = DiffPlusNotebook::new(1);
-        h_box.pack_end(&diff_notebook.tws_count_display().pwo(), false, false, 0);
-        v_box.pack_start(&diff_notebook.pwo(), true, true, 0);
+        h_box.pack_end(diff_notebook.tws_count_display().pwo(), false, false, 0);
+        v_box.pack_start(diff_notebook.pwo(), true, true, 0);
         let wdtw = Rc::new(Self {
             v_box,
             diff_rb,

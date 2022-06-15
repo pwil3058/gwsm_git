@@ -70,7 +70,7 @@ impl CommitButton {
             w.hide_on_delete();
             gtk::Inhibit(true)
         });
-        db.window.add(&db.commit_widget.pwo());
+        db.window.add(db.commit_widget.pwo());
         db.window.show_all();
         db.window.hide();
 
@@ -108,8 +108,8 @@ impl IndexDiffWidget {
         h_box.pack_start(&gtk::Label::new(Some("Diffs")), false, false, 0);
         v_box.pack_start(&h_box, false, false, 0);
         let diff_notebook = DiffPlusNotebook::new(1);
-        h_box.pack_end(&diff_notebook.tws_count_display().pwo(), false, false, 0);
-        v_box.pack_start(&diff_notebook.pwo(), true, true, 0);
+        h_box.pack_end(diff_notebook.tws_count_display().pwo(), false, false, 0);
+        v_box.pack_start(diff_notebook.pwo(), true, true, 0);
         let idw = Rc::new(Self {
             v_box,
             diff_notebook: diff_notebook,
@@ -345,7 +345,7 @@ impl CommitWidget {
         scrolled_window.add(&cw.text_view);
         cw.v_box.pack_start(&scrolled_window, true, true, 0);
         cw.v_box
-            .pack_start(&cw.index_diff_widget.pwo(), true, true, 0);
+            .pack_start(cw.index_diff_widget.pwo(), true, true, 0);
         cw.v_box.show_all();
 
         cw

@@ -391,7 +391,7 @@ impl CloneRepoMenuItem {
         let crw = CloneRepoWidget::new();
         dialog
             .get_content_area()
-            .pack_start(&crw.pwo(), true, true, 0);
+            .pack_start(crw.pwo(), true, true, 0);
         while gtk::ResponseType::from(dialog.run()) == gtk::ResponseType::Ok {
             if let Some(src_url) = crw.source_url() {
                 if let Some(as_name) = crw.as_name() {
@@ -431,8 +431,8 @@ pub fn create_workspaces_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     let mi = gtk::MenuItem::with_label("Workspaces");
     let menu = gtk::Menu::new();
     mi.set_submenu(Some(&menu));
-    menu.append(&CloneRepoMenuItem::new(exec_console).pwo());
-    menu.append(&OpenKnownRepoMenuItem::new(exec_console).pwo());
+    menu.append(CloneRepoMenuItem::new(exec_console).pwo());
+    menu.append(OpenKnownRepoMenuItem::new(exec_console).pwo());
     mi
 }
 
