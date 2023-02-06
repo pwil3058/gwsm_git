@@ -19,7 +19,6 @@ use std::rc::Rc;
 use std::time::SystemTime;
 
 use chrono::prelude::*;
-use shlex;
 use xml::escape;
 
 use pw_gix::{
@@ -73,10 +72,10 @@ impl ExecConsole {
             text_view: gtk::TextView::new(),
             update_button: gtk::Button::with_label("Update"),
             event_notifier: EventNotifier::new(),
-            changed_condns_notifier: changed_condns_notifier,
-            managed_buttons: managed_buttons,
-            managed_check_buttons: managed_check_buttons,
-            managed_menu_items: managed_menu_items,
+            changed_condns_notifier,
+            managed_buttons,
+            managed_check_buttons,
+            managed_menu_items,
             auto_update: timeout::ControlledTimeoutCycle::new("Auto Update", true, 10),
         });
         ec.text_view.set_editable(false);
@@ -211,7 +210,7 @@ impl ExecConsole {
         }
         match env::set_current_dir(&adj_dir_path) {
             Err(err) => {
-                let stderr = format!("{}\n", err.to_string());
+                let stderr = format!("{err}\n");
                 self.append_stderr(&stderr);
                 self.append_bold("% ");
                 let msg = format!("chdir {} failed", shlex::quote(new_dir_path));
@@ -251,7 +250,7 @@ pub fn create_files_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     mi.set_submenu(Some(&menu));
 
     let chdir_menu_item = gtk::MenuItem::with_label("Open");
-    let ec_clone = Rc::clone(&exec_console);
+    let ec_clone = Rc::clone(exec_console);
     chdir_menu_item.connect_activate(move |_| {
         if let Some(path) = ec_clone.browse_path(
             Some("Directory Path"),
@@ -259,7 +258,7 @@ pub fn create_files_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
             gtk::FileChooserAction::CreateFolder,
             false,
         ) {
-            ec_clone.chdir(&path.to_string_lossy().to_string());
+            ec_clone.chdir(&path.to_string_lossy());
         }
     });
     menu.append(&chdir_menu_item);
@@ -268,12 +267,12 @@ pub fn create_files_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     exec_console
         .managed_menu_items
         .add_widget("init", &init_menu_item, repos::SAV_NOT_IN_REPO);
-    let ec_clone = Rc::clone(&exec_console);
+    let ec_clone = Rc::clone(exec_console);
     init_menu_item.connect_activate(move |_| {
         let cmd = "git init";
-        let result = ec_clone.exec_cmd(&cmd, events::EV_CHANGE_DIR);
+        let result = ec_clone.exec_cmd(cmd, events::EV_CHANGE_DIR);
         ec_clone.check_repo_states();
-        ec_clone.report_any_command_problems(&cmd, &result);
+        ec_clone.report_any_command_problems(cmd, &result);
     });
     menu.append(&init_menu_item);
 
@@ -296,11 +295,11 @@ pub fn create_friends_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     ]
     .iter()
     {
-        let menu_item = gtk::MenuItem::with_label(&friend.to_string());
-        let ec_clone = Rc::clone(&exec_console);
+        let menu_item = gtk::MenuItem::with_label(friend.as_ref());
+        let ec_clone = Rc::clone(exec_console);
         menu_item.connect_activate(move |_| {
-            if let Err(err) = Command::new(&friend).arg(".").spawn() {
-                let msg = format!("Error running \"{}\"", friend);
+            if let Err(err) = Command::new(friend).arg(".").spawn() {
+                let msg = format!("Error running \"{friend}\"");
                 ec_clone.report_error(&msg, &err);
             }
         });
