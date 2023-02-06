@@ -176,25 +176,23 @@ impl ScmFsoDataIfce for ScmFsoData {
             } else {
                 !self.is_hidden_dir()
             }
-        } else {
-            if show_hidden {
-                if hide_clean {
-                    !self.is_clean_file()
-                } else {
-                    true
-                }
-            } else if hide_clean {
-                !self.is_clean_file() && !self.is_hidden_file()
+        } else if show_hidden {
+            if hide_clean {
+                !self.is_clean_file()
             } else {
-                !self.is_hidden_file()
+                true
             }
+        } else if hide_clean {
+            !self.is_clean_file() && !self.is_hidden_file()
+        } else {
+            !self.is_hidden_file()
         }
     }
 }
 
 impl ScmFsoData {
     fn is_hidden_dir(&self) -> bool {
-        if self.name.starts_with(".") {
+        if self.name.starts_with('.') {
             !SIGNIFICANT_SET.contains(&self.status.as_str())
                 && !SIGNIFICANT_SET.contains(&self.clean_status.as_str())
         } else {
@@ -208,7 +206,7 @@ impl ScmFsoData {
     }
 
     fn is_hidden_file(&self) -> bool {
-        if self.name.starts_with(".") {
+        if self.name.starts_with('.') {
             !SIGNIFICANT_SET.contains(&self.status.as_str())
         } else {
             self.status == IGNORED
@@ -225,7 +223,7 @@ impl ScmFsoData {
             .get::<String>()
             .unwrap()
             .unwrap();
-        if relation.len() == 0 {
+        if relation.is_empty() {
             None
         } else {
             let file_path = store
@@ -267,7 +265,7 @@ impl FsObjectIfce for ScmFsoData {
             status: NO_STATUS.to_string(),
             clean_status: NO_STATUS.to_string(),
             related_file_data: None,
-            is_dir: is_dir,
+            is_dir,
         }
     }
 
@@ -386,7 +384,7 @@ impl FsObjectIfce for ScmFsoData {
                 .unwrap()
         {
             store.set_value(iter, STATUS as u32, &self.status.to_value());
-            let (style, foreground) = get_deco(&self.status.as_str());
+            let (style, foreground) = get_deco(self.status.as_str());
             store.set_value(iter, STYLE as u32, &style.to_value());
             store.set_value(iter, FOREGROUND as u32, &foreground.to_value());
             changed = true;
@@ -415,7 +413,7 @@ impl FsObjectIfce for ScmFsoData {
         store.set_value(iter, STATUS as u32, &self.status.to_value());
         self.set_rfd_in_row(store, iter);
         self.set_icon_in_row(store, iter);
-        let (style, foreground) = get_deco(&self.status.as_str());
+        let (style, foreground) = get_deco(self.status.as_str());
         store.set_value(iter, STYLE as u32, &style.to_value());
         store.set_value(iter, FOREGROUND as u32, &foreground.to_value());
         store.set_value(iter, IS_DIR as u32, &self.is_dir.to_value());
@@ -487,7 +485,7 @@ lazy_static! {
     };
 
     static ref ORDERED_DIR_CLEAN_STATUS_LIST: Vec<&'static str> = {
-        let mut v: Vec<&'static str> = MODIFIED_LIST.iter().filter(|x| !CLEAN_SET.contains(*x)).map(|x| *x).collect();
+        let mut v: Vec<&'static str> = MODIFIED_LIST.iter().filter(|x| !CLEAN_SET.contains(*x)).copied().collect();
         v.push(NOT_TRACKED);
         v
     };
@@ -552,7 +550,7 @@ impl Snapshot {
         let relevant_keys: Vec<String> = self
             .file_status_data
             .keys()
-            .filter(|k| k.path_starts_with(&dir_path))
+            .filter(|k| k.path_starts_with(dir_path))
             .map(|s| s.to_string())
             .collect();
         let mut status_set = HashSet::new();
@@ -566,7 +564,7 @@ impl Snapshot {
         Self {
             num_dir_components: dir_path.path_components().len(),
             file_status_data: Rc::clone(&self.file_status_data),
-            relevant_keys: relevant_keys,
+            relevant_keys,
             status: status.to_string(),
             clean_status: clean_status.to_string(),
         }
@@ -591,7 +589,7 @@ impl<'a> Iterator for SnapshotIterator<'a> {
                     // This is me and I'm a submodule
                     continue;
                 }
-                let (status, related_file_data) = self.file_status_data.get(&*file_path).unwrap();
+                let (status, related_file_data) = self.file_status_data.get(file_path).unwrap();
                 let path = components[..self.num_dir_components + 1].to_string_path();
                 let is_dir = components.len() > self.num_dir_components + 1 || path.path_is_dir();
                 let name = components[self.num_dir_components].to_string();
@@ -706,10 +704,10 @@ fn extract_snapshot_from_text(text: &str) -> Snapshot {
     }
     Snapshot {
         num_dir_components: 1,
-        file_status_data: file_status_data,
-        relevant_keys: relevant_keys,
-        status: status,
-        clean_status: clean_status,
+        file_status_data,
+        relevant_keys,
+        status,
+        clean_status,
     }
 }
 
@@ -737,15 +735,15 @@ where
     fn new(dir_path: &str, snapshot: Snapshot, show_hidden: bool, hide_clean: bool) -> Self {
         Self {
             path: dir_path.to_string(),
-            show_hidden: show_hidden,
-            hide_clean: hide_clean,
+            show_hidden,
+            hide_clean,
             dirs_data_unfiltered: vec![],
             files_data_unfiltered: vec![],
             dirs_data: Rc::new(vec![]),
             files_data: Rc::new(vec![]),
             hash_digest: None,
             sub_dirs: HashMap::new(),
-            snapshot: snapshot,
+            snapshot,
         }
     }
 
@@ -851,14 +849,14 @@ where
             .dirs_data_unfiltered
             .iter()
             .filter(|x| x.is_visible(self.show_hidden, self.hide_clean))
-            .map(|x| x.clone())
+            .cloned()
             .collect();
         self.dirs_data = Rc::new(dirs_filtered);
         let files_filtered = self
             .files_data_unfiltered
             .iter()
             .filter(|x| x.is_visible(self.show_hidden, self.hide_clean))
-            .map(|x| x.clone())
+            .cloned()
             .collect();
         self.files_data = Rc::new(files_filtered);
     }
@@ -884,7 +882,7 @@ where
         if self.hash_digest.is_none() {
             self.populate();
         }
-        if components.len() == 0 {
+        if components.is_empty() {
             Some(self)
         } else {
             assert!(components[0].is_normal());
@@ -896,7 +894,7 @@ where
         }
     }
 
-    fn dirs_and_files<'a>(&'a mut self) -> (Rc<Vec<FSOI>>, Rc<Vec<FSOI>>) {
+    fn dirs_and_files(&mut self) -> (Rc<Vec<FSOI>>, Rc<Vec<FSOI>>) {
         (Rc::clone(&self.dirs_data), Rc::clone(&self.files_data))
     }
 }
@@ -1036,13 +1034,13 @@ where
         status_set.insert(status.to_string());
         Self {
             path: path.to_string(),
-            hide_clean: hide_clean,
+            hide_clean,
             dirs_data_unfiltered: vec![],
             files_data_unfiltered: vec![],
             dirs_data: Rc::new(vec![]),
             files_data: Rc::new(vec![]),
             sub_dirs: HashMap::new(),
-            status_set: status_set,
+            status_set,
         }
     }
 
@@ -1077,7 +1075,7 @@ where
     }
 
     fn find_dir(&self, components: &[StrPathComponent]) -> Option<&GitIndexDbDir<FSOI>> {
-        if components.len() == 0 {
+        if components.is_empty() {
             Some(self)
         } else {
             assert!(components[0].is_normal());
@@ -1094,12 +1092,12 @@ where
             .sort_unstable_by(|a, b| a.name().partial_cmp(b.name()).unwrap());
         for (name, sub_dir) in self.sub_dirs.iter_mut() {
             sub_dir.finalize();
-            let mut dir_data = FSOI::new(&name, &sub_dir.path, true);
+            let mut dir_data = FSOI::new(name, &sub_dir.path, true);
             let status = first_status_in_list_in_set(&ORDERED_DIR_STATUS_LIST, &sub_dir.status_set);
-            dir_data.set_status(&status);
+            dir_data.set_status(status);
             let clean_status =
                 first_status_in_list_in_set(&ORDERED_DIR_CLEAN_STATUS_LIST, &sub_dir.status_set);
-            dir_data.set_clean_status(&clean_status);
+            dir_data.set_clean_status(clean_status);
             self.dirs_data_unfiltered.push(dir_data);
         }
         self.dirs_data_unfiltered
@@ -1112,14 +1110,14 @@ where
             .dirs_data_unfiltered
             .iter()
             .filter(|x| x.is_visible(true, self.hide_clean))
-            .map(|x| x.clone())
+            .cloned()
             .collect();
         self.dirs_data = Rc::new(dirs_filtered);
         let files_filtered = self
             .files_data_unfiltered
             .iter()
             .filter(|x| x.is_visible(true, self.hide_clean))
-            .map(|x| x.clone())
+            .cloned()
             .collect();
         self.files_data = Rc::new(files_filtered);
     }
@@ -1241,7 +1239,7 @@ where
         let hide_clean = base_dir.hide_clean;
         *base_dir = GitIndexDbDir::new(".", NO_STATUS, hide_clean);
         for line in text.lines() {
-            if line.starts_with(" ") {
+            if line.starts_with(' ') {
                 continue; // not in the index
             }
             let (file_path, status, related_file_data) = parse_line!(line);
