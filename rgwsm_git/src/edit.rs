@@ -23,7 +23,6 @@ use std::path::PathBuf;
 use std::rc::Rc;
 
 use glob::{Pattern, PatternError};
-use serde_json;
 
 use pw_gix::{
     glib,
@@ -37,51 +36,53 @@ use crate::config;
 use crate::repos;
 
 #[derive(Debug)]
-pub enum ETError {
-    IOError(io::Error),
-    GlobError(PatternError),
-    JsonError(serde_json::Error),
+pub enum EditorTableError {
+    InputOutput(io::Error),
+    GlobPattern(PatternError),
+    SerdeJson(serde_json::Error),
 }
 
-impl fmt::Display for ETError {
+impl fmt::Display for EditorTableError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "ETError is here!")
+        write!(f, "EditorTableError is here!")
     }
 }
 
-impl Error for ETError {
+impl Error for EditorTableError {
     fn description(&self) -> &str {
         match self {
-            ETError::IOError(_) => "I/O Error accessing editor assignment table",
-            ETError::GlobError(_) => "Glob Pattern Error accessing editor assignment table",
-            ETError::JsonError(_) => "Serde Json Error accessing editor assignment table",
+            EditorTableError::InputOutput(_) => "I/O Error accessing editor assignment table",
+            EditorTableError::GlobPattern(_) => {
+                "Glob Pattern Error accessing editor assignment table"
+            }
+            EditorTableError::SerdeJson(_) => "Serde Json Error accessing editor assignment table",
         }
     }
 
     fn source(&self) -> Option<&(dyn Error + 'static)> {
         match self {
-            ETError::IOError(err) => Some(err),
-            ETError::GlobError(err) => Some(err),
-            ETError::JsonError(err) => Some(err),
+            EditorTableError::InputOutput(err) => Some(err),
+            EditorTableError::GlobPattern(err) => Some(err),
+            EditorTableError::SerdeJson(err) => Some(err),
         }
     }
 }
 
-impl From<io::Error> for ETError {
+impl From<io::Error> for EditorTableError {
     fn from(error: io::Error) -> Self {
-        ETError::IOError(error)
+        EditorTableError::InputOutput(error)
     }
 }
 
-impl From<PatternError> for ETError {
+impl From<PatternError> for EditorTableError {
     fn from(error: PatternError) -> Self {
-        ETError::GlobError(error)
+        EditorTableError::GlobPattern(error)
     }
 }
 
-impl From<serde_json::Error> for ETError {
+impl From<serde_json::Error> for EditorTableError {
     fn from(error: serde_json::Error) -> Self {
-        ETError::JsonError(error)
+        EditorTableError::SerdeJson(error)
     }
 }
 
@@ -109,7 +110,7 @@ fn editor_assignment_table_filepath() -> PathBuf {
     pathbuf
 }
 
-fn read_editor_assignment_table() -> Result<Vec<(String, String)>, ETError> {
+fn read_editor_assignment_table() -> Result<Vec<(String, String)>, EditorTableError> {
     let mut file = File::open(editor_assignment_table_filepath())?;
     let mut buffer = String::new();
     file.read_to_string(&mut buffer)?;
@@ -117,7 +118,7 @@ fn read_editor_assignment_table() -> Result<Vec<(String, String)>, ETError> {
     Ok(v)
 }
 
-fn write_editor_assignment_table(table: &[(String, String)]) -> Result<usize, ETError> {
+fn write_editor_assignment_table(table: &[(String, String)]) -> Result<usize, EditorTableError> {
     let data = serde_json::to_string(table)?;
     let mut file = File::create(editor_assignment_table_filepath())?;
     let nbytes = file.write(data.as_bytes())?;
@@ -126,12 +127,11 @@ fn write_editor_assignment_table(table: &[(String, String)]) -> Result<usize, ET
 
 pub fn init_editor_assignment_table() {
     if !editor_assignment_table_filepath().is_file() {
-        write_editor_assignment_table(&vec![])
-            .expect("failed to initialize editor assignment table");
+        write_editor_assignment_table(&[]).expect("failed to initialize editor assignment table");
     }
 }
 
-pub fn get_assigned_editor(file_path: &str) -> Result<String, ETError> {
+pub fn get_assigned_editor(file_path: &str) -> Result<String, EditorTableError> {
     let editor_assignment_table = read_editor_assignment_table()?;
     for (globs, editor) in editor_assignment_table.iter() {
         for glob in globs.split(PATH_SEP) {
@@ -174,14 +174,14 @@ impl EditorAllocationTableEditor {
 
         let eate = Rc::new(Self {
             v_box: gtk::Box::new(gtk::Orientation::Vertical, 0),
-            view: view,
-            list_store: list_store,
+            view,
+            list_store,
             add_button: gtk::Button::with_label("Add"),
             insert_button: gtk::Button::with_label("Insert"),
             delete_button: gtk::Button::with_label("Delete"),
             undo_button: gtk::Button::with_label("Undo"),
             apply_button: gtk::Button::with_label("Apply"),
-            managed_buttons: managed_buttons,
+            managed_buttons,
             modified: Cell::new(false),
         });
         eate.set_modified(false);
@@ -333,7 +333,7 @@ impl EditorAllocationTableEditor {
             }
             Err(err) => {
                 let msg = "Problem loading editor assignment table";
-                self.report_error(&msg, &err);
+                self.report_error(msg, &err);
             }
         }
         self.set_modified(false);
@@ -372,7 +372,7 @@ impl EditorAllocationTableEditor {
                     .expect("error extracting editor from list store");
                 let globs = globs.trim().to_string();
                 let editor = editor.trim().to_string();
-                if globs.len() > 0 && editor.len() > 0 {
+                if globs.len() > 0 && !editor.is_empty() {
                     v.push((globs, editor));
                 }
                 if !self.list_store.iter_next(&t_iter) {
@@ -382,7 +382,7 @@ impl EditorAllocationTableEditor {
         }
         if let Err(err) = write_editor_assignment_table(&v) {
             let msg = "Problem writing editor assignment table";
-            self.report_error(&msg, &err);
+            self.report_error(msg, &err);
         } else {
             self.set_modified(false);
         }
