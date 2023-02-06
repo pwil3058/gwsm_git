@@ -52,7 +52,7 @@ impl SimpleRemoteActionButtons {
             h_box: gtk::Box::new(gtk::Orientation::Horizontal, 2),
             simple_pull_button: gtk::Button::with_label("Pull"),
             simple_push_button: gtk::Button::with_label("Push"),
-            exec_console: Rc::clone(&exec_console),
+            exec_console: Rc::clone(exec_console),
         });
 
         srab.simple_pull_button
@@ -66,9 +66,9 @@ impl SimpleRemoteActionButtons {
         srab.simple_pull_button.connect_clicked(move |_| {
             let cmd = "git pull";
             let cursor = srab_clone.show_busy();
-            let result = srab_clone.exec_console.exec_cmd(&cmd, events::EV_PULL);
+            let result = srab_clone.exec_console.exec_cmd(cmd, events::EV_PULL);
             srab_clone.unshow_busy(cursor);
-            srab_clone.report_any_command_problems(&cmd, &result);
+            srab_clone.report_any_command_problems(cmd, &result);
         });
 
         srab.simple_push_button
@@ -82,9 +82,9 @@ impl SimpleRemoteActionButtons {
         srab.simple_push_button.connect_clicked(move |_| {
             let cmd = "git push";
             let cursor = srab_clone.show_busy();
-            let result = srab_clone.exec_console.exec_cmd(&cmd, events::EV_PULL);
+            let result = srab_clone.exec_console.exec_cmd(cmd, events::EV_PULL);
             srab_clone.unshow_busy(cursor);
-            srab_clone.report_any_command_problems(&cmd, &result);
+            srab_clone.report_any_command_problems(cmd, &result);
         });
 
         srab.h_box
@@ -99,18 +99,17 @@ impl SimpleRemoteActionButtons {
 
 fn get_raw_data() -> (String, Vec<u8>) {
     let mut hasher = Hasher::new(Algorithm::SHA256);
-    let text: String;
     let output = Command::new("git")
         .arg("remote")
         .arg("-v")
         .output()
         .expect("getting all remotes text failed");
-    if output.status.success() {
+    let text: String = if output.status.success() {
         hasher.write_all(&output.stdout).expect("hasher blew up!!!");
-        text = String::from_utf8_lossy(&output.stdout).to_string();
+        String::from_utf8_lossy(&output.stdout).to_string()
     } else {
-        text = "".to_string();
-    }
+        "".to_string()
+    };
     (text, hasher.finish())
 }
 
@@ -151,7 +150,7 @@ impl RowBuffer<String> for RemotesRowBuffer {
             let mut name: &str = "";
             let mut inbound_url: &str = "";
             for (i, line) in core.raw_data.lines().enumerate() {
-                let captures = VREMOTE_RE.captures(&line).unwrap();
+                let captures = VREMOTE_RE.captures(line).unwrap();
                 if i % 2 == 0 {
                     name = captures.get(1).unwrap().as_str();
                     inbound_url = captures.get(2).unwrap().as_str();
@@ -292,7 +291,7 @@ impl RemotesNameTable {
             list_store,
             required_map_action,
             exec_console: Rc::clone(exec_console),
-            popup_menu: popup_menu,
+            popup_menu,
             hovered_remote: RefCell::new(None),
         });
         let table_clone = Rc::clone(&table);
