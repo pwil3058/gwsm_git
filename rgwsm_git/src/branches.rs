@@ -48,34 +48,32 @@ struct BranchesRawData {
 
 fn get_raw_data() -> (BranchesRawData, Vec<u8>) {
     let mut hasher = Hasher::new(Algorithm::SHA256);
-    let abt_text: String;
     let abt_output = Command::new("git")
         .arg("branch")
         .arg("-vv")
         .output()
         .expect("getting all branches text failed");
-    if abt_output.status.success() {
+    let abt_text: String = if abt_output.status.success() {
         hasher
             .write_all(&abt_output.stdout)
             .expect("hasher blew up!!!");
-        abt_text = String::from_utf8_lossy(&abt_output.stdout).to_string();
+        String::from_utf8_lossy(&abt_output.stdout).to_string()
     } else {
-        abt_text = "".to_string();
-    }
-    let mbt_text: String;
+        "".to_string()
+    };
     let mbt_output = Command::new("git")
         .arg("branch")
         .arg("--merged")
         .output()
         .expect("getting merged branches text failed");
-    if mbt_output.status.success() {
+    let mbt_text: String = if mbt_output.status.success() {
         hasher
             .write_all(&mbt_output.stdout)
             .expect("hasher blew up!!!");
-        mbt_text = String::from_utf8_lossy(&mbt_output.stdout).to_string();
+        String::from_utf8_lossy(&mbt_output.stdout).to_string()
     } else {
-        mbt_text = "".to_string();
-    }
+        "".to_string()
+    };
     let raw_data = BranchesRawData {
         all_branches_text: abt_text,
         merged_branches_text: mbt_text,
@@ -89,7 +87,7 @@ lazy_static! {
 }
 
 fn extract_branch_row(line: &str, merged_set: &HashSet<&str>) -> Row {
-    let is_current = line.starts_with("*");
+    let is_current = line.starts_with('*');
     let captures = ALL_BRANCHES_RE.captures(&line[2..]).unwrap();
     let name = captures.get(1).unwrap().as_str();
     let rev = captures.get(4).unwrap().as_str();
@@ -99,10 +97,10 @@ fn extract_branch_row(line: &str, merged_set: &HashSet<&str>) -> Row {
     v.push(name.to_value());
     if is_current {
         v.push("<b><span foreground=\"green\">*</span></b>".to_value());
-        v.push(format!("<b><span foreground=\"green\">{}</span></b>", name).to_value());
+        v.push(format!("<b><span foreground=\"green\">{name}</span></b>").to_value());
     } else if is_merged {
         v.push("".to_value());
-        v.push(format!("<span foreground=\"green\">{}</span>", name).to_value());
+        v.push(format!("<span foreground=\"green\">{name}</span>").to_value());
     } else {
         v.push("".to_value());
         v.push(name.to_value());
@@ -147,7 +145,7 @@ impl RowBuffer<BranchesRawData> for BranchesRowBuffer {
                 merged_set.insert(line[2..].trim_end());
             }
             for line in core.raw_data.all_branches_text.lines() {
-                rows.push(extract_branch_row(&line, &merged_set))
+                rows.push(extract_branch_row(line, &merged_set))
             }
         }
         let mut core = self.row_buffer_core.borrow_mut();
@@ -283,7 +281,7 @@ impl BranchesNameTable {
             list_store,
             required_map_action,
             exec_console: Rc::clone(exec_console),
-            popup_menu: popup_menu,
+            popup_menu,
             hovered_branch: RefCell::new(None),
         });
         let table_clone = Rc::clone(&table);
@@ -431,8 +429,8 @@ impl BranchButton {
             .managed_buttons
             .add_widget("branch", &button, repos::SAV_IN_REPO);
         let bb = Rc::new(Self {
-            button: button,
-            exec_console: Rc::clone(&exec_console),
+            button,
+            exec_console: Rc::clone(exec_console),
         });
 
         let bb_clone = Rc::clone(&bb);
@@ -469,16 +467,16 @@ impl BranchButton {
         dialog.get_content_area().show_all();
         let result = dialog.run();
         dialog.hide();
-        if gtk::ResponseType::from(result) == gtk::ResponseType::Ok {
+        if result == gtk::ResponseType::Ok {
             let branch_name = branch_name.get_text();
             if checkout_new_branch.get_active() {
-                let cmd = format!("git checkout -b {}", branch_name);
+                let cmd = format!("git checkout -b {branch_name}");
                 let result = self
                     .exec_console
                     .exec_cmd(&cmd, events::EV_BRANCHES_CHANGE | events::EV_CHECKOUT);
                 self.report_any_command_problems(&cmd, &result);
             } else {
-                let cmd = format!("git branch {}", branch_name);
+                let cmd = format!("git branch {branch_name}");
                 let result = self.exec_console.exec_cmd(&cmd, events::EV_BRANCHES_CHANGE);
                 self.report_any_command_problems(&cmd, &result);
             }

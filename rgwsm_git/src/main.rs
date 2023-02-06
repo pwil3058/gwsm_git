@@ -187,7 +187,7 @@ fn activate(app: &gtk::Application) {
 }
 
 fn main() {
-    recollections::init(&config::get_config_dir_path().join("recollections"));
+    recollections::init(config::get_config_dir_path().join("recollections"));
     edit::init_editor_assignment_table();
     repos::init_known_repos_table();
     let flags = gio::ApplicationFlags::empty();
