@@ -57,10 +57,10 @@ impl CommitButton {
             .add_widget("commit", &button, repos::SAV_IN_REPO);
 
         let db = Rc::new(Self {
-            button: button,
+            button,
             window: gtk::Window::new(gtk::WindowType::Toplevel),
             commit_widget: CommitWidget::new(exec_console),
-            _exec_console: Rc::clone(&exec_console),
+            _exec_console: Rc::clone(exec_console),
         });
         db.window
             .set_geometry_from_recollections("commit:window", (700, 600));
@@ -68,7 +68,7 @@ impl CommitButton {
         db.window.set_title(&config::window_title(Some("commit")));
         db.window.connect_delete_event(move |w, _| {
             w.hide_on_delete();
-            gtk::Inhibit(true)
+            Inhibit(true)
         });
         db.window.add(db.commit_widget.pwo());
         db.window.show_all();
@@ -112,9 +112,9 @@ impl IndexDiffWidget {
         v_box.pack_start(diff_notebook.pwo(), true, true, 0);
         let idw = Rc::new(Self {
             v_box,
-            diff_notebook: diff_notebook,
+            diff_notebook,
             current_digest: RefCell::new(Vec::new()),
-            exec_console: Rc::clone(&exec_console),
+            exec_console: Rc::clone(exec_console),
             diff_plus_parser: DiffPlusParser::new(),
         });
 
@@ -178,7 +178,7 @@ impl IndexDiffWidget {
             *self.current_digest.borrow_mut() = new_digest;
             let lines = Lines::from_string(&text);
             match self.diff_plus_parser.parse_lines(&lines) {
-                Ok(ref diff_pluses) => self.diff_notebook.update(&diff_pluses),
+                Ok(ref diff_pluses) => self.diff_notebook.update(diff_pluses),
                 Err(err) => {
                     self.diff_notebook.update(&vec![]);
                     self.report_error("Malformed diff text", &err);
@@ -205,7 +205,7 @@ fn get_name_and_email_string() -> String {
         .arg("user.name")
         .output()
         .expect("\"git config user.name\" blew up");
-    let name = if output.status.success() && output.stdout.len() > 0 {
+    let name = if output.status.success() && !output.stdout.is_empty() {
         String::from_utf8_lossy(&output.stdout).to_string()
     } else {
         "user name".to_string()
@@ -215,7 +215,7 @@ fn get_name_and_email_string() -> String {
         .arg("user.email")
         .output()
         .expect("\"git config user.email\" blew up");
-    let email = if output.status.success() && output.stdout.len() > 0 {
+    let email = if output.status.success() && !output.stdout.is_empty() {
         String::from_utf8_lossy(&output.stdout).to_string()
     } else {
         "user@somewhere".to_string()
@@ -239,7 +239,7 @@ impl CommitWidget {
             v_box: gtk::Box::new(gtk::Orientation::Vertical, 0),
             text_view: sourceview::View::new(),
             index_diff_widget: IndexDiffWidget::new(exec_console),
-            exec_console: Rc::clone(&exec_console),
+            exec_console: Rc::clone(exec_console),
             exec_button: gtk::Button::new(),
             amend_option_button: gtk::CheckButton::with_label("--amend"),
             signoff_option_button: gtk::CheckButton::with_label("--signoff"),
@@ -303,12 +303,10 @@ impl CommitWidget {
                     } else {
                         format!("git commit --signoff -m {}", shlex::quote(&text))
                     }
+                } else if cw_clone.amend_option_button.get_active() {
+                    format!("git commit --amend -m {}", shlex::quote(&text))
                 } else {
-                    if cw_clone.amend_option_button.get_active() {
-                        format!("git commit --amend -m {}", shlex::quote(&text))
-                    } else {
-                        format!("git commit -m {}", shlex::quote(&text))
-                    }
+                    format!("git commit -m {}", shlex::quote(&text))
                 };
                 let result = cw_clone.exec_console.exec_cmd(&cmd, events::EV_COMMIT);
                 if let Ok(ref output) = result {
