@@ -57,10 +57,10 @@ impl DiffButton {
             .add_widget("diff", &button, repos::SAV_IN_REPO);
 
         let db = Rc::new(Self {
-            button: button,
+            button,
             window: gtk::Window::new(gtk::WindowType::Toplevel),
             wdtw: WdDiffTextWidget::new(exec_console),
-            _exec_console: Rc::clone(&exec_console),
+            _exec_console: Rc::clone(exec_console),
         });
         db.wdtw.repopulate();
         db.window
@@ -69,7 +69,7 @@ impl DiffButton {
         db.window.set_title(&config::window_title(Some("diff")));
         db.window.connect_delete_event(move |w, _| {
             w.hide_on_delete();
-            gtk::Inhibit(true)
+            Inhibit(true)
         });
         db.window.add(db.wdtw.pwo());
         db.window.show_all();
@@ -125,9 +125,9 @@ impl WdDiffTextWidget {
             diff_rb,
             diff_staged_rb,
             diff_head_rb,
-            diff_notebook: diff_notebook,
+            diff_notebook,
             current_digest: RefCell::new(Vec::new()),
-            exec_console: Rc::clone(&exec_console),
+            exec_console: Rc::clone(exec_console),
             diff_plus_parser: DiffPlusParser::new(),
         });
         // NB: only update when active to stop double update
@@ -193,7 +193,7 @@ impl WdDiffTextWidget {
         *self.current_digest.borrow_mut() = new_digest;
         let lines = Lines::from_string(&text);
         match self.diff_plus_parser.parse_lines(&lines) {
-            Ok(ref diff_pluses) => self.diff_notebook.repopulate(&diff_pluses),
+            Ok(ref diff_pluses) => self.diff_notebook.repopulate(diff_pluses),
             Err(err) => {
                 self.diff_notebook.repopulate(&vec![]);
                 self.report_error("Malformed diff text", &err);
@@ -208,7 +208,7 @@ impl WdDiffTextWidget {
             *self.current_digest.borrow_mut() = new_digest;
             let lines = Lines::from_string(&text);
             match self.diff_plus_parser.parse_lines(&lines) {
-                Ok(ref diff_pluses) => self.diff_notebook.update(&diff_pluses),
+                Ok(ref diff_pluses) => self.diff_notebook.update(diff_pluses),
                 Err(err) => {
                     self.diff_notebook.update(&vec![]);
                     self.report_error("Malformed diff text", &err);
