@@ -372,7 +372,7 @@ impl EditorAllocationTableEditor {
                     .expect("error extracting editor from list store");
                 let globs = globs.trim().to_string();
                 let editor = editor.trim().to_string();
-                if globs.len() > 0 && !editor.is_empty() {
+                if !globs.is_empty() && !editor.is_empty() {
                     v.push((globs, editor));
                 }
                 if !self.list_store.iter_next(&t_iter) {
