@@ -18,9 +18,6 @@ use std::fs::File;
 use std::io::{self, Read, Write};
 use std::rc::Rc;
 
-use git2;
-use shlex;
-
 use pw_gix::{
     gtk::{self, prelude::*},
     sav_state::*,
@@ -47,16 +44,13 @@ pub const SAV_REPO_STATE_MASK: u64 = SAV_NOT_IN_REPO
     | SAV_HAS_SUBMODULES;
 
 pub fn is_repo_workdir(dir_path: &str) -> bool {
-    git2::Repository::open(&dir_path.path_absolute().unwrap()).is_ok()
+    git2::Repository::open(dir_path.path_absolute().unwrap()).is_ok()
 }
 
 pub fn get_repo_workdir_for_path(dir_path: &str) -> Option<String> {
-    if let Ok(repo) = git2::Repository::discover(&dir_path.path_absolute().unwrap()) {
-        if let Some(path) = repo.workdir() {
-            Some(path.to_string_lossy().to_string())
-        } else {
-            None
-        }
+    if let Ok(repo) = git2::Repository::discover(dir_path.path_absolute().unwrap()) {
+        repo.workdir()
+            .map(|path| path.to_string_lossy().to_string())
     } else {
         None
     }
@@ -80,7 +74,7 @@ pub fn get_repo_condns() -> MaskedCondns {
         condns = SAV_NOT_IN_REPO | SAV_NOT_IN_SUBMODULE | SAV_NOT_HAS_SUBMODULES;
     }
     MaskedCondns {
-        condns: condns,
+        condns,
         mask: SAV_REPO_STATE_MASK,
     }
 }
@@ -155,7 +149,7 @@ fn write_known_repos_table(table: &[(String, String)]) -> Result<usize, KRTError
 
 pub fn init_known_repos_table() {
     if !known_repos_table_filepath().is_file() {
-        write_known_repos_table(&vec![]).expect("failed to initialize editor assignment table");
+        write_known_repos_table(&[]).expect("failed to initialize editor assignment table");
     }
 }
 
@@ -192,7 +186,7 @@ impl OpenKnownRepoMenuItem {
             .connect_enter_notify_event(move |menu_item, _| {
                 let submenu = ormi_clone.build_submenu();
                 menu_item.set_submenu(Some(&submenu));
-                gtk::Inhibit(false)
+                Inhibit(false)
             });
 
         ormi
@@ -392,7 +386,7 @@ impl CloneRepoMenuItem {
         dialog
             .get_content_area()
             .pack_start(crw.pwo(), true, true, 0);
-        while gtk::ResponseType::from(dialog.run()) == gtk::ResponseType::Ok {
+        while dialog.run() == gtk::ResponseType::Ok {
             if let Some(src_url) = crw.source_url() {
                 if let Some(as_name) = crw.as_name() {
                     let in_dir = if let Some(in_dir) = crw.in_dir() {
