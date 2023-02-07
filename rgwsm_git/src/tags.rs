@@ -22,8 +22,6 @@ use std::rc::Rc;
 use crypto_hash::{Algorithm, Hasher};
 use regex::Regex;
 
-use shlex;
-
 use pw_gix::{
     glib,
     glibx::*,
@@ -47,24 +45,24 @@ use crate::message;
 use crate::repos;
 
 #[derive(Debug)]
-pub enum TagError {
-    NoTagName,
-    NoKeyId,
-    NoAnnotationMessage,
+pub enum MissingTagComponentError {
+    TagName,
+    KeyId,
+    AnnotationMessage,
 }
 
-impl fmt::Display for TagError {
+impl fmt::Display for MissingTagComponentError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "TagError is here!")
+        write!(f, "MissingTagComponentError is here!")
     }
 }
 
-impl Error for TagError {
+impl Error for MissingTagComponentError {
     fn description(&self) -> &str {
         match self {
-            TagError::NoTagName => "Tag name is required",
-            TagError::NoKeyId => "User key-id is required",
-            TagError::NoAnnotationMessage => "Annotation message is required",
+            MissingTagComponentError::TagName => "Tag name is required",
+            MissingTagComponentError::KeyId => "User key-id is required",
+            MissingTagComponentError::AnnotationMessage => "Annotation message is required",
         }
     }
 
@@ -162,7 +160,7 @@ impl NewTagWidget {
     pub fn apply(
         &self,
         target: Option<&str>,
-    ) -> Result<(String, io::Result<process::Output>), TagError> {
+    ) -> Result<(String, io::Result<process::Output>), MissingTagComponentError> {
         let tag_name = self.tag_name_entry.entry().get_text();
         if tag_name.len() > 0 {
             let mut cmd = "git tag ".to_string();
@@ -184,7 +182,7 @@ impl NewTagWidget {
                     cmd.push_str(&shlex::quote(&key_id));
                     cmd.push(' ');
                 } else {
-                    return Err(TagError::NoKeyId);
+                    return Err(MissingTagComponentError::KeyId);
                 }
             }
             if annotate {
@@ -193,7 +191,7 @@ impl NewTagWidget {
                     cmd.push_str(&shlex::quote(&msg));
                     cmd.push(' ');
                 } else {
-                    return Err(TagError::NoAnnotationMessage);
+                    return Err(MissingTagComponentError::AnnotationMessage);
                 }
             }
             cmd.push_str(&shlex::quote(&tag_name));
@@ -204,9 +202,9 @@ impl NewTagWidget {
             let old_cursor = self.show_busy();
             let result = self.exec_console.exec_cmd(&cmd, events::EV_TAGS_CHANGE);
             self.unshow_busy(old_cursor);
-            return Ok((cmd, result));
+            Ok((cmd, result))
         } else {
-            return Err(TagError::NoTagName);
+            Err(MissingTagComponentError::TagName)
         }
     }
 }
@@ -233,7 +231,7 @@ pub trait CreatTag: WidgetWrapper {
         dialog.set_size_from_recollections("tag:dialog", (640, 320));
         loop {
             let result = dialog.run();
-            if gtk::ResponseType::from(result) == gtk::ResponseType::Ok {
+            if result == gtk::ResponseType::Ok {
                 match ntw.apply(target) {
                     Ok((cmd, result)) => {
                         self.report_any_command_problems(&cmd, &result);
@@ -279,8 +277,8 @@ impl TagButton {
             .managed_buttons
             .add_widget("tag", &button, repos::SAV_IN_REPO);
         let bb = Rc::new(Self {
-            button: button,
-            exec_console: Rc::clone(&exec_console),
+            button,
+            exec_console: Rc::clone(exec_console),
         });
 
         let bb_clone = Rc::clone(&bb);
@@ -295,18 +293,17 @@ impl TagButton {
 
 fn get_raw_data() -> (String, Vec<u8>) {
     let mut hasher = Hasher::new(Algorithm::SHA256);
-    let text: String;
     let output = Command::new("git")
         .arg("tag")
         .arg("--format=%(refname:short) %(objectname:short) %(subject)")
         .output()
         .expect("getting tags text failed");
-    if output.status.success() {
+    let text: String = if output.status.success() {
         hasher.write_all(&output.stdout).expect("hasher blew up!!!");
-        text = String::from_utf8_lossy(&output.stdout).to_string();
+        String::from_utf8_lossy(&output.stdout).to_string()
     } else {
-        text = "".to_string();
-    }
+        "".to_string()
+    };
     (text, hasher.finish())
 }
 
@@ -316,13 +313,13 @@ lazy_static! {
 }
 
 fn extract_tag_row(line: &str) -> Row {
-    let captures = TAGS_RE.captures(&line).unwrap();
+    let captures = TAGS_RE.captures(line).unwrap();
     let name = captures.get(1).unwrap().as_str();
     let rev = captures.get(2).unwrap().as_str();
     let synopsis = captures.get(3).unwrap().as_str();
     let mut v = vec![];
     v.push(name.to_value());
-    v.push(format!("<b>{}</b>", name).to_value());
+    v.push(format!("<b>{name}</b>").to_value());
     v.push(rev.to_value());
     v.push(synopsis.to_value());
     v
@@ -358,7 +355,7 @@ impl RowBuffer<String> for TagsRowBuffer {
         let mut core = self.row_buffer_core.borrow_mut();
         let mut rows: Vec<Row> = Vec::new();
         for line in core.raw_data.lines() {
-            rows.push(extract_tag_row(&line))
+            rows.push(extract_tag_row(line))
         }
         core.rows = Rc::new(rows);
         core.set_is_finalised_true();
@@ -491,7 +488,7 @@ impl TagsNameTable {
             list_store,
             required_map_action,
             exec_console: Rc::clone(exec_console),
-            popup_menu: popup_menu,
+            popup_menu,
             hovered_tag: RefCell::new(None),
         });
         let table_clone = Rc::clone(&table);
