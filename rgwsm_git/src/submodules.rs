@@ -17,7 +17,6 @@ use std::process::Command;
 use std::rc::Rc;
 
 use crypto_hash::{Algorithm, Hasher};
-use git2;
 
 use regex::Regex;
 
@@ -43,11 +42,7 @@ pub fn is_git_submodule(dir_path: Option<&str>) -> bool {
 fn find_submodule_parent() -> Option<String> {
     assert!(is_git_submodule(None));
     if let Ok(repo) = git2::Repository::discover("..") {
-        if let Some(wd) = repo.workdir() {
-            Some(wd.to_string_lossy().to_string())
-        } else {
-            None
-        }
+        repo.workdir().map(|wd| wd.to_string_lossy().to_string())
     } else {
         None
     }
@@ -72,19 +67,18 @@ pub fn submodule_count() -> usize {
 
 fn _get_submodule_paths_rawdata() -> (String, Vec<u8>) {
     let mut hasher = Hasher::new(Algorithm::SHA256);
-    let text: String;
     let output = Command::new("git")
         .arg("submodule")
         .arg("status")
         .arg("--recursive")
         .output()
         .expect("getting all branches text failed");
-    if output.status.success() {
+    let text: String = if output.status.success() {
         hasher.write_all(&output.stdout).expect("hasher blew up!!!");
-        text = String::from_utf8_lossy(&output.stdout).to_string();
+        String::from_utf8_lossy(&output.stdout).to_string()
     } else {
-        text = "".to_string();
-    }
+        "".to_string()
+    };
     (text, hasher.finish())
 }
 
@@ -112,8 +106,8 @@ impl SubmoduleParentButton {
             .managed_buttons
             .add_widget("chdir_parent", &button, repos::SAV_IN_SUBMODULE);
         let bb = Rc::new(Self {
-            button: button,
-            exec_console: Rc::clone(&exec_console),
+            button,
+            exec_console: Rc::clone(exec_console),
         });
 
         let bb_clone = Rc::clone(&bb);
