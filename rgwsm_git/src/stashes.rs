@@ -19,7 +19,6 @@ use std::rc::Rc;
 
 use crypto_hash::{Algorithm, Hasher};
 use regex::Regex;
-use shlex;
 
 use cub_diff_lib::diff::DiffPlusParser;
 use cub_diff_lib::lines::*;
@@ -129,8 +128,8 @@ impl StashPushButton {
             .managed_buttons
             .add_widget("stash push", &button, repos::SAV_IN_REPO);
         let bb = Rc::new(Self {
-            button: button,
-            exec_console: Rc::clone(&exec_console),
+            button,
+            exec_console: Rc::clone(exec_console),
         });
 
         let bb_clone = Rc::clone(&bb);
@@ -158,7 +157,7 @@ impl StashPushButton {
         dialog.get_content_area().show_all();
         let result = dialog.run();
         dialog.hide();
-        if gtk::ResponseType::from(result) == gtk::ResponseType::Ok {
+        if result == gtk::ResponseType::Ok {
             let mut cmd = "git stash push".to_string();
             if stash_push_widget.keep_index_ch_btn.get_active() {
                 cmd.push_str(" --keep-index");
@@ -185,18 +184,17 @@ impl StashPushButton {
 
 fn get_raw_data() -> (String, Vec<u8>) {
     let mut hasher = Hasher::new(Algorithm::SHA256);
-    let text: String;
     let output = Command::new("git")
         .arg("stash")
         .arg("list")
         .output()
         .expect("getting stashes list text failed");
-    if output.status.success() {
+    let text: String = if output.status.success() {
         hasher.write_all(&output.stdout).expect("hasher blew up!!!");
-        text = String::from_utf8_lossy(&output.stdout).to_string();
+        String::from_utf8_lossy(&output.stdout).to_string()
     } else {
-        text = "".to_string();
-    }
+        "".to_string()
+    };
     (text, hasher.finish())
 }
 
@@ -235,7 +233,7 @@ impl RowBuffer<String> for StashesRowBuffer {
         let mut core = self.row_buffer_core.borrow_mut();
         let mut rows: Vec<Row> = Vec::new();
         for line in core.raw_data.lines() {
-            let captures = STASH_RE.captures(&line).unwrap();
+            let captures = STASH_RE.captures(line).unwrap();
             let row = vec![
                 captures.get(1).unwrap().as_str().to_value(),
                 captures.get(2).unwrap().as_str().to_value(),
@@ -368,7 +366,7 @@ impl StashesNameTable {
             list_store,
             required_map_action,
             exec_console: Rc::clone(exec_console),
-            popup_menu: popup_menu,
+            popup_menu,
             hovered_stash: RefCell::new(None),
         });
         let table_clone = Rc::clone(&table);
@@ -419,8 +417,8 @@ impl StashesNameTable {
                         match diff_plus_parser.parse_lines(&lines) {
                             Ok(ref diff_pluses) => {
                                 let diff_notebook = DiffPlusNotebook::new(1);
-                                diff_notebook.repopulate(&diff_pluses);
-                                let subtitle = format!("diff: {}", stash);
+                                diff_notebook.repopulate(diff_pluses);
+                                let subtitle = format!("diff: {stash}");
                                 let title = config::window_title(Some(&subtitle));
                                 let dialog = table_clone
                                     .new_dialog_builder()
@@ -448,7 +446,7 @@ impl StashesNameTable {
                                 dialog.show()
                             }
                             Err(err) => {
-                                let msg = format!("{}: Malformed diff text", stash);
+                                let msg = format!("{stash}: Malformed diff text");
                                 table_clone.report_error(&msg, &err);
                             }
                         }
@@ -472,7 +470,7 @@ impl StashesNameTable {
             )
             .connect_activate(move |_| {
                 if let Some(stash) = table_clone.get_chosen_stash() {
-                    let subtitle = format!("Pop Stash: {}", stash);
+                    let subtitle = format!("Pop Stash: {stash}");
                     let title = config::window_title(Some(&subtitle));
                     let dialog = table_clone
                         .new_dialog_builder()
@@ -489,7 +487,7 @@ impl StashesNameTable {
                     dialog.set_size_from_recollections("stash:pop:dialog", (400, 50));
                     let result = dialog.run();
                     dialog.hide();
-                    if gtk::ResponseType::from(result) == gtk::ResponseType::Ok {
+                    if result == gtk::ResponseType::Ok {
                         let cmd = if index_ch_btn.get_active() {
                             format!("git stash pop --index {}", shlex::quote(&stash))
                         } else {
@@ -521,7 +519,7 @@ impl StashesNameTable {
             )
             .connect_activate(move |_| {
                 if let Some(stash) = table_clone.get_chosen_stash() {
-                    let subtitle = format!("Apply Stash: {}", stash);
+                    let subtitle = format!("Apply Stash: {stash}");
                     let title = config::window_title(Some(&subtitle));
                     let dialog = table_clone
                         .new_dialog_builder()
@@ -538,7 +536,7 @@ impl StashesNameTable {
                     dialog.set_size_from_recollections("stash:apply:dialog", (400, 50));
                     let result = dialog.run();
                     dialog.hide();
-                    if gtk::ResponseType::from(result) == gtk::ResponseType::Ok {
+                    if result == gtk::ResponseType::Ok {
                         let cmd = if index_ch_btn.get_active() {
                             format!("git stash apply --index {}", shlex::quote(&stash))
                         } else {
@@ -609,7 +607,7 @@ impl StashesNameTable {
             .connect_activate(move |_| {
                 if let Some(stash) = table_clone.get_chosen_stash() {
                     let cmd = format!("git stash drop {}", shlex::quote(&stash));
-                    let msg = format!("Confirm: {}", cmd);
+                    let msg = format!("Confirm: {cmd}");
                     if table_clone.ask_confirm_action(&msg, None) {
                         let cursor = table_clone.show_busy();
                         let result = table_clone
