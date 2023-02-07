@@ -27,7 +27,7 @@ fn get_name_and_email_string() -> String {
         .arg("user.name")
         .output()
         .expect("\"git config user.name\" blew up");
-    let name = if output.status.success() && output.stdout.len() > 0 {
+    let name = if output.status.success() && !output.stdout.is_empty() {
         String::from_utf8_lossy(&output.stdout).to_string()
     } else {
         "user name".to_string()
@@ -37,7 +37,7 @@ fn get_name_and_email_string() -> String {
         .arg("user.email")
         .output()
         .expect("\"git config user.email\" blew up");
-    let email = if output.status.success() && output.stdout.len() > 0 {
+    let email = if output.status.success() && !output.stdout.is_empty() {
         String::from_utf8_lossy(&output.stdout).to_string()
     } else {
         "user@somewhere".to_string()
