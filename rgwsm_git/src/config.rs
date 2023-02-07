@@ -41,18 +41,18 @@ pub fn window_title(sub_title: Option<&str>) -> String {
         str_path::str_path_current_dir_or_panic()
     };
     if let Some(sub_title) = sub_title {
-        format!("{}::{}: {}", APP_NAME, sub_title, curr_dir)
+        format!("{sub_title}::{APP_NAME}: {curr_dir}")
     } else {
-        format!("{}: {}", APP_NAME, curr_dir)
+        format!("{APP_NAME}: {curr_dir}")
     }
 }
 
 pub fn get_config_dir_path() -> PathBuf {
     match env::var(DCDP_OVERRIDE_ENVAR) {
         Ok(dir_path) => {
-            if dir_path.len() == 0 {
+            if dir_path.is_empty() {
                 abs_default_config_dir_path()
-            } else if dir_path.starts_with("~") {
+            } else if dir_path.starts_with('~') {
                 match pw_pathux::expand_home_dir(&PathBuf::from(dir_path)) {
                     Some(expanded_dir) => expanded_dir,
                     None => panic!(
