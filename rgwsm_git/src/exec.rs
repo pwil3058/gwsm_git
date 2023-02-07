@@ -295,7 +295,7 @@ pub fn create_friends_menu(exec_console: &Rc<ExecConsole>) -> gtk::MenuItem {
     ]
     .iter()
     {
-        let menu_item = gtk::MenuItem::with_label(friend.as_ref());
+        let menu_item = gtk::MenuItem::with_label(friend);
         let ec_clone = Rc::clone(exec_console);
         menu_item.connect_activate(move |_| {
             if let Err(err) = Command::new(friend).arg(".").spawn() {
