@@ -27,8 +27,9 @@ pub const EV_REMOTES_CHANGE: u64 = 1 << 8;
 pub const EV_STASHES_CHANGE: u64 = 1 << 9;
 pub const EV_TAGS_CHANGE: u64 = 1 << 10;
 
+pub type EventNotification = (u64, u64, Box<dyn Fn(u64)>);
 pub struct EventNotifier {
-    callbacks: RefCell<Vec<(u64, u64, Box<dyn Fn(u64)>)>>,
+    callbacks: RefCell<Vec<EventNotification>>,
     next_token: Cell<u64>,
 }
 
