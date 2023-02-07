@@ -17,8 +17,6 @@ use std::marker::PhantomData;
 use std::process::Command;
 use std::rc::Rc;
 
-use shlex;
-
 use pw_gix::{
     file_tree::*,
     fs_db::*,
@@ -129,15 +127,15 @@ where
             .build();
 
         let owft = Rc::new(Self {
-            v_box: v_box,
-            view: view,
-            store: store,
+            v_box,
+            view,
+            store,
             fs_db: FSDB::new(),
-            auto_expand: auto_expand,
-            show_hidden: show_hidden,
-            hide_clean: hide_clean,
-            exec_console: Rc::clone(&exec_console),
-            popup_menu: popup_menu,
+            auto_expand,
+            show_hidden,
+            hide_clean,
+            exec_console: Rc::clone(exec_console),
+            popup_menu,
             hovered_fso_path: RefCell::new(None),
             phantom: PhantomData,
         });
@@ -193,7 +191,7 @@ where
             )
             .connect_activate(move |_| {
                 if let Some(fso_paths) = owft_clone.get_chosen_file_paths_string() {
-                    let cmd = format!("git add {}", fso_paths);
+                    let cmd = format!("git add {fso_paths}");
                     let result = owft_clone
                         .exec_console
                         .exec_cmd(&cmd, events::EV_FILES_CHANGE);
@@ -204,13 +202,8 @@ where
         let owft_clone = owft.clone();
         owft.view.connect_button_press_event(move |view, event| {
             if event.get_button() == 3 {
-                let fso_path = if let Some(fso_path) =
-                    get_row_item_for_event!(view, event, String, fs_db::PATH)
-                {
-                    Some(shlex::quote(&fso_path).to_string())
-                } else {
-                    None
-                };
+                let fso_path = get_row_item_for_event!(view, event, String, fs_db::PATH)
+                    .map(|fso_path| shlex::quote(&fso_path).to_string());
                 owft_clone.set_hovered_fso_path(fso_path);
                 owft_clone.popup_menu.popup_at_event(event);
                 return Inhibit(true);
@@ -249,7 +242,7 @@ where
                             }
                             Err(err) => {
                                 let msg = "Error accessing editor assignment table";
-                                owft_clone.report_error(&msg, &err);
+                                owft_clone.report_error(msg, &err);
                             }
                         }
                     }
@@ -275,16 +268,16 @@ where
     fn get_chosen_file_paths_string(&self) -> Option<String> {
         let selection = self.view.get_selection();
         let (tree_paths, store) = selection.get_selected_rows();
-        if tree_paths.len() > 0 {
+        if !tree_paths.is_empty() {
             let mut count = 0;
             let mut fso_paths = String::new();
             for tree_path in tree_paths.iter() {
-                if let Some(iter) = store.get_iter(&tree_path) {
+                if let Some(iter) = store.get_iter(tree_path) {
                     if let Some(fso_path) =
                         store.get_value(&iter, fs_db::PATH).get::<String>().unwrap()
                     {
                         if count > 0 {
-                            fso_paths.push_str(" ");
+                            fso_paths.push(' ');
                         }
                         count += 1;
                         fso_paths.push_str(&shlex::quote(&fso_path));
